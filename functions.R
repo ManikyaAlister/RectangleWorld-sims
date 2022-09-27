@@ -88,7 +88,7 @@ weakLearner = function(borders, observations) {
 }
 
 
-# function for plotting the generalization gradients of a weak learner 
+# function for plotting the generalization gradients of a weak sampling learner 
 plotWeak = function(hypotheses,observations, categoryBoundary, range = 1:10) {
   plot(c(1,max(range)), c(1, max(range)), type= "n", xlab = "", ylab = "")
   rect(hypotheses[,1],hypotheses[,2],hypotheses[,3],hypotheses[,4], col= rgb(0,0,1,alpha=hypotheses[,"posterior"]),lwd = 0.01)
@@ -103,7 +103,7 @@ findSize <- function (r) {
   (abs((r[1]-r[3]))*(abs(r[2]-r[4])))
 }
 
-# Strong sampling -- weights each hypothesis by its size, such that smaller hypotheses are allocated a higher probability
+# Strong sampling learner -- weights each hypothesis by its size, such that smaller hypotheses are allocated a higher probability
 # ~ 1/(|h|^n), where |h| = size of the hypothesis, and n = number of observations
 strongLearner = function(borders, observations) {
   weak = weakLearner(borders, observations) # builds off of the weak learner because it's just one extra step
@@ -126,28 +126,14 @@ strongLearner = function(borders, observations) {
   return(strongHypotheses)
 }
 
-# function for plotting the generalization gradients of a strong learner 
+# function for plotting the generalization gradients of a strong sampling learner 
 plotStrong = function(strongHypotheses, observations, categoryBoundary, range = 1:10){
   plot(c(1,max(range)), c(1, max(range)), type= "n", xlab = "", ylab = "")
   rect(strongHypotheses[,1],strongHypotheses[,2],strongHypotheses[,3],strongHypotheses[,4], col= rgb(0,0,1.0,alpha=strongHypotheses[,"posterior"]), lwd = 0.01) # making alpha equivalent to the likelihood to show strong sampling gradient 
   points(observations)
   rect(categoryBoundary[1],categoryBoundary[2],categoryBoundary[3],categoryBoundary[4],border = "darkblue", lwd = 3)
 }
-
-pedegogicalLearner = function(strongHypotheses){
-  strongHypotheses$best = strongHypotheses[,"posterior"] == max(strongHypotheses["posterior"])
-  pedHypotheses = strongHypotheses[strongHypotheses[,"best"]==TRUE,]
-  pedHypotheses$posterior = 1
-  return(pedHypotheses)
-}
   
-
-plotPed = function(pedHypotheses, observations, categoryBoundary, range = 1:10){
-  plot(c(1,max(range)), c(1, max(range)), type= "n", xlab = "", ylab = "")
-  rect(pedHypotheses[,1],pedHypotheses[,2],pedHypotheses[,3],pedHypotheses[,4], col= rgb(0,0,1.0,alpha=pedHypotheses[,"posterior"]), lwd = 0.01) # making alpha equivalent to the likelihood to show strong sampling gradient 
-  points(observations)
-  rect(categoryBoundary[1],categoryBoundary[2],categoryBoundary[3],categoryBoundary[4],border = "darkblue", lwd = 3)
-}
 
 alphaPedegogicalLearner = function(borders, observations, alphaParam) {
     weak = weakLearner(borders, observations) # builds off of the weak learner because it's just one extra step
@@ -170,4 +156,17 @@ alphaPedegogicalLearner = function(borders, observations, alphaParam) {
     return(pedHypotheses)
 }
 
+# function for plotting the generalisation gradients of the alpha pedagogical model
+plotPed = function(pedHypotheses, observations, categoryBoundary, range = 1:10){
+  plot(c(1,max(range)), c(1, max(range)), type= "n", xlab = "", ylab = "")
+  rect(pedHypotheses[,1],pedHypotheses[,2],pedHypotheses[,3],pedHypotheses[,4], col= rgb(0,0,1.0,alpha=pedHypotheses[,"posterior"]), lwd = 0.01) # making alpha equivalent to the likelihood to show strong sampling gradient 
+  points(observations)
+  rect(categoryBoundary[1],categoryBoundary[2],categoryBoundary[3],categoryBoundary[4],border = "darkblue", lwd = 3)
+}
 
+# pedegogicalLearner = function(strongHypotheses) {
+#   strongHypotheses$best = strongHypotheses[, "posterior"] == max(strongHypotheses["posterior"])
+#   pedHypotheses = strongHypotheses[strongHypotheses[, "best"] == TRUE,]
+#   pedHypotheses$posterior = 1
+#   return(pedHypotheses)
+# }
