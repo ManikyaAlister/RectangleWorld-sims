@@ -1,0 +1,173 @@
+---
+title: "Rectangle World Simulations"
+author: "Manikya Alister"
+date: "30/08/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+rm(list = ls())
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+source(here("functions.R"))
+```
+
+## Set up rectangle world 
+
+```{r include = TRUE}
+
+# Define range of possible features
+range = 1:10
+
+# Create array with all possible rectangle coordinates within the range 
+borders = expand.grid(range,range,range,range)
+
+for (i in 1:length(borders[,1])){ # replace duplicate rectangles with NA
+  if (borders[i,1]-borders[i,3] > 0 | borders[i,2]-borders[i,4] > 0){
+    borders[i,] = NA
+  }
+}
+
+borders = borders[complete.cases(borders),] # delete rows that previously held duplicate rectangles (there was probably a better way to do this)
+
+# Define the true category region
+cat1 = c(2,2,6,8)
+
+#visualize true category region
+plot(c(1,max(range)), c(1, max(range)), type= "n", xlab = "", ylab = "")
+rect(cat1[1],cat1[2],cat1[3],cat1[4],border = "blue", lwd = 3)
+```
+
+## Sample some observations
+
+For this simulation I'm going to do a maximum of 10 observations, 5 positive examples and 5 negative examples. I'm interested to see how the different learning strategies (weak, strong, pedagogical) generalise given different quantities of examples (e.g., 1, 3, 5 of each positive/negative evidence type). 
+
+This sampling is, I guess, a form of weak sampling, but it's not truly weak because I'm ensuring an equal number of positive and negative examples. 
+
+```{r echo = TRUE}
+nObs = 10
+# Positive examples
+pX = round(runif(nObs/2, cat1[1],cat1[3]),2) # X coordinates 
+pY = round(runif(nObs/2, cat1[2],cat1[4]),2) # Y coordinates
+pos = cbind(pX,pY,"1")
+
+## Need to find a  better way to sample negative evidence 
+neg = weakSampler(20)
+neg = neg[neg[,"category"]== "none",]
+neg = neg[1:5,]
+
+# set up different arrays with different numbers of observations
+obs1 = rbind(pos[1,],neg[1,])
+colnames(obs1) = c("x","y","category")
+
+obs3 = rbind(pos[1:3,],neg[1:3,])
+colnames(obs3) = c("x","y","category")
+
+obs5 = rbind(pos[1:5,],neg[1:5,])
+colnames(obs5) = c("x","y","category")
+
+# visualize observations
+plot(c(1,max(range)), c(1, max(range)), type= "n", xlab = "", ylab = "", main = "Hypothesis Space, Observations, and True Category Boundary")
+rect(cat1[1],cat1[2],cat1[3],cat1[4],border = "blue", lwd = 3)
+points(obs5)
+```
+
+```{r echo = FALSE}
+weak1 = weakLearner(borders, obs1)
+weak3 = weakLearner(borders, obs3)
+weak5 = weakLearner(borders, obs5)
+```
+
+```{r echo = FALSE}
+strong1 = strongLearner(borders, obs1)
+strong3 = strongLearner(borders, obs3)
+strong5 = strongLearner(borders, obs5)
+```
+
+
+***transparency of block corresponds to probability***qw3ws
+
+```{r echo = FALSE}
+par(omi=rep(0.3, 4), mar=c(1,1,1,1), mfrow=c(3,2))
+
+plotWeak(weak1,obs1,cat1)
+mtext("Weak Sampler", side = 3)
+
+plotStrong(strong1, obs1, cat1)
+mtext("Strong Sampler", side = 3)
+
+plotWeak(weak3,obs3,cat1)
+
+plotStrong(strong3, obs3, cat1)
+
+plotWeak(weak5,obs5,cat1)
+
+plotStrong(strong5, obs5, cat1)
+
+```
+
+What happens if I just raise the strong sampling learner's likelihood to the power of alpha? An alpha of 0 should basically be weak sampling and alpha = 1 would be strong sampling. Alpha = 2 should be a hacky way of making a pedagogical model. 
+
+```{r echo = FALSE}
+# Different levels of alpha parameter: 0,1,2
+
+
+# 1 observation
+ped1a0 = alphaPedegogicalLearner(borders,obs1,0)
+ped1a1 = alphaPedegogicalLearner(borders,obs1,1)
+ped1a2 = alphaPedegogicalLearner(borders,obs1,2)
+
+# 3 observations
+ped3a0 = alphaPedegogicalLearner(borders,obs3,0)
+ped3a1 = alphaPedegogicalLearner(borders,obs3,1)
+ped3a2 = alphaPedegogicalLearner(borders,obs3,2)
+
+# 5 observations
+ped5a0 = alphaPedegogicalLearner(borders,obs5,0)
+ped5a1 = alphaPedegogicalLearner(borders,obs5,1)
+ped5a2 = alphaPedegogicalLearner(borders,obs5,2)
+
+```
+
+```{r echo = FALSE}
+par(omi=rep(0.3, 4), mar=c(1,1,1,1), mfrow=c(3,3))
+
+plotPed(ped1a0,obs1,cat1)
+mtext("alpha = 0", side = 3)
+plotPed(ped1a1,obs1,cat1)
+mtext("alpha = 1", side = 3)
+plotPed(ped1a2,obs1,cat1)
+mtext("alpha = 2", side = 3)
+
+plotPed(ped3a0,obs3,cat1)
+plotPed(ped3a1,obs3,cat1)
+plotPed(ped3a2,obs3,cat1)
+
+plotPed(ped5a0,obs5,cat1)
+plotPed(ped5a1,obs5,cat1)
+plotPed(ped5a2,obs5,cat1)
+
+```
+
+## To Do: 
+
+- Code proper pedagogical model where the learner tries to figure out what rectangle would be the *most* probable given the points that have been shown.   
+- Code priors into these models. What would happen if the learner has a prior favoring larger hypotheses?
+
+
+```{r include = FALSE}
+# trect = rbind(c(1, 1, 7, 7), c(1, 8, 8, 9))
+# isInRectangle(c(2, 9), trect)
+# weakLearner(trect, obs5)
+# areInCat(trect, obs5, "none")
+# 
+# isInRectangle(c(2, 9), c(1, 1, 7, 7))
+# isInRectangle(obs5[8, ], c(1, 8, 8, 9))
+# isInRectangle(obs5[8, ], trect)
+# 
+# tmp = c(2, 7, 4, 8)
+# tmp1 = c(2, 7, 3, 9)
+# findSize(tmp1)
+
+```
+
