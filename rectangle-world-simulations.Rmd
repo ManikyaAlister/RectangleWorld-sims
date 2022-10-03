@@ -10,6 +10,7 @@ rm(list = ls())
 knitr::opts_chunk$set(echo = TRUE)
 library(here)
 source(here("functions.R"))
+source(here("least-squares-heuristic.R"))
 ```
 
 ## Set up rectangle world 
@@ -84,27 +85,85 @@ strong3 = strongLearner(borders, obs3)
 strong5 = strongLearner(borders, obs5)
 ```
 
+```{r}
+ls1 = lsLearner(borders, obs1)
+ls3 = lsLearner(borders, obs3)
+ls5 = lsLearner(borders, obs5)
+```
 
-***transparency of block corresponds to probability***qw3ws
+***transparency of block corresponds to probability***
 
 ```{r echo = FALSE}
-par(omi=rep(0.3, 4), mar=c(1,1,1,1), mfrow=c(3,2))
+par(omi=rep(0.3, 4), mar=c(1,1,1,1), mfrow=c(3,3))
 
 plotWeak(weak1,obs1,cat1)
-mtext("Weak Sampler", side = 3)
+mtext("Weak Learner", side = 3)
 
 plotStrong(strong1, obs1, cat1)
-mtext("Strong Sampler", side = 3)
+mtext("Strong Learner", side = 3)
+
+plotLS(ls1, obs1, cat1)
+mtext("Least Squares Learner", side = 3)
 
 plotWeak(weak3,obs3,cat1)
 
 plotStrong(strong3, obs3, cat1)
 
+plotLS(ls3, obs3, cat1)
+
 plotWeak(weak5,obs5,cat1)
 
 plotStrong(strong5, obs5, cat1)
 
+plotLS(ls5, obs5, cat1)
+
 ```
+
+The above plots aren't great at showing which triangle is most likely because when the rectangles overlap it inflates how probable a rectangle appears. 
+
+What about just showing the highest probability rectangle? Main problem with this is it doesn't really show the uncertainty or distribution of possible rectangles, but it will do a better job of showing differences between models. 
+
+```{r echo = FALSE}
+# adjust plotting functions to jusrt show the highest probability rectangle
+plotStrong1 = function(strongHypotheses, observations, categoryBoundary, range = 1:10){
+  strongHypotheses = strongHypotheses[which.max(strongHypotheses$posterior),]
+  plot(c(1,max(range)), c(1, max(range)), type= "n", xlab = "", ylab = "")
+  rect(strongHypotheses[,1],strongHypotheses[,2],strongHypotheses[,3],strongHypotheses[,4], col= rgb(0,0,1.0,alpha=.8), lwd = 0.01) 
+  points(observations)
+  rect(categoryBoundary[1],categoryBoundary[2],categoryBoundary[3],categoryBoundary[4],border = "darkblue", lwd = 3)
+}
+
+plotLS1 = function(hypotheses,observations, categoryBoundary, range = 1:10) {
+  hypotheses = hypotheses[which.max(hypotheses$prob),]
+  plot(c(1,max(range)), c(1, max(range)), type= "n", xlab = "", ylab = "")
+  rect(hypotheses[,1],hypotheses[,2],hypotheses[,3],hypotheses[,4], col= rgb(0,0,1,alpha=.8),lwd = 0.01)
+  points(observations)
+  rect(categoryBoundary[1],categoryBoundary[2],categoryBoundary[3],categoryBoundary[4],border = "darkblue", lwd = 3)
+}
+```
+
+
+```{r }
+par(omi=rep(0.3, 4), mar=c(1,1,1,1), mfrow=c(3,2))
+
+plotStrong1(strong1, obs1, cat1)
+mtext("Strong Learner", side = 3)
+
+plotLS1(ls1, obs1, cat1)
+mtext("Least Squares Learner", side = 3)
+
+plotStrong1(strong3, obs3, cat1)
+
+plotLS1(ls3, obs3, cat1)
+
+plotStrong1(strong5, obs5, cat1)
+
+plotLS1(ls5, obs5, cat1)
+
+```
+
+Ordinal hypotheses? 
+
 
 What happens if I just raise the strong sampling learner's likelihood to the power of alpha? An alpha of 0 should basically be weak sampling and alpha = 1 would be strong sampling. Alpha = 2 should be a hacky way of making a pedagogical model. 
 

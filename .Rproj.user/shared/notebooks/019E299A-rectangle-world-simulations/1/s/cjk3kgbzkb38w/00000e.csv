@@ -1,3 +1,0 @@
-"0","weak1 = weakLearner(borders, obs1)"
-"0","weak3 = weakLearner(borders, obs3)"
-"0","weak5 = weakLearner(borders, obs5)"
