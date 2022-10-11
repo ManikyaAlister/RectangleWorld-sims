@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(here)
 source(here("functions.R"))
 source(here("least-squares-heuristic.R"))
+
 ```
 
 ## Set up rectangle world 
@@ -50,11 +51,11 @@ nObs = 10
 # Positive examples
 pX = round(runif(nObs/2, cat1[1],cat1[3]),2) # X coordinates 
 pY = round(runif(nObs/2, cat1[2],cat1[4]),2) # Y coordinates
-pos = cbind(pX,pY,"1")
+pos = cbind(pX,pY,"positive")
 
 ## Need to find a  better way to sample negative evidence 
 neg = weakSampler(20)
-neg = neg[neg[,"category"]== "none",]
+neg = neg[neg[,"category"]== "negative",]
 neg = neg[1:5,]
 
 # set up different arrays with different numbers of observations
@@ -100,7 +101,7 @@ plotWeak(weak1,obs1,cat1)
 mtext("Weak Learner", side = 3)
 
 plotStrong(strong1, obs1, cat1)
-mtext("Strong Learner", side = 3)
+mtext("Pedegogical Learner", side = 3)
 
 plotLS(ls1, obs1, cat1)
 mtext("Least Squares Learner", side = 3)
@@ -147,7 +148,7 @@ plotLS1 = function(hypotheses,observations, categoryBoundary, range = 1:10) {
 par(omi=rep(0.3, 4), mar=c(1,1,1,1), mfrow=c(3,2))
 
 plotStrong1(strong1, obs1, cat1)
-mtext("Strong Learner", side = 3)
+mtext("Pedegogical Learner", side = 3)
 
 plotLS1(ls1, obs1, cat1)
 mtext("Least Squares Learner", side = 3)
@@ -162,7 +163,100 @@ plotLS1(ls5, obs5, cat1)
 
 ```
 
+Other model: just outside points are considered. 
+
+For debugging maybe make it a smaller grid? Much less hypothesis. Can think about how probable each hypothesis is myself. 
+
+Check to make sure trade off between size of the positive and size of the negative hypotheses. 
+
+Code alpha into the model 
+
 Ordinal hypotheses? 
+
+```{r echo = FALSE}
+weak1 = pedLearner(borders, obs1, alpha = 0)
+weak3 = pedLearner(borders, obs3, alpha = 0)
+weak5 = pedLearner(borders, obs5, alpha = 0)
+```
+
+```{r echo = FALSE}
+strong1 = pedLearner(borders, obs1)
+strong3 = pedLearner(borders, obs3)
+strong5 = pedLearner(borders, obs5)
+```
+
+```{r}
+ls1 = lsLearner(borders, obs1)
+ls3 = lsLearner(borders, obs3)
+ls5 = lsLearner(borders, obs5)
+```
+
+
+```{r}
+par(omi=rep(0.3, 4), mar=c(1,1,1,1), mfrow=c(3,3))
+
+plotPed(weak1,obs1,cat1)
+mtext("Weak Learner a = 0", side = 3)
+
+plotPed(strong1, obs1, cat1)
+mtext("Pedegogical Learner a = 1", side = 3)
+
+plotLS(ls1, obs1, cat1)
+mtext("Least Squares Learner", side = 3)
+
+plotPed(weak3,obs3,cat1)
+
+plotPed(strong3, obs3, cat1)
+
+plotLS(ls3, obs3, cat1)
+
+plotPed(weak5,obs5,cat1)
+
+plotPed(strong5, obs5, cat1)
+
+plotLS(ls5, obs5, cat1)
+```
+```{r}
+par(omi=rep(0.3, 4), mar=c(1,1,1,1), mfrow=c(3,3))
+
+plotPed(weak1,obs1,cat1,nHypotheses = 3)
+mtext("Weak Learner a = 0", side = 3)
+
+plotPed(strong1, obs1, cat1, nHypotheses = 3)
+mtext("Pedegogical Learner a = 1", side = 3)
+
+plotLS(ls1, obs1, cat1, nHypotheses = 3)
+mtext("Least Squares Learner", side = 3)
+
+plotPed(weak3,obs3,cat1, nHypotheses = 3)
+
+plotPed(strong3, obs3, cat1, nHypotheses = 3)
+
+plotLS(ls3, obs3, cat1, nHypotheses = 3)
+
+plotPed(weak5,obs5, cat1, nHypotheses = 3)
+
+plotPed(strong5, obs5, cat1, nHypotheses = 3)
+
+plotLS(ls5, obs5, cat1, nHypotheses = 3)
+```
+
+
+### 1 positive observation 
+
+```{r}
+obs1Pos = c(4,4,"positive")
+names(obs1Pos) = c("x","y","category")
+obs1Neg = c(8,8,"negative")
+names(obs1Neg) = c("x","y","category")
+
+strong1Pos = pedLearner(borders,obs1Pos)
+strong1Neg = pedLearner(borders,obs1Neg)
+
+plotPed(strong1Neg,obs1Neg,cat1)
+#plotPed(strong1Pos,obs1Pos,cat1)
+
+```
 
 
 What happens if I just raise the strong sampling learner's likelihood to the power of alpha? An alpha of 0 should basically be weak sampling and alpha = 1 would be strong sampling. Alpha = 2 should be a hacky way of making a pedagogical model. 
@@ -218,7 +312,7 @@ plotPed(ped5a2,obs5,cat1)
 # trect = rbind(c(1, 1, 7, 7), c(1, 8, 8, 9))
 # isInRectangle(c(2, 9), trect)
 # weakLearner(trect, obs5)
-# areInCat(trect, obs5, "none")
+# areInCat(trect, obs5, "negative")
 # 
 # isInRectangle(c(2, 9), c(1, 1, 7, 7))
 # isInRectangle(obs5[8, ], c(1, 8, 8, 9))

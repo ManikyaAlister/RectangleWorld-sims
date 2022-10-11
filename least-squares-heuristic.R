@@ -3,60 +3,34 @@ setwd(here())
 
 source("functions.R")
 
-# #***** Set up
-# 
-# # set up rectangle world
-# 
-# # Define range of possible features
-# range = 1:10
-# 
-# # Create array with all possible rectangle coordinates within the range 
-# borders = expand.grid(range,range,range,range)
-# 
-# for (i in 1:length(borders[,1])){ # replace duplicate rectangles with NA
-#   if (borders[i,1]-borders[i,3] > 0 | borders[i,2]-borders[i,4] > 0){
-#     borders[i,] = NA
-#   }
-# }
-# 
-# borders = borders[complete.cases(borders),] # delete rows that previously held duplicate rectangles (there was probably a better way to do this)
-# 
-# # Define the true category region
-# cat1 = c(2,2,6,8)
-# 
-# #visualize true category region
-# plot(c(1,max(range)), c(1, max(range)), type= "n", xlab = "", ylab = "")
-# 
-# rect(cat1[1],cat1[2],cat1[3],cat1[4],border = "blue", lwd = 3)
-# 
-# 
-# # Sample observations
-# 
-# nObs = 10
-# # Positive examples
-# pX = round(runif(nObs/2, cat1[1],cat1[3]),2) # X coordinates 
-# pY = round(runif(nObs/2, cat1[2],cat1[4]),2) # Y coordinates
-# pos = cbind(pX,pY,"1")
-# 
-# ## Need to find a  better way to sample negative evidence 
-# neg = weakSampler(20)
-# neg = neg[neg[,"category"]== "none",]
-# neg = neg[1:5,]
-# 
-# # set up different arrays with different numbers of observations
-# obs1 = rbind(pos[1,],neg[1,])
-# colnames(obs1) = c("x","y","category")
-# 
-# obs3 = rbind(pos[1:3,],neg[1:3,])
-# colnames(obs3) = c("x","y","category")
-# 
-# obs5 = rbind(pos[1:5,],neg[1:5,])
-# colnames(obs5) = c("x","y","category")
-# 
-# # visualize observations
-# plot(c(1,max(range)), c(1, max(range)), type= "n", xlab = "", ylab = "", main = "Hypothesis Space, Observations, and True Category Boundary")
-# rect(cat1[1],cat1[2],cat1[3],cat1[4],border = "blue", lwd = 3)
-# points(obs5)
+# weakLearner function updates the likelihood of each hypothesis given weak sampling
+weakLearner = function(borders, observations) {
+  isInRectPos = areInCat(borders, observations, "positive")
+  areInRect = function(isInRect)
+    setequal(isInRect, rep(TRUE, length(as.data.frame(isInRect))))
+  positiveEvidence = if (length(as.data.frame(isInRectPos)) > 1) {
+    # tells us which rectangles contain all of the observations of the category of interest
+    apply(isInRectPos, 1, areInRect)
+  } else {
+    # if length is 1, no need to do the above function
+    positiveEvidence = isInRectPos
+  }
+  
+  isInRectNeg = areInCat(borders, observations, "negative") # does the hypothesised rectangle contain negative evidence?
+  negativeEvidence = if (length(as.data.frame(isInRectPos)) > 1) {
+    negativeEvidence = rowSums(isInRectNeg) > 0
+  } else {
+    negativeEvidence = isInRectNeg
+  }
+  
+  hypotheses = cbind(borders, positiveEvidence, negativeEvidence)
+  hypotheses = hypotheses[hypotheses[, "positiveEvidence"] == TRUE &
+                            hypotheses[, "negativeEvidence"] == FALSE, ]
+  hypotheses$likelihood = 1
+  hypotheses$posterior = hypotheses[,"likelihood"]/sum(hypotheses[,"likelihood"]) # no prior yet so posterior is just likelihood over sum(likelihood)
+  return(hypotheses)
+}
+
 
 #***** Least squares heuristic
 
@@ -98,16 +72,22 @@ lsLearner = function(borders, obs) {
 }
 # plot
 
-plotLS = function(hypotheses,observations, categoryBoundary, range = 1:10) {
+plotLS = function(hypotheses,observations, categoryBoundary, nHypotheses = "all",range = 1:10) {
+  
+  if (nHypotheses == "all"){
+    nHypotheses = length(hypotheses[,1])
+  } else {
+    nHypotheses = nHypotheses
+  }
+  
+  hypotheses = hypotheses[order(hypotheses[,"prob"], decreasing = TRUE),]
+  hypotheses = hypotheses[1:nHypotheses,]
+  hypotheses[,"prob"] = hypotheses[,"prob"]/sum(hypotheses[,"prob"])
+  
   plot(c(1,max(range)), c(1, max(range)), type= "n", xlab = "", ylab = "")
   rect(hypotheses[,1],hypotheses[,2],hypotheses[,3],hypotheses[,4], col= rgb(0,0,1,alpha=hypotheses[,"prob"]),lwd = 0.01)
   #) # making alpha equal t 1/the number of hypotheses makes the transparency of the plot equivilent to the relitive probability of each hypothesis. 
   points(observations)
-  rect(categoryBoundary[1],categoryBoundary[2],categoryBoundary[3],categoryBoundary[4],border = "darkblue", lwd = 3)
+  rect(categoryBoundary[1],categoryBoundary[2],categoryBoundary[3],categoryBoundary[4],border = "red", lwd = 2)
 }
 
-#test5 = lsLearner(borders,obs5) 
-#plotLS(hypotheses,obs5,cat1)
-
-#tmp = hypotheses[2,]
-#plotLS(tmp,obs5,cat1)
