@@ -1,13 +1,17 @@
 ### Pedagogical Learner ###
 library(here)
 
-# Function to figure out whether a certain observation is within a category
+
 isInRectangle <- function (p,r) {
   return (p[1]>=r[1] & p[1]<=r[3] & p[2]>=r[2] & p[2]<=r[4])
 }
 
 
-# weakLearner function updates the likelihood of each hypothesis given weak sampling
+#' simulates a learner who assumes observations are sampled pedagogically
+#'  
+#' @param alpha Numeric value from -inf to inf. determines how helpful the learner thinks the teacher is. Alpha = 0 is equivalent to weak sampling, alpha = 1 is standard pedagogical sampling. 
+#' @param borders Array of hypothesised category boundary points (coordinates of rectangles)
+#' @param observations Points that have been labelled as belonging to a certain category
 pedLearner = function(borders, observations, alpha = 1) {
   posInRect = areInCat(borders, observations, "positive")
   if (is.na(posInRect[1])) {

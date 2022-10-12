@@ -1,4 +1,6 @@
-# sets up all possible rectangles within a given hypothesis space 
+#' Sets up all possible rectangles within a given hypothesis space 
+#' 
+#' @param range vector pertaining to the range of a square hypothesis space, also describing the discrete intervals (e.g., 1:10)
 makeBorders = function(range){
   
   # Create array with all possible rectangle coordinates within the range 
@@ -25,13 +27,17 @@ makeBorders = function(range){
   
 }
 
-# Function to figure out whether a certain observation is within a category
+#' Function to figure out whether a certain observation is within a category
+#' 
+#' @param p vector of length 2. The point that you want to know is inside the rectangle or not
+#' @param r vector of length 4. Coordinates of the rectangle
 isInRectangle <- function (p,r) {
   return (p[1]>=r[1] & p[1]<=r[3] & p[2]>=r[2] & p[2]<=r[4])
 }
 
-# Observations sampled and *teacher* categorizes -- exemplars/observations chosen via Weak Sampling
+#' Observations sampled and *teacher* categorizes -- exemplars/observations chosen via Weak Sampling
 # practical problem with this function is that it doesn't guarantee any observations of either type of evidence
+#' @param nObs Number of observations to be sampled
 weakSampler = function(nObs){
   
   obs = array(dim = c(nObs,3)) # array to fill with observation coordinates and their category
@@ -54,11 +60,13 @@ weakSampler = function(nObs){
 # Weak Sampling ~ All hypotheses that contain the observation are equally as likely
 # In our scenario it's not quite that simple, because the hypothesis also cannot contain negative evidence 
 
+#' Function that tells you whether certain observations fall within a rectangular category
+#' 
+#' @param borders Array of hypothesised category boundary points (coordinates of rectangles)
+#' @param observations Points that have been labelled as belonging to a certain category
+#' @param catLabel Positive evidence that you're checking falls within a certain hypothesis space/category boundary/rectangle
 areInCat = function(borders, observations, catLabel = "positive") {
-  # function that tells you whether certain observations fall within a rectangle
-  # borders = array of hypothesised category boundary points (coordinates of rectangles)
-  # observations = points that have been labelled as belonging to a certain category
-  # catLabel = positive evidence that you're checking falls within a certain hypothesis space/category boundary/rectangle
+
   
   if (is.vector(observations)) {
     observations = observations[observations["category"] == catLabel]
@@ -102,11 +110,17 @@ areInCat = function(borders, observations, catLabel = "positive") {
   
 }
 
-# function to find the size of each rectangle (necessary for strong sampling)
+#' Function to find the size of each rectangle (necessary for strong sampling)
+#' 
+#' @param r vector of length 4. Coordinates of the rectangle
 findSize <- function (r) {
   (abs((r[1]-r[3]))*(abs(r[2]-r[4])))
 }
 
+#' Function to find the size of the space outside the rectangle (necessary for pedagogical sampling)
+#' 
+#' @param r vector of length 4. Coordinates of the rectangle
+#' @param range vector pertaining to the range of a square hypothesis space, also describing the discrete intervals (e.g., 1:10)
 findSizeNeg = function(r, range = 100) { # apply to all hypotheses that are inconsistent
   range-(abs((r[1]-r[3]))*(abs(r[2]-r[4])))
 }
