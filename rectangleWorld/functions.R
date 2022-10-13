@@ -35,11 +35,10 @@ isInRectangle <- function (p,r) {
   return (p[1]>=r[1] & p[1]<=r[3] & p[2]>=r[2] & p[2]<=r[4])
 }
 
-#' @title Weak Sampler
-#' @description Observations sampled and *teacher* categorizes -- exemplars/observations chosen via Weak Sampling.
-# Practical problem with this function is that it doesn't guarantee any observations of either type of evidence
+#' Observations sampled and *teacher* categorizes -- exemplars/observations chosen via Weak Sampling
+# practical problem with this function is that it doesn't guarantee any observations of either type of evidence
 #' @param nObs Number of observations to be sampled
-weakSampler = function(nObs,trueRectangle,range = 1:10){
+weakSampler = function(nObs){
   
   obs = array(dim = c(nObs,3)) # array to fill with observation coordinates and their category
   colnames(obs) = c("x","y","category")
@@ -47,33 +46,12 @@ weakSampler = function(nObs,trueRectangle,range = 1:10){
   for (i in 1:nObs) {
     obs[i, 1] = sample(range, 1, replace = TRUE)
     obs[i, 2] = sample(range, 1, replace = TRUE)
-    if (isInRectangle(obs[i, 1:2], trueRectangle)) {
+    if (isInRectangle(obs[i, 1:2], cat1)) {
       obs[i, "category"] = "positive"
     } else {
       obs[i, "category"] = "negative"
     }
   }
-  return(obs) #' @return a matrix with the x and y coordinates of the observations sampled and their category
-}
-
-#' @title Sample positive and negative evidence from rectangle world
-#' @description 
-#' Choose a certain amount of positive or negative observations that are sampled randomly from each category (strong sampling)
-sampleRect = function(nPos, #' @param nPos Number of positive observations
-                      nNeg, #' @param nNeg Number of negative observations
-                      trueRectangle) { #' @param trueRectangle vector of coordinates representing the true rectangle
-  # Positive examples
-  x = round(runif(nPos, trueRectangle[1],trueRectangle[3]),2) # X coordinates 
-  y = round(runif(nPos, trueRectangle[2],trueRectangle[4]),2) # Y coordinates
-  pos = cbind(x,y,"positive")
-  
-  ## Need to find a  better way to sample negative evidence 
-  neg = weakSampler(nNeg*5, trueRectangle = trueRectangle)
-  neg = neg[neg[,"category"]== "negative",]
-  neg = neg[1:nNeg,]
-  
-  obs = rbind(pos,neg)
-  colnames(obs) = c("x","y","category")
   return(obs)
 }
 
