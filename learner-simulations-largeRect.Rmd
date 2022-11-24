@@ -28,7 +28,7 @@ range = 1:10
 borders = makeBorders(range)
 
 # Define the true category region
-trueRectangle = c(2,2,6,8)
+trueRectangle = c(4,4,9,9)
 
 #visualize true category region
 plot(c(1,max(range)), c(1, max(range)), type= "n", xlab = "", ylab = "")
@@ -44,12 +44,21 @@ This sampling is, I guess, a form of weak sampling, but it's not truly weak beca
 ```{r echo = TRUE}
 
 obs = sampleRect(5,5,trueRectangle)
+# 
+# # set up different arrays with different numbers of observations
+# obs1 = obs[c(1,6),]
+# obs3 = obs[c(1:2,6:7),]
+# obs5 = obs[c(1:3,6:8),]
 
 
-# set up different arrays with different numbers of observations
-obs1 = obs[c(1,6),]
-obs3 = obs[c(1:3,6:9),]
-obs5 = obs[c(1:5,6:10),]
+obs1 = rbind(c(10,10,"negative"),c(8.5,8.5,"positive"))
+obs3 = rbind(c(10,10,"negative"),c(10,8.5,"negative"),c(8.5,7.5,"positive"),c(8.5,8.5,"positive"))
+obs5 = rbind(c(10,10,"negative"),c(10,8.5,"negative"),c(8.5,7.5,"positive"),c(8.5,8.5,"positive"), c(8.5,6.5,"positive"), c(10,6.5,"negative"))
+
+colnames(obs1) = c("x","y","category")
+colnames(obs3) = c("x","y","category")
+colnames(obs5) = c("x","y","category")
+
 
 # visualize observations
 plot(c(1,max(range)), c(1, max(range)), type= "n", xlab = "", ylab = "", main = "Hypothesis Space, Observations, and True Category Boundary")
@@ -183,9 +192,9 @@ plotPed(ped5, obs5, trueRectangle, nHypotheses = 3)
 ## 1 observation 
 
 ```{r}
-obs1Pos = c(4,4,"positive")
+obs1Pos = c(8,8,"positive")
 names(obs1Pos) = c("x","y","category")
-obs1Neg = c(8,8,"negative")
+obs1Neg = c(2,2,"negative")
 names(obs1Neg) = c("x","y","category")
 
 ped1Pos = pedLearner(borders,obs1Pos)
@@ -196,5 +205,5 @@ par(omi=rep(0.3, 4), mar=c(1,1,1,1), mfrow=c(1,2))
 plotPed(ped1Neg,obs1Neg,trueRectangle, nHypotheses = 3)
 plotPed(ped1Pos,obs1Pos,trueRectangle, nHypotheses = 3)
 
-```
+https://www.google.com/url?sa=i&url=https%3A%2F%2Fa-z-animals.com%2Fanimals%2Flion%2F&psig=AOvVaw1Ce4_08kIJSFPhRMOkY3QU&ust=1668572480858000&source=images&cd=vfe&ved=0CA8QjRxqFwoTCNiSlISrr_sCFQAAAAAdAAAAABAD```
 

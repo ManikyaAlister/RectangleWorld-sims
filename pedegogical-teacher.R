@@ -11,10 +11,15 @@ root = here()
 #' @example 
 #' pedTeacher(trueRectangle = c(2,2,6,6), borders = makeBorders(1:10), nPoints = 3)
 #' 
-pedTeacher = function(trueRectangle, #' @param trueRectangle A vector of coordinates indicating the true rectangle that the 
-                      borders, #' @param borders Array of hypothesised category boundary points (coordinates of rectangles). Can be generated using the makeBorders() function. 
-                      nPoints, #' @param nPoints Number indicating how many points you want the teacher to provide. 
-                      range = 1:10){ 
+#' @param trueRectangle A vector of coordinates indicating the true rectangle that the 
+#' @param borders Array of hypothesised category boundary points (coordinates of rectangles). Can be generated using the makeBorders() function. 
+#' @param nPoints Number indicating how many points you want the teacher to provide.
+#'
+pedTeacher = function(trueRectangle, 
+                      borders, 
+                      nPoints,  
+                      range = 1:10,
+                      alpha = 1){ 
   
   # set up all possible points
   allPoints = expand.grid(range,range) 
@@ -41,7 +46,7 @@ pedTeacher = function(trueRectangle, #' @param trueRectangle A vector of coordin
   # Set the learner's initial prior
   learnerPrior[,1] = rep(1,length(borders[,1]))/sum(rep(1,length(borders[,1]))) # uniform prior to start
   
-  # empty vector to fill with the points that th teacher chooses
+  # empty vector to fill with the points that the teacher chooses
   points = array(NA,c(nPoints,2)) 
   
   # loop through each point that the teacher is providing
@@ -54,7 +59,7 @@ for (j in 1:nPoints){
   for (i in 1:length(observations[,1])){
     observation = as.vector(as.matrix(observations[i,])) # needs to be a vector for pedLearner, but as.vector() wouldn't work unless it was first converted to a matrix. Not sure why. 
     names(observation) = c("Var1","Var2","category") # needs to be named vector for pedLearner to work 
-    learner = pedLearner(borders,observation, prior = learnerPrior[,j]) 
+    learner = pedLearner(borders,observation, prior = learnerPrior[,j], alpha = alpha) 
     pointProb = learner[learner[,1] == trueRectangle[1] & learner[,2] == trueRectangle[2] & learner[,3] == trueRectangle[3] & learner[,4] == trueRectangle[4],"posterior"] # extract just the probability of the true rectangle for each  
     probTrueRect[i] = pointProb 
     }
@@ -74,9 +79,11 @@ for (j in 1:nPoints){
 #' Plot the points chosen by a pedagogical teacher
 #' @example 
 #' plotPedTeacher(points = pedTeacher(trueRectangle = c(2,2,6,6), borders = makeBorders(1:10), nPoints = 10), trueRectangle = c(2,2,6,6),borders = makeBorders(1:10))
+#' @param trueRectangle Numeric vector with coordinates of the true rectangle. 
+#' @param points Numeric array with the chosen points of the teacher ordered correctly. Output from pedTeacher()
 
-plotPedTeacher = function(points, #' @param points Numeric array with the chosen points of the teacher ordered correctly. Output from pedTeacher()
-                          trueRectangle, #' @param trueRectangle Numeric vector with coordinates of the true rectangle. 
+plotPedTeacher = function(points, 
+                          trueRectangle, 
                           range = 1:10){
   plot(c(1,max(range)), c(1, max(range)), type = "n", xlab = "", ylab = "", main = "")
   rect(trueRectangle[1],trueRectangle[2],trueRectangle[3],trueRectangle[4],border = "red", lwd = 2) 

@@ -24,6 +24,7 @@ pedLearner = function(borders, observations, prior = "uniform", alpha = 1) {
   # }
   
   posInRect = areInCat(borders, observations, "positive")
+  
   if (is.na(posInRect[1])) {
     hasPosEvidence = rep(TRUE,length(borders[,1])) # if there is no positive evidence, then all of the hypotheses are valid for this condition
   } else { f = function(isInRect) setequal(isInRect, rep(TRUE, length(as.data.frame(isInRect)))) # make isInRect a function suitable for apply
@@ -41,7 +42,7 @@ pedLearner = function(borders, observations, prior = "uniform", alpha = 1) {
   if (is.na(negInRect[1])) {
     hasNegEvidence =  rep(FALSE,length(borders[,1]))
   } else {  
-    hasNegEvidence = if (length(as.data.frame(posInRect)) > 1) {
+    hasNegEvidence = if (length(as.data.frame(negInRect)) > 1) {
     hasNegEvidence = rowSums(negInRect) > 0
   } else {
     hasNegEvidence = negInRect
@@ -100,7 +101,8 @@ plotPed = function(hypotheses, #' @param hypotheses Matrix including the posteri
                    observations, #' @param observations Matrix (or vector if only one point) of points that have been labeled as belonging to the true category or not (same input as pedLearner)
                    trueRectangle,#' @param trueRectangle True rectangle 
                    range = 1:10, #' @param range Vector denoting the size of hypothesis space and discrete intervals
-                   nHypotheses = "all"){ #' @param nHypotheses Number of hypotheses/rectangles to plot. E.g., nHypotheses = 1 means only the most probable rectangle is plotted. 
+                   nHypotheses = "all", #' @param nHypotheses Number of hypotheses/rectangles to plot. E.g., nHypotheses = 1 means only the most probable rectangle is plotted. 
+                   sampling = "ped"){ 
   
   if (nHypotheses == "all"){
     nHypotheses = length(hypotheses[,1])
@@ -108,21 +110,28 @@ plotPed = function(hypotheses, #' @param hypotheses Matrix including the posteri
     nHypotheses = nHypotheses
   }
   
+   if (sampling == "weak") {
+     randomHyp = sample(1:length(hypotheses[,1]), size = nHypotheses)
+     hypotheses = hypotheses[randomHyp,]
+   } 
+  
+  
   hypotheses = hypotheses[order(hypotheses[,"posterior"], decreasing = TRUE),]
   hypotheses = hypotheses[1:nHypotheses,]
   hypotheses[,"posterior"] = hypotheses[,"posterior"]/sum(hypotheses[,"posterior"])
   
   if (is.vector(observations)){ # plotting syntax is slightly different when there's only 1 observation (i.e., it's a vector)
     plot(c(1,max(range)), c(1, max(range)), type= "n", xlab = "", ylab = "")
-    rect(hypotheses[,1],hypotheses[,2],hypotheses[,3],hypotheses[,4], col= rgb(0,0,1.0,alpha=hypotheses[,"posterior"]), lwd = 0.01) # making alpha equivalent to the likelihood to show strong sampling gradient 
+    rect(hypotheses[,1],hypotheses[,2],hypotheses[,3],hypotheses[,4], col= rgb(0,0,1.0,alpha=hypotheses[,"posterior"]), lwd = 0.01) # making alpha equivalent to the likelihood generalization gradient 
     points(observations[1], observations[2]) # this part is different when observations is a vector
     rect(trueRectangle[1],trueRectangle[2],trueRectangle[3],trueRectangle[4],border = "red", lwd = 2)
   } else{
     plot(c(1,max(range)), c(1, max(range)), type= "n", xlab = "", ylab = "")
-    rect(hypotheses[,1],hypotheses[,2],hypotheses[,3],hypotheses[,4], col= rgb(0,0,1.0,alpha=hypotheses[,"posterior"]), lwd = 0.01) # making alpha equivalent to the likelihood to show strong sampling gradient 
+    rect(hypotheses[,1],hypotheses[,2],hypotheses[,3],hypotheses[,4], col= rgb(0,0,1.0,alpha=hypotheses[,"posterior"]), lwd = 0.01) 
     points(observations)
     rect(trueRectangle[1],trueRectangle[2],trueRectangle[3],trueRectangle[4],border = "red", lwd = 2)
   }
   
 }
+
 
