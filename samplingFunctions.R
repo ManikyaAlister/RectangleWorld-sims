@@ -2,6 +2,7 @@
 
 
 samplePosNeg = function(nPos, nNeg, trueRect) {
+  trueRect = c(trueRect) # make sure it's a vector
   allPoints = expand.grid(seq(0.5, 9.5, 1), seq(0.5, 9.5, 1)) # set up a matrixx of all possibele points. Using intervals of .5 so points are inside the rectangles not on the borders.
   isPositive = isInRectangle(p = allPoints, r = trueRect) # check which of the points are inside the true rectangle and which aren't.
   evidence = cbind(allPoints, isPositive) # combine into a single matrix

@@ -4,8 +4,6 @@ source("samplingFunctions.R")
 
 # step 1: what rectangle does a given alpha create for a set of observations?
 
-borders = makeBorders(0:10)
-
 #' Grid search through a range of alpha values
 #'
 #' @param alphaRange vector of alpha values you want to search
@@ -17,22 +15,23 @@ borders = makeBorders(0:10)
 #' @export
 #'
 #' @examples
-alphaGridSearch = function(alphaRange = seq(from = -1, to = 1, by = .2),
-                           borders,
+alphaGridSearch = function(borders,
                            observations,
+                           alphaRange = seq(from = -1, to = 1, by = .2),
                            prior = "uniform") {
 
-    gridSearch = array(NA, dim = c(length(alphaRange), 4)) # create an empty array to fill with the coordinates of each rectangle predicted by a given alpha.
-  
+    gridSearch = NULL
   for (i in 1:length(alphaRange)) {
     rect =  pedLearner(borders, observations, prior, alpha = alphaRange[i]) # generate all eligible rectangles (hypotheses)
     orderedRect =  order(rect[, "posterior"], decreasing = TRUE) # order from highest to lowest probability
-    bestRect = as.numeric(rect[orderedRect[1], 1:4]) # take the most probable rectangle, keeping only the coordinate information (columns 1:4)
-    gridSearch[i,] = bestRect # fill relevant row with the rectangle for that alpha
+    bestRect = rect[rect[,"posterior"] == rect[orderedRect[1],"posterior"],1:4] # take the most probable rectangle, keeping only the coordinate information (columns 1:4)
+    alpha = rep(alphaRange[i], length(bestRect[,1]))
+    prob = rep(1/length(bestRect[,1]), length(bestRect[,1]))
+    bestRect = cbind(bestRect, alpha, prob) # add a column so we know what alpha generated each rectangle
+    gridSearch = rbind(gridSearch,bestRect)
   }
   
-  gridSearch = cbind(gridSearch, alphaRange) # add a column so we know what alpha generated each rectangle
-  colnames(gridSearch) = c("x1", "y1", "x2", "y2", "alpha") # name
+  colnames(gridSearch) = c("x1", "y1", "x2", "y2", "alpha", "prob") # name
   return(gridSearch)
   
 }
@@ -49,6 +48,9 @@ alphaGridSearch = function(alphaRange = seq(from = -1, to = 1, by = .2),
 #' @examples rectOverlap(rect1 = c(2,2,6,6), rect2 = c(4,4,8,8))
 rectOverlap = function(rect1, rect2) { 
 
+  rect1 = as.numeric(rect1)
+  rect2 = as.numeric(rect2)
+  
   # figure out which x and y values are the maximum and minimum values of each rectangle 
   x1Max = max(c(rect1[1], rect1[3]))
   x1Min = min(c(rect1[1], rect1[3]))
@@ -66,15 +68,80 @@ rectOverlap = function(rect1, rect2) {
   
   if (dx >= 0 & dy >= 0) {
     size = dx * dy
+    prop = size/max(findSize(rect1), findSize(rect2)) # prop = proportion of overlap
   } else {
-    size = 0
+    prop = 0
   }
-  return(size)
+  return(prop)
 }  
 
 # Step 3: Make a function that runs through each participant and finds the alpha that best describes them. 
 
-# Test 
+# simulate some trial data: 
+
+#' Generate some unique "true" rectangles by randomly sampling from all possible rectangles without replacement 
+#'
+#' @param nRectangles number of unique rectangles you want to generate
+#' @param borders matrix of the coordinates of all possible rectangles in the grid
+#'
+#' @return nRectangle X 4 matrix of rectangle coordinates
+#'
+#' @examples genTrueRects(nRectangles = 5, borders = makeBorders(0:10))
+genTrueRects = function(nRectangles, borders, minSize = 3) {
+  sizes = findSize(borders)
+  bordersMinSize = borders[sizes >= minSize,]
+  trueRects = bordersMinSize[sample(1:length(borders[,1]),nRectangles),]
+  return(trueRects) # <-- size needs to be greater than 3 (while loop?)
+}
+
+
+#' Generate some observations 
+#' 
+#' Generate observations for the learner in rectangle world for different nPoints conditions and different true rectangles
+#'
+#' @param nPos Vector or single number indicating the number of positive evidence points. If you want different nPoints 
+#' in different conditions, represent this as a vector with each number corresponding to a different nPoints condition. 
+#' @param nNeg Number of negative evidence points
+#' @param nTriangles Number of unique triangles for each nObs condition
+#' @param trueRects Matrix of rectangle coordinates for the true rectangles you want generate the data from (can be generated from genTrueRects function)
+#'
+#' @return Matrix of points labelled by trial and number of observations condition
+#'
+#' @examples 
+#' generateObs(nPos = c(1, 2, 3), nNeg = c(1, 2, 3), nTriangles = 5, genTrueRects(nRectangles = 5, borders = makeBorders(0:10)))
+#' 
+generateObs = function(nPos, nNeg, nTriangles, trueRects) {
+  
+  allObs = NULL
+  
+  for (j in 1:length(nPos)) {
+    nPosLoop = nPos[j]
+    nNegLoop = nNeg[j]
+    
+    for (i in 1:nTrials) {
+      obsTrial = samplePosNeg(nPosLoop, nNegLoop, trueRect = c(trueRects[i, ]))
+      rownames(obsTrial) = NULL
+      triangle = rep(i, nPosLoop + nNegLoop)
+      nObsCond = rep(j, nPosLoop + nNegLoop)
+      obsTrial = cbind(obsTrial, triangle, nObsCond)
+      allObs = rbind(allObs, obsTrial)
+    }
+  }
+  
+  return(allObs)
+}
+
+## Simulate participant 
+
+simulatePar = function(obs,
+                       borders,
+                       prior = "uniform",
+                       alpha = 1) {
+  rect = pedLearner(borders, obs, prior = "uniform", alpha = alpha) # generate probability distribution of pedagogical learner for these observations
+  orderedRect =  order(rect[, "posterior"], decreasing = TRUE) # order from highest to lowest probability
+  bestRect = rect[rect[, "posterior"] == rect[orderedRect[1], "posterior"], 1:4] # filter rectangle(s) with highest probability
+  parRect = bestRect[sample(1:length(bestRect[, 1]), 1), ] # randomly sample from those rectangles
+}
 
 plotAlphaPredictions = function(rects, obs, trueRect) {
   rects = as.data.frame(rects)
@@ -109,24 +176,4 @@ plotAlphaPredictions = function(rects, obs, trueRect) {
 
 ## Idea for generating data: generate points and true rectangles randomly but set a 
 # condition where only points that have a different rectangle for each alpha are chosen. 
-
-
-
-# small rectangle
-smallRect = c(6,6,8,8)
-allObservations = weakSampler(30, smallRect)
-obsPos = allObservations[allObservations[,"category"] == "positive",]
-obsNeg = allObservations[allObservations[,"category"] == "negative",]
-
-# Large rectangle 
-
-largeRect = c(2,2,8,8)
-
-obs = samplePosNeg(4,2,largeRect)
-test1 = alphaGridSearch(borders = borders, observations = obs)
-plotAlphaPredictions(rects = test1, obs = obs, largeRect)
-
-obs2 = samplePosNeg(1,1,largeRect) 
-test1 = alphaGridSearch(borders = borders, observations = obs2)
-plotAlphaPredictions(rects = test1, obs = obs2, largeRect)
 
