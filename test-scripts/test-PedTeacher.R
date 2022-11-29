@@ -1,4 +1,4 @@
-source("pedegogical-teacher.R")
+source("functions/pedegogical-teacher.R")
 borders = makeBorders(1:10)
 
 # small true rectangle

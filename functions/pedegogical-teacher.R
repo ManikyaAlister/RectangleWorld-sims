@@ -1,8 +1,7 @@
 #### Pedagogical teacher 
 library(here)
-library(roxygen2)
-source(here("functions.R"))
-source(here("pedagogical-learner.R"))
+source(here("functions/generic-functions.R"))
+source(here("functions/pedagogical-learner.R"))
 root = here()
 
 #' @title Pedagogical Teacher
@@ -92,4 +91,3 @@ plotPedTeacher = function(points,
   text(x = points[i,1],y = points[i,2], label = i , cex = 0.5)
 }
 
-roxygen2::roxygenise()

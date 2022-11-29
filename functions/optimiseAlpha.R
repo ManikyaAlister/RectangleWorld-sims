@@ -1,6 +1,6 @@
-source("pedagogical-learner.R")
-source("functions.R")
-source("samplingFunctions.R")
+source("functions/pedagogical-learner.R")
+source("functions/generic-functions.R")
+source("functions/samplingFunctions.R")
 
 # step 1: what rectangle does a given alpha create for a set of observations?
 
@@ -19,19 +19,21 @@ alphaGridSearch = function(borders,
                            observations,
                            alphaRange = seq(from = -1, to = 1, by = .2),
                            prior = "uniform") {
-
-    gridSearch = NULL
+  gridSearch = NULL
   for (i in 1:length(alphaRange)) {
     rect =  pedLearner(borders, observations, prior, alpha = alphaRange[i]) # generate all eligible rectangles (hypotheses)
     orderedRect =  order(rect[, "posterior"], decreasing = TRUE) # order from highest to lowest probability
-    bestRect = rect[rect[,"posterior"] == rect[orderedRect[1],"posterior"],1:4] # take the most probable rectangle, keeping only the coordinate information (columns 1:4)
-    alpha = rep(alphaRange[i], length(bestRect[,1]))
-    prob = rep(1/length(bestRect[,1]), length(bestRect[,1]))
-    bestRect = cbind(bestRect, alpha, prob) # add a column so we know what alpha generated each rectangle
-    gridSearch = rbind(gridSearch,bestRect)
+    bestRect = rect[rect[, "posterior"] == rect[orderedRect[1], "posterior"], 1:4] # take the most probable rectangle, keeping only the coordinate information (columns 1:4)
+    posterior = rect[rect[, "posterior"] == rect[orderedRect[1], "posterior"], "posterior"] # probs a more efficient way to do this 
+    alpha = rep(alphaRange[i], length(bestRect[, 1]))
+    prob = rep(1 / length(bestRect[, 1]), length(bestRect[, 1])) # "prob" is necessary because in some scenarios a given alpha will say that multiple rectangles are most likely. For example,
+    # when alpha = 0, all eligible rectangles are equally possible. Therefore, "prob" corresponds to 1/no. of unique "best" rectangles at that alpha level. This way even though if an alpha of 1
+    # and an alpha of 0 both predict the same rectangle to be the best, we will say that it corresponds to alpha = 1 because there were fewer possible rectangles to match with.
+    bestRect = cbind(bestRect, posterior, alpha, prob) # add a column so we know what alpha generated each rectangle
+    gridSearch = rbind(gridSearch, bestRect)
   }
   
-  colnames(gridSearch) = c("x1", "y1", "x2", "y2", "alpha", "prob") # name
+  colnames(gridSearch) = c("x1", "y1", "x2", "y2", "posterior", "alpha", "prob") # name
   return(gridSearch)
   
 }
@@ -89,9 +91,9 @@ rectOverlap = function(rect1, rect2) {
 #' @examples genTrueRects(nRectangles = 5, borders = makeBorders(0:10))
 genTrueRects = function(nRectangles, borders, minSize = 3) {
   sizes = findSize(borders)
-  bordersMinSize = borders[sizes >= minSize,]
-  trueRects = bordersMinSize[sample(1:length(borders[,1]),nRectangles),]
-  return(trueRects) # <-- size needs to be greater than 3 (while loop?)
+  bordersMinSize = borders[sizes >= minSize, ]
+  trueRects = bordersMinSize[sample(1:length(bordersMinSize[, 1]), nRectangles), ]
+  return(trueRects) 
 }
 
 
@@ -110,38 +112,86 @@ genTrueRects = function(nRectangles, borders, minSize = 3) {
 #' @examples 
 #' generateObs(nPos = c(1, 2, 3), nNeg = c(1, 2, 3), nTriangles = 5, genTrueRects(nRectangles = 5, borders = makeBorders(0:10)))
 #' 
-generateObs = function(nPos, nNeg, nTriangles, trueRects) {
-  
+generateObs = function(nPos, nNeg, trueRects) {
   allObs = NULL
-  
-  for (j in 1:length(nPos)) {
-    nPosLoop = nPos[j]
-    nNegLoop = nNeg[j]
-    
-    for (i in 1:nTrials) {
-      obsTrial = samplePosNeg(nPosLoop, nNegLoop, trueRect = c(trueRects[i, ]))
+  if (is.vector(trueRects)){
+    trueRects = (as.data.frame(t(trueRects)) )
+  }
+  for (i in 1:ifelse(is.vector(trueRects), 1,length(trueRects[, 1]))) {
+    nPosSoFar = 0 # calculates the number of pos/neg observations that have already been sampled, because each iteration builds on the last
+    nNegSoFar = 0
+    for (j in 1:length(nPos)) {
+      nPosLoop = nPos[j]
+      nNegLoop = nNeg[j]
+      trueRect = c(trueRects[i,])
+      obsTrial = samplePosNeg(
+        nPos = nPosLoop - nPosSoFar,
+        nNeg = nNegLoop - nNegSoFar,
+        trueRect = trueRect
+      )
+      nPosSoFar = nPosLoop
+      nNegSoFar = nNegLoop
       rownames(obsTrial) = NULL
-      triangle = rep(i, nPosLoop + nNegLoop)
-      nObsCond = rep(j, nPosLoop + nNegLoop)
-      obsTrial = cbind(obsTrial, triangle, nObsCond)
+      #triangle = rep(i, nPosLoop + nNegLoop)
+      nObsCond = j
+      obsTrial = cbind(obsTrial, nObsCond,trueRect)
       allObs = rbind(allObs, obsTrial)
     }
   }
   
+  
   return(allObs)
-}
-
+}  
+  
 ## Simulate participant 
 
-simulatePar = function(obs,
+#' Simulate a participant for one trial and one participant in the Rectangle Game 
+#'
+#'This function chooses the best rectangle from a set of observations as predicted by the pedagogical model. 
+#'
+#' @param obs Observation provided by the teacher
+#' @param borders 
+#' @param prior 
+#' @param alpha 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+simulatePar = function(observations,
+                       # 3-columned labeled matrix of points provided by the teacher
                        borders,
+                       # Entire range of possible rectangles (generate using makeBorders function)
                        prior = "uniform",
+                       # Learner's prior probability
                        alpha = 1) {
-  rect = pedLearner(borders, obs, prior = "uniform", alpha = alpha) # generate probability distribution of pedagogical learner for these observations
+  # How helpful the learner thinks the teacher is.
+  rect = pedLearner(borders, observations, prior = "uniform", alpha = alpha) # generate probability distribution of pedagogical learner for these observations
   orderedRect =  order(rect[, "posterior"], decreasing = TRUE) # order from highest to lowest probability
   bestRect = rect[rect[, "posterior"] == rect[orderedRect[1], "posterior"], 1:4] # filter rectangle(s) with highest probability
-  parRect = bestRect[sample(1:length(bestRect[, 1]), 1), ] # randomly sample from those rectangles
+  parRect = bestRect[sample(1:length(bestRect[, 1]), 1),] # randomly sample from those rectangles
 }
+
+#' Find the alpha value that best describes a participant's response
+#'
+#' @param partRectangle # Rectangle drawn by the participant
+#' @param gridSearch # Rectangles predicted by each alpha
+#'
+#' @return # Alpha values that predicted the participant's rectangle
+#'
+#' @examples
+fitAlpha = function(partRectangle, gridSearch) {
+  overlap = NULL
+  for (i in 1:length(gridSearch[, 1])) {
+    overlap[i] = rectOverlap(gridSearch[i, 1:4], partRectangle)
+  }
+  
+  fit = gridSearch[overlap == 1,]
+  #bestFit = fit[fit[, "prob"] == max(fit[, "prob"]), c("alpha", "prob")]
+  return(fit)
+}
+
+
 
 plotAlphaPredictions = function(rects, obs, trueRect) {
   rects = as.data.frame(rects)

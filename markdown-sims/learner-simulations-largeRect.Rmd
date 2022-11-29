@@ -11,9 +11,9 @@ output:
 rm(list = ls())
 knitr::opts_chunk$set(echo = TRUE)
 library(here)
-source(here("heuristic-learner.R"))
-source(here("pedagogical-learner.R"))
-source(here("functions.R"))
+source(here("functions/heuristic-learner.R"))
+source(here("functions/pedagogical-learner.R"))
+source(here("functions/generic-functions.R"))
 ```
 
 ## Set up rectangle world 

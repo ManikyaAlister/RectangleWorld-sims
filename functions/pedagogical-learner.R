@@ -1,6 +1,4 @@
 ### Pedagogical Learner ###
-library(here)
-
 
 isInRectangle <- function (p,r) {
   return (p[1]>=r[1] & p[1]<=r[3] & p[2]>=r[2] & p[2]<=r[4])
