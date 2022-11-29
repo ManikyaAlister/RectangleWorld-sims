@@ -1,5 +1,4 @@
-
-
+source("functions/generic-functions.R")
 
 samplePosNeg = function(nPos, nNeg, trueRect) {
   trueRect = c(trueRect) # make sure it's a vector
