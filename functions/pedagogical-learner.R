@@ -22,6 +22,7 @@ pedLearner = function(borders, observations, prior = "uniform", alpha = 1) {
   #   prior = prior
   # }
   
+  
   posInRect = areInCat(borders, observations, "positive")
   
   if (is.na(posInRect[1])) {

@@ -12,7 +12,7 @@ rm(list = ls())
 knitr::opts_chunk$set(echo = TRUE)
 library(here)
 source(here("functions/heuristic-learner.R"))
-source(here("functions/pedagogical-learner.R"))
+source(here("function"))
 source(here("functions/generic-functions.R"))
 ```
 
@@ -68,6 +68,20 @@ ped1 = pedLearner(borders, obs1)
 ped3 = pedLearner(borders, obs3)
 ped5 = pedLearner(borders, obs5)
 ```
+
+```{r}
+par(mfrow =(c(3,2)))
+plot(1:length(ped1[,1]),sort(ped1[,"posterior"]), type = "l")
+plot(1:length(weak1[,1]),sort(weak1[,"posterior"]), "l")
+plot(1:length(ped5[,1]),sort(ped5[,"posterior"]), type = "l")
+plot(1:length(weak5[,1]),sort(weak5[,"posterior"]), "l")
+
+
+plot(sort(ped1[,"sizePos"]),ped1[sort(ped1[,"sizePos"]),"posterior"], "l")
+
+
+```
+
 
 ```{r}
 ls1 = heuristicLearner(borders, obs1)

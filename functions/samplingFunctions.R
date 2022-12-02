@@ -63,3 +63,34 @@ samplePosNegOld = function(nObsPos, nObsNeg, trueRectangle) {
   return(obs)
   
 }
+
+generateObs = function(nPos, nNeg, trueRects) {
+  allObs = NULL
+  if (is.vector(trueRects)){
+    trueRects = (as.data.frame(t(trueRects)) )
+  }
+  for (i in 1:ifelse(is.vector(trueRects), 1,length(trueRects[, 1]))) {
+    nPosSoFar = 0 # calculates the number of pos/neg observations that have already been sampled, because each iteration builds on the last
+    nNegSoFar = 0
+    for (j in 1:length(nPos)) {
+      nPosLoop = nPos[j]
+      nNegLoop = nNeg[j]
+      trueRect = c(trueRects[i,])
+      obsTrial = samplePosNeg(
+        nPos = nPosLoop - nPosSoFar,
+        nNeg = nNegLoop - nNegSoFar,
+        trueRect = trueRect
+      )
+      nPosSoFar = nPosLoop
+      nNegSoFar = nNegLoop
+      rownames(obsTrial) = NULL
+      #triangle = rep(i, nPosLoop + nNegLoop)
+      nObsCond = j
+      obsTrial = cbind(obsTrial, nObsCond,trueRect)
+      allObs = rbind(allObs, obsTrial)
+    }
+  }
+  
+  
+  return(allObs)
+}  

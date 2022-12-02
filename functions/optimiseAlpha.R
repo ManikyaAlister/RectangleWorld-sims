@@ -112,36 +112,6 @@ genTrueRects = function(nRectangles, borders, minSize = 3) {
 #' @examples 
 #' generateObs(nPos = c(1, 2, 3), nNeg = c(1, 2, 3), nTriangles = 5, genTrueRects(nRectangles = 5, borders = makeBorders(0:10)))
 #' 
-generateObs = function(nPos, nNeg, trueRects) {
-  allObs = NULL
-  if (is.vector(trueRects)){
-    trueRects = (as.data.frame(t(trueRects)) )
-  }
-  for (i in 1:ifelse(is.vector(trueRects), 1,length(trueRects[, 1]))) {
-    nPosSoFar = 0 # calculates the number of pos/neg observations that have already been sampled, because each iteration builds on the last
-    nNegSoFar = 0
-    for (j in 1:length(nPos)) {
-      nPosLoop = nPos[j]
-      nNegLoop = nNeg[j]
-      trueRect = c(trueRects[i,])
-      obsTrial = samplePosNeg(
-        nPos = nPosLoop - nPosSoFar,
-        nNeg = nNegLoop - nNegSoFar,
-        trueRect = trueRect
-      )
-      nPosSoFar = nPosLoop
-      nNegSoFar = nNegLoop
-      rownames(obsTrial) = NULL
-      #triangle = rep(i, nPosLoop + nNegLoop)
-      nObsCond = j
-      obsTrial = cbind(obsTrial, nObsCond,trueRect)
-      allObs = rbind(allObs, obsTrial)
-    }
-  }
-  
-  
-  return(allObs)
-}  
   
 ## Simulate participant 
 
@@ -166,6 +136,9 @@ simulatePar = function(observations,
                        # Learner's prior probability
                        alpha = 1) {
   # How helpful the learner thinks the teacher is.
+  # if (is.vector(observations)){
+  #   trueRects = (as.data.frame(observations) )
+  # }
   rect = pedLearner(borders, observations, prior = "uniform", alpha = alpha) # generate probability distribution of pedagogical learner for these observations
   orderedRect =  order(rect[, "posterior"], decreasing = TRUE) # order from highest to lowest probability
   bestRect = rect[rect[, "posterior"] == rect[orderedRect[1], "posterior"], 1:4] # filter rectangle(s) with highest probability
