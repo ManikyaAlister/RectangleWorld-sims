@@ -1,0 +1,85 @@
+---
+title: "Fitting across multiple trials"
+author: "Manikya Alister"
+date: "2022-12-04"
+output: html_document
+#  html_document:
+#    template: simplex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(ggplot2)
+source(here("functions/generic-functions.R"))
+source(here("functions/samplingFunctions.R"))
+source(here("functions/fit-multi-trial.R"))
+source(here("functions/optimiseAlpha.R"))
+source(here("functions/pedagogical-learner.R"))
+```
+
+# Simulate some experimental trials
+
+## Set up trial scenarios
+
+```{r}
+# make rectangle grid (borders)
+borders = makeBorders(0:10)
+
+# generate true rectangles
+rect1 = genTrueRects(1, borders)
+
+# generate observations
+obs = generateObs(c(1,1,2,2), c(0,1,1,2), as.vector(rect1))
+```
+
+## Simulate participant responses
+
+```{r}
+# simulate multiple trials of responses
+partTrust = cbind(simulate_MultiTrials(obs, alpha = 1), alpha = 1)
+partDecept = cbind(simulate_MultiTrials(obs, alpha = -1), alpha = -1)
+partWeak =  cbind(simulate_MultiTrials(obs, alpha = 0), alpha = 0)
+```
+
+```{r}
+# plot 
+d_plot = rbind(partTrust, partWeak, partDecept)
+
+  
+ggplot(data = (as.data.frame(d_plot)))+
+  geom_point(data = as.data.frame(obs), aes(as.numeric(x),as.numeric(y)))+
+  geom_rect(aes(xmin = x1, xmax = x2, ymin = y1, ymax = y2),colour = "black", alpha = 0)+
+  facet_grid(alpha ~ nObsCond) 
+
+
+```
+
+# Fit alpha
+
+Find the alpha which across all trials of the block maximizes the fit between the rectangle predicted by that alpha value and the rectangle predicted by the participant. 
+
+## Grid search for each combination of observations
+
+What does each alpha predict for a given set of observations?
+
+```{r}
+grid = gridSearch_MultiTrials(obs,borders)
+```
+
+## Find alpha that maximises the overlap across all trials
+
+```{r}
+fitTrust = fitAlpha_MultiTrials(grid, partTrust)
+```
+
+```{r}
+d_alphaPlot = rbind(grid[grid[,"alpha"] == 1, ], grid[grid[,"alpha"] == -1, ])
+
+ggplot(data = (as.data.frame(d_alphaPlot)))+
+  geom_point(data = as.data.frame(obs), aes(as.numeric(x),as.numeric(y)))+
+  geom_rect(aes(xmin = x1, xmax = x2, ymin = y1, ymax = y2),colour = "black", alpha = 0)+
+  geom_rect(data = d_plot, aes(xmin = x1, xmax = x2, ymin = y1, ymax = y2),colour = "black", fill = "red", alpha = 0.3)+
+  facet_grid(alpha ~ nObsCond) 
+```
+

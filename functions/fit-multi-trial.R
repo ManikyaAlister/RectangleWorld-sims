@@ -1,29 +1,32 @@
-source("functions/samplingFunctions.R")
-source("functions/optimiseAlpha.R")
-borders = makeBorders(0:10)
-rectSmall = c(2,2,4,4)
-rectLarge = c(1,1,9,9)
-
-obs = generateObs(c(1,2,3), c(0,1,2), rectSmall)
-
-
-t1 = simulatePar(obs[obs[,"nObsCond"] == "1",], borders)
-t2 = simulatePar(obs[obs[,"nObsCond"] == "2",], borders, alpha = 0)
-t3 = simulatePar(obs[obs[,"nObsCond"] == "3",], borders)
+# 
+# borders = makeBorders(0:10)
+# rectSmall = c(2,2,4,4)
+# rectLarge = c(1,1,9,9)
+# 
+# obs = generateObs(c(1,2,3), c(0,1,2), rectSmall)
+# 
+# 
+# t1 = simulatePar(obs[obs[,"nObsCond"] == "1",], borders)
+# t2 = simulatePar(obs[obs[,"nObsCond"] == "2",], borders, alpha = 0)
+# t3 = simulatePar(obs[obs[,"nObsCond"] == "3",], borders)
 
 simulate_MultiTrials = function (observations, alpha = "default (1)") {
   obs = observations
-  nObsConds = unique(obs[, "nObsCond"]) # unique trials (different "number of observations" condition)
+  nObsConds = as.numeric(unique(obs[, "nObsCond"])) # unique trials (different "number of observations" condition)
   
   # make sure the default alpha is a vector the size of nObsConds
-  if (alpha == 1) {
+  if (alpha == "default (1)") {
     alpha = rep(1, length(nObsConds))
+  } else if (length(alpha) == 1) {
+    alpha = rep(alpha, length(nObsConds))
   }
   
   responses = NULL
   # for each trial, generate a rectangle that someone would have produced with a given alpha
   for (i in nObsConds) {
-    trial = cbind(simulatePar(obs[obs[, "nObsCond"] == i, ], borders, alpha = alpha[i]), i)
+    alphaTrial = alpha[i]
+    partRect = simulatePar(obs[obs[, "nObsCond"] == i, ], borders, alpha = alphaTrial)
+    trial = cbind(partRect, i)
     responses = rbind(responses, trial)
   }
   names(responses) =  c("x1", "y1", "x2", "y2", "nObsCond")
@@ -43,28 +46,6 @@ gridSearch_MultiTrials = function(observaitions, borders){
   }
 return(gridAllTrials)
 }
-
-fitAlpha_MultiTrials = function(gridSearch, partRectangles) {
-  nObsConds = unique(gridSearch[, "nObsCond"]) # unique trials (different "number of observations" condition)
-  fit_multiTrials = NULL
-  
-  overlap = rectOverlap(partRectangles[,1:4], tmp[1:4])
-  
-  for (i in nObsConds){
-      partRectangle = partRectangles[partRectangles[,"nObsCond"] == i,]
-      grid = gridSearch[gridSearch[,"nObsCond"]==i,]
-      overlap = rectOverlap(borders,)
-      fit = fitAlpha(partRectangle, tmp)
-      nObsCond = i
-      fitTrial = cbind(fit,i)
-      names(fitTrial) = c(names(fit), "nObsCond")
-      fit_multiTrials = rbind(fit_multiTrials, fitTrial)
-  }
-  # find alpha that maximizes overlap for each trial. 
-  
-  
-}
-
 
 fitAlpha_MultiTrials = function (gridSearch, partRectangles){
 allOverlap = NULL

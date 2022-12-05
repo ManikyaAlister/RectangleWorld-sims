@@ -1,5 +1,3 @@
-source("functions/generic-functions.R")
-
 samplePosNeg = function(nPos, nNeg, trueRect) {
   trueRect = c(trueRect) # make sure it's a vector
   allPoints = expand.grid(seq(0.5, 9.5, 1), seq(0.5, 9.5, 1)) # set up a matrixx of all possibele points. Using intervals of .5 so points are inside the rectangles not on the borders.
@@ -7,7 +5,7 @@ samplePosNeg = function(nPos, nNeg, trueRect) {
   evidence = cbind(allPoints, isPositive) # combine into a single matrix
   colnames(evidence) = c("x", "y", "isPositive") # assign column names
   
-  # make a seperate data set for positive and negative evidene respectively
+  # make a separate data set for positive and negative evidence respectively
   pos = evidence[evidence[, "isPositive"] == TRUE, ] 
   neg = evidence[evidence[, "isPositive"] == FALSE, ]
   
@@ -69,13 +67,15 @@ generateObs = function(nPos, nNeg, trueRects) {
   if (is.vector(trueRects)){
     trueRects = (as.data.frame(t(trueRects)) )
   }
+  # for each true rectangle
   for (i in 1:ifelse(is.vector(trueRects), 1,length(trueRects[, 1]))) {
     nPosSoFar = 0 # calculates the number of pos/neg observations that have already been sampled, because each iteration builds on the last
     nNegSoFar = 0
     for (j in 1:length(nPos)) {
       nPosLoop = nPos[j]
       nNegLoop = nNeg[j]
-      trueRect = c(trueRects[i,])
+      #trueRect = ifelse(is.vector(trueRects),trueRects, c(trueRects[i,]))
+      trueRect = trueRects[1,]
       obsTrial = samplePosNeg(
         nPos = nPosLoop - nPosSoFar,
         nNeg = nNegLoop - nNegSoFar,
@@ -87,10 +87,12 @@ generateObs = function(nPos, nNeg, trueRects) {
       #triangle = rep(i, nPosLoop + nNegLoop)
       nObsCond = j
       obsTrial = cbind(obsTrial, nObsCond,trueRect)
+      obsTrial = rbind(allObs[allObs[,"nObsCond"] == j-1,], obsTrial)
+      obsTrial[,"nObsCond"] = j
       allObs = rbind(allObs, obsTrial)
     }
   }
   
   
-  return(allObs)
+  return(as.matrix(allObs))
 }  

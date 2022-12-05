@@ -1,7 +1,3 @@
-source("functions/pedagogical-learner.R")
-source("functions/generic-functions.R")
-source("functions/samplingFunctions.R")
-
 # step 1: what rectangle does a given alpha create for a set of observations?
 
 #' Grid search through a range of alpha values
@@ -93,6 +89,7 @@ genTrueRects = function(nRectangles, borders, minSize = 3) {
   sizes = findSize(borders)
   bordersMinSize = borders[sizes >= minSize, ]
   trueRects = bordersMinSize[sample(1:length(bordersMinSize[, 1]), nRectangles), ]
+  if (nRectangles == 1) trueRects = as.vector(as.matrix(trueRects)) # make sure trueRects is a vector if there's only one rectangle (necessary for generateObs function)
   return(trueRects) 
 }
 
