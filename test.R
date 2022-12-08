@@ -7,6 +7,9 @@ learn = pedLearner(borders,obs)
 gridDist = alphaGridSearchDist(borders,obs)
 colnames(learn)
 
+
+#
+
 rect = c(2,2,4,4)
 
 match = gridDist[gridDist[,1] == 2 & gridDist[,2] == 2 & gridDist[,3] == 4 & gridDist[,4] == 4,]

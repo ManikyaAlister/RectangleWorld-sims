@@ -143,7 +143,7 @@ findSize <- function (r) {
 #' 
 #' @param r vector of length 4. Coordinates of the rectangle
 #' @param range vector pertaining to the range of a square hypothesis space, also describing the discrete intervals (e.g., 1:10)
-findSizeNeg = function(r, range = 100) { # apply to all hypotheses that are inconsistent
-  range-(abs((r[1]-r[3]))*(abs(r[2]-r[4])))
+findSizeNeg = function(r, borderSize) { # apply to all hypotheses that are inconsistent
+  borderSize-(abs((r[1]-r[3]))*(abs(r[2]-r[4])))
 }
 

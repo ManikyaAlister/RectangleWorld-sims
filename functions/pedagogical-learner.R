@@ -11,17 +11,12 @@ isInRectangle <- function (p,r) {
 #' @param borders Array of hypothesised category boundary points (coordinates of rectangles)
 #' @param observations Points that have been labelled as belonging to a certain category
 #' @param prior Numeric vector of the same length as borders. Default is a uniform prior. 
-pedLearner = function(borders, observations, prior = "uniform", alpha = 1) {
+pedLearner = function(borders, observations, borderSize = 100, prior = "uniform", alpha = 1) {
   
+  # set up default prior if no other is specified 
   prior = ifelse(prior == "uniform", rep(1,length(borders[,1]))/sum(rep(1,length(borders[,1]))), prior)
   
-  # if (prior == "uniform"){
-  #   prior = rep(1,length(borders[,1]))/sum(rep(1,length(borders[,1])))
-  # } else {
-  #   prior = prior
-  # }
-  
-  
+  # Rule out ineligible rectangles ----------------------------------------------------------------------
   posInRect = areInCat(borders, observations, "positive")
   
   if (is.na(posInRect[1])) {
@@ -52,9 +47,10 @@ pedLearner = function(borders, observations, prior = "uniform", alpha = 1) {
   hypotheses = cbind(borders, hasPosEvidence, hasNegEvidence)
   hypotheses = hypotheses[hypotheses[, "hasPosEvidence"] == TRUE &
                             hypotheses[, "hasNegEvidence"] == FALSE, ]
-  
-### pedagogical likelihood
 
+# Pedagogical likelihood --------------------------------------------------------------------------------------------
+  
+  # Calculate the number of positive and negative observations
   if (is.vector(observations)){
     numPos = sum(observations["category"]=="positive")
     numNeg = sum(observations["category"]=="negative")
@@ -63,26 +59,29 @@ pedLearner = function(borders, observations, prior = "uniform", alpha = 1) {
     numNeg = sum(observations[,"category"]=="negative")
   }
   
-  sizeNeg = findSizeNeg(hypotheses) # likelihood for negative evidence is different to positive evidence
+  # calculate the area outside of each prospective rectangle (hypothesis)
+  sizeNeg = findSizeNeg(hypotheses, borderSize = borderSize) 
+  
+  # calculate the area inside of each prospective rectangle (hypothesis)
   sizePos = findSize(hypotheses)
   
-  likelihoodNeg = (1 / findSizeNeg(hypotheses) ^ numNeg) 
-  likelihoodPos = (1 / findSize(hypotheses) ^ numPos) # non-log probability so that I can integrate it with alpha/transparency when plotting
+  # calculate the likelihood of positive and negative evidence respectively 
+  likelihoodNeg = (1 / sizeNeg^ numNeg)/sum((1 / sizeNeg^ numNeg)) 
+  likelihoodPos = (1 / sizePos^ numPos)/sum((1 / sizePos^ numPos)) # non-log likelihood so that I can integrate it with alpha/transparency when plotting
+  
   likelihood = (likelihoodNeg*likelihoodPos)^alpha
   
   posterior = (likelihood*prior)/sum(likelihood*prior)
   
   logLikelihood = log(likelihood)
   
-  pedHypotheses = cbind(hypotheses[,1:6], sizePos,sizeNeg,prior,likelihood, likelihoodPos, likelihoodNeg,logLikelihood,posterior)
+  pedHypotheses = cbind(hypotheses[,1:4], sizePos,sizeNeg,prior,likelihood, likelihoodPos, likelihoodNeg,logLikelihood,posterior)
   
-  colnames(pedHypotheses) = c( # <-- matrix columns messed up 
+  colnames(pedHypotheses) = c( # <-- rename cols
     "x1",
     "y1",
     "x2",
     "y2",
-    "hasPosEvidence",
-    "hasNegEvidence",
     "sizePos",
     "sizeNeg",
     "prior",

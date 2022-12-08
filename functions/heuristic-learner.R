@@ -1,8 +1,5 @@
 library(here)
 setwd(here())
-
-source("functions.R")
-
 #' @title Weak Learner
 #'
 #' @description 

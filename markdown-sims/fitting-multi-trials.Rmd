@@ -26,6 +26,7 @@ source(here("functions/pedagogical-learner.R"))
 # make rectangle grid (borders)
 borders = makeBorders(0:10)
 
+
 # generate true rectangles
 rect1 = genTrueRects(1, borders)
 
