@@ -1,0 +1,48 @@
+---
+title: "test-new-ped-learner"
+author: "Manikya Aluster"
+date: "2022-12-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+source(here("functions/generic-functions.R"))
+source(here("new-ped-learner.R"))
+source(here("functions/pedagogical-learner.R"))
+```
+
+```{r}
+borders = makeBorders(0:10)
+
+load("obsTest.Rdata")
+
+obs1 = obs[obs[,"nObsCond"] == 1,]
+obs2 = obs[obs[,"nObsCond"] == 2,]
+```
+
+```{r}
+ped1 = newPedLearner(borders, obs1)
+ped2 = newPedLearner(borders, obs2)
+```
+
+```{r}
+ped1Best = ped1[order(ped1[,"posterior"], decreasing = TRUE),][1,]
+ped2Best = ped2[order(ped2[,"posterior"], decreasing = TRUE),][1,]
+
+plot(obs1[1], obs1[2], xlim = c(0,10), ylim = c(0,10))
+rect(ped1Best[1], ped1Best[2], ped1Best[3], ped1Best[4])
+
+
+plot(obs2[,1], obs2[,2], xlim = c(0,10), ylim = c(0,10))
+rect(ped2Best[1], ped2Best[2], ped2Best[3], ped2Best[4])
+
+
+
+rect(ped1)
+
+
+plotPed(ped1, obs1, c(1,1,1,1), nHypotheses = 1)
+```
+

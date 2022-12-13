@@ -1,0 +1,614 @@
+---
+title: "Simulate how learners with different alphas behave with the same data"
+author: "Manikya Alister"
+---
+
+Let's begin by loading up the pre-calculated files so we are more resource friendly and can do everything a lot faster.
+
+```{r setup, include=FALSE}
+# We'll begin by loading up the libraries and data we need, as always.
+knitr::opts_chunk$set(echo = TRUE)
+ rm(list=ls())
+ 
+# loading the libraries
+library(tidyverse)
+library(here)
+library(ggplot2)
+library(ggpubr)
+library(nnet)
+
+# size of hypothesis space
+H <- 10
+# version of this we are running (for saving)
+version <- 1
+## Number of different learners in this scenario
+nLearners <- 3 
+# the alpha the teacher is actually following. In this example, let's make the 
+# teacher helpful, but not too helpful such that they will eliminate too many 
+# hypotheses too quickly. 
+tchAlpha <- 0.5 
+# the alpha the teacher is assuming the learner thinks the teacher is. For the 
+# sake of the experiment, let's say the teacher doesn't know the learner has been
+# tipped off that they may not be helpful. 
+tchLnAlpha <- 0.5  
+# what size of rectangle this pair is using (small, medium, or large)
+trueRectSize <- "small"
+# number of best hypotheses to show
+nBestH <- 3
+# TRUE if we want the teacher to always sample the highest probability pt
+# (if multiple points are equally high probability, randomly selects among them)
+maximise <- TRUE
+
+# Set up the different alphas the learners assume the teacher is following
+learnerAlphas <- c(1,0,-1)
+# as text for labeling purposes
+learnerAlphasText <- paste(as.character(learnerAlphas), collapse = "_")
+
+## Trusting learner (thinks teacher is being helpful)
+lnAlphaH <- learnerAlphas[1]
+## Weak learner
+lnAlphaW <- learnerAlphas[2]
+## Suspicious learner (thinks teacher is being deceptive)
+lnAlphaD <- learnerAlphas[3]
+
+# sourcing our files
+source(here("genericFunctions.R"))
+source(here("calculatingFunctions.R"))
+source(here("plottingFunctions.R"))
+
+# load the data
+fileSeg <- paste0("x0to",H,"y0to",H)
+fn <- paste0("datafiles/",fileSeg,".RData")
+load(here(fn))
+
+# set alphas based on parameters above
+## Teacher
+tA <- which(alphas==tchAlpha)
+tchAlphaText <- returnAlpha(tchAlpha)
+tlA <- which(alphas==tchLnAlpha)
+tchLnAlphaText <- returnAlpha(tchLnAlpha)
+## Helpful learner
+lAH <- which(alphas==lnAlphaH)
+lnAlphaTextH <- returnAlpha(lnAlphaH)
+## Weak learner
+lAW <- which(alphas==lnAlphaW)
+lnAlphaTextW <- returnAlpha(lnAlphaW)
+## Deceptive learner
+lAD <- which(alphas==lnAlphaD)
+lnAlphaTextD <- returnAlpha(lnAlphaD)
+
+
+mx <- "F"
+if (maximise) {
+   mx <- "T" 
+}
+
+
+
+# update filename to reflect this
+dirname <- paste0("x",H,"y",H,"-L",learnerAlphasText,
+                  "-T",tchAlphaText,"-TL",tchLnAlphaText,
+                  "-",trueRectSize,"-mx",mx,"-v",version)
+dir.create(here(paste0("figures/tlpairs/",dirname,"/")))
+```
+
+# What do we have?
+
+*xrange*: the x-axis range for our hypothesis space: `r xrange`
+
+*yrange*: the y-axis range for our hypothesis space: `r yrange`
+
+*alphas*: the values of alpha I precalculated: `r alphas`
+
+*hyp*: all possible hypotheses in this space: there are *nHyp* = `r nHyp`
+
+*pts*: all of the points in this space: there are *nPts* = `r nPts`
+
+*posProbPts*: a 3d array of size *nPts* x *nHyp* x *length(alphas)*. This calculating the probability of generating each point assuming it is positive given each hypothesis and each alpha. This is all possible likelihoods (for the positive observations) we need to know.
+
+*negProbPts*: a 3d array of size *nPts* x *nHyp* x *length(alphas)*. This calculating the probability of generating each point assuming it is negative given each hypothesis and each alpha. This is all possible likelihoods (for the negative observations) we need to know.
+
+*allProbPts*: a 3d array of size *nPts* x *nHyp* x *length(alphas)*. This calculating the probability of generating each point whether it is positive or negative (i.e. with both of those summed together), given each hypothesis and each alpha. This is all possible likelihoods (for both positive and negative observations) we need to know.
+
+*consPts*: a 2d array of size *nPts* x *nHyp*. For each point and hypothesis, this is TRUE if that point is contained within that hypothesis and FALSE otherwise. Useful as a quick lookup. 
+
+## The true hypothesis
+
+Let's randomly generate a single **true rectangle**. We can control whether it is small, medium, or large using the parameter above. 
+
+```{r echo=FALSE, fig.height=3.5, fig.width=3, fig.align="center", message=FALSE, warning=FALSE}
+
+# get number of hypothesis corresponding to rectangle created
+trueHNum <- createRectangle(hyp,size=trueRectSize)
+
+# get coordinates of rectangle created
+trueH <- getCoordinates(hyp,trueHNum)
+
+# plot rectangle
+t <- paste0("Hypothesis: ",trueRectSize)
+pRect <- plotHypotheses(trueH,obs=NA,rects=NA,xrange,yrange,
+                         title=t,
+                         subtitle=paste0("Size = ",findSize(trueH),
+                                         "; version ", version))
+pRect
+
+```
+# Let's make a learner/teacher pairs. Each pair contains the following:
+
+**trueH**: coordinates of the true hypothesis the teacher knows (x1,y1,x2,y2). Already generated
+
+**lnAlpha**: the alpha value that the learner assumes the teacher has. Her there are three learners,  `r lnAlphaH, lnAlphaW, lnAlphaD`
+
+**lnPts**: the set of points tracked by the learner. Each row is a point. The columns are: *x* (the x coordinate of that point); *y* (the y coordinate of that point); *selected* (TRUE if the teacher has provided that point; initialised to FALSE); *type* ("positive" or "negative", initialised to NA since no points have been seen at the start); *prior* (the prior probability of each point, initialised to be uniform); and *posterior* (posterior probability of each point, initialised to be uniform). As the learner sees new points, they update *selected*, *type*, and *posterior*.
+
+**lnHyp**: the set of hypotheses tracked by the learner. Each row is a hypothesis. The columns are: *x1,y1,x2,y2* (the coordinates of that hypothesis) *size* (the size of that hypothesis); *negSize* (the size of the space around the hypothesis); *prior* (their priors over hypotheses, initialised to be uniform); *nPos* and *nNeg* (the number of positive and negative points seen so far; initialised to zero); *consPos* and *consNeg* (TRUE if the positive/negative points seen so far are all consistent with that hypothesis; initialised to TRUE because none have been seen so far); *likePos* and *likeNeg* (the probability of having seen those positive/negative datapoints given that hypothesis. zero if they are not consistent); *posterior* (posterior probability of that hypothesis, based on combining the prior with likePos and likeNeg). As the learner sees new points, they update everything after the *prior* column.
+
+**tchAlpha**: the alpha value that the teacher has. Here it is `r tchAlpha`
+
+**tchLnAlpha**: the alpha value the teacher assumes the learner has about them. Here it is `r tchLnAlpha`
+
+**tchPts**: the set of points tracked by the teacher that it is assuming the learner has. Each row is a point. The columns are: *x* (the x coordinate of that point); *y* (the y coordinate of that point); *selected* (TRUE if the teacher has provided that point; initialised to FALSE); *type* ("positive" or "negative", initialised to NA since no points have been seen at the start); *prior* (the prior probability of each point, initialised to be uniform); and *posterior* (posterior probability of each point, initialised to be uniform). As the teacher provides new points, they update *selected*, *type*, and *posterior*. Note that their values might be different than the learner's in *lnPts* if they are wrong about what the learner's assumed alpha is.
+
+**tchHyp**: the set of hypotheses the teacher is assuming the learner has. Each row is a hypothesis. The columns are: *x1,y1,x2,y2* (the coordinates of that hypothesis) *size* (the size of that hypothesis); *negSize* (the size of the space around the hypothesis); *prior* (their priors over hypotheses, initialised to be uniform); *nPos* and *nNeg* (the number of positive and negative points seen so far; initialised to zero); *consPos* and *consNeg* (TRUE if the positive/negative points seen so far are all consistent with that hypothesis; initialised to TRUE because none have been seen so far); *likePos* and *likeNeg* (the probability of having seen those positive/negative datapoints given that hypothesis. zero if they are not consistent); *posterior* (posterior probability of that hypothesis, based on combining the prior with likePos and likeNeg). As the teacher sees new points, they update everything after the *prior* column. As with the points, the teacher might differ from the learner if it is making the wrong assumption about the learner's alpha.
+
+*obs*: observations so far (initially is NA)
+
+
+```{r echo=FALSE, fig.height=6, fig.width=10, fig.align="center", message=FALSE, warning=FALSE}
+
+
+# Initialisie points and hypotheses for the teacher
+tchPts <- pts
+tchHyp <- hyp
+
+# Initialise points for different learners
+lnPtsH <- pts
+lnPtsW <- pts
+lnPtsD <- pts
+
+# Initialise hypotheses for different learners
+lnHypH <- hyp
+lnHypW <- hyp
+lnHypD <- hyp
+
+
+obs <- NA
+
+# let's see what the teacher's prior for the learner is
+tchPtProbs <- sweep(allProbPts[,,tlA],2,tchHyp$prior,"*")
+tchPts$prior <- rowSums(tchPtProbs)/sum(tchPtProbs)
+
+# let's see what the learner's prior over points is
+
+## Helpful learner
+lnPtProbsH <- sweep(allProbPts[,,lAH],2,lnHypH$prior,"*")
+lnPtsH$prior <- rowSums(lnPtProbsH)/sum(lnPtProbsH)
+
+## Weak learner
+lnPtProbsW <- sweep(allProbPts[,,lAW],2,lnHypW$prior,"*")
+lnPtsW$prior <- rowSums(lnPtProbsW)/sum(lnPtProbsW)
+
+## Deceptive learner
+lnPtProbsD <- sweep(allProbPts[,,lAD],2,lnHypD$prior,"*")
+lnPtsD$prior <- rowSums(lnPtProbsD)/sum(lnPtProbsD)
+
+# plot both of these
+## Teacher
+pTchPriors <- plotDistribution(allPts=tchPts,xrange=xrange,yrange=yrange,
+                               subtitle=paste0("Assumes learner has teacher alpha=",tchLnAlpha), whichDist="prior",title="Priors for teacher")
+## Learner
+pLnPriorsH <- plotDistribution(allPts=lnPtsH,xrange=xrange,yrange=yrange,
+                         subtitle=paste0("Assumes teacher alpha=",lnAlphaH),
+                         whichDist="prior",title="Priors for Trusting learner")
+
+pLnPriorsW <- plotDistribution(allPts=lnPtsW,xrange=xrange,yrange=yrange,
+                         subtitle=paste0("Assumes teacher alpha=",lnAlphaW),
+                         whichDist="prior",title="Priors for Weak learner")
+
+pLnPriorsD <- plotDistribution(allPts=lnPtsD,xrange=xrange,yrange=yrange,
+                         subtitle=paste0("Assumes teacher alpha=",lnAlphaD),
+                         whichDist="prior",title="Priors for Deceptive learner")
+
+p <- ggarrange(pLnPriorsH, pLnPriorsW, pLnPriorsH,pTchPriors,ncol=2, nrow = 2)
+p
+
+ggsave(paste0("figures/tlpairs/",dirname,"/priors.png"),
+       plot=p,device="png",
+       width=24,height=10, units="cm")
+
+```
+
+# The first data point
+
+The teacher needs to decide what is the first point to sample. This leads to six things we need to calculate.
+
+1. The sampling distribution over points the teacher generates. They do this by calculating what each point would do to the learner's hypothesis distribution, based on their assumption about the learner's alpha. Then, based on their alpha, they decide whether they want to make it more likely that the learner guesses the right hypothesis (tchAlpha > 0) or less (tchAlpha < 0) or if they don't care (tchAlpha = 0).
+
+2. The teacher then samples a point from that distribution, proportional to its probability.
+
+3. The teacher then updates their estimate of what the learner's distribution over hypotheses is, given that point.
+
+4. The teacher then updates their estimate of what the learner's distribution over points is (this will be useful later).
+
+5. The learner updates their distribution over hypotheses, given that point.
+
+6. The learner estimates their distribution over points. 
+
+
+```{r echo=FALSE, fig.height7, fig.width=12, fig.align="center", message=FALSE, warning=FALSE}
+
+# setting subtitles
+st  <- paste0("teacher thinks learner alpha: ",tchLnAlpha)
+stH <- paste0("Learner alpha: ",lnAlphaH,"; teacher thinks learner alpha: ",tchLnAlpha)
+stW <- paste0("Learner alpha: ",lnAlphaW,"; teacher thinks learner alpha: ",tchLnAlpha)
+stD <- paste0("Learner alpha: ",lnAlphaD,"; teacher thinks learner alpha: ",tchLnAlpha)
+
+st2 <- paste0("Sampled point according to maximise=",mx)
+
+
+
+# first step: the teacher generates a sampling distribution over points
+tchPts$posterior <- getSamplingDistribution(allProbPts[,,tlA],consPts,tchPts,
+                                    trueHNum,priors=tchHyp$prior,alpha=tchAlpha) 
+t <- paste0("Teacher sampling distribution: alpha=",tchAlpha)
+pt1step1 <- plotColourfulDistribution(allPts=tchPts,xrange=xrange,yrange=yrange,
+                          trueRectangle=trueH,obs=obs,
+                          title=t, subtitle=st)
+
+# step two: teacher samples the next point based on that distribution
+newPt <- sampleNextPoint(consPts,pts,trueHNum,abs(tchPts$posterior),obs=obs,
+                         maximise=maximise)
+obs <- rbind(obs,newPt)
+obs <- obs %>% filter(!is.na(x))
+
+# step three: teacher updates their estimate of the learner's distribution over hypotheses, given the point that was generated
+tchHyp <- updateHypotheses(allProbPts[,,tlA],consPts,newPt,tchHyp)
+bestH <- returnBestHypothesis(tchHyp,n=nBestH)
+t <- "Teacher hypothesis distribution for learner"
+pt1step3 <- plotHypotheses(trueH,obs,tchHyp[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st2)
+
+# step four: teacher updates their estimate of the learner's distribution over points, given the hypothesis distribution
+tchPts <- updatePoints(posProbPts[,,tlA],newPt,
+                       posterior=abs(tchHyp$posterior),pts=tchPts)
+t <- "Teacher point distribution for learner"
+pt1step4 <- plotColourfulDistribution(allPts=tchPts,xrange=xrange,yrange=yrange,
+                          trueRectangle=trueH,obs=obs,
+                          title=t, subtitle=st)
+
+
+# step five: learners update their estimate of the hypotheses, given the point that was generated
+## Helpful learner
+lnHypH <- updateHypotheses(allProbPts[,,lAH],consPts,newPt,lnHypH)
+bestHH <- returnBestHypothesis(lnHypH,n=nBestH)
+
+## Weak learner
+lnHypW <- updateHypotheses(allProbPts[,,lAW],consPts,newPt,lnHypW)
+bestHW <- returnBestHypothesis(lnHypW,n=nBestH)
+
+## Deceptive learner
+lnHypD <- updateHypotheses(allProbPts[,,lAD],consPts,newPt,lnHypD)
+bestHD <- returnBestHypothesis(lnHypD,n=nBestH)
+
+tH <- "Helpful Learner's actual hypothesis distribution"
+tW <- "Weak Learner's actual hypothesis distribution"
+tD <- "Deceptive Learner's actual hypothesis distribution"
+
+pt1step5H <- plotHypotheses(trueH,obs,lnHypH[bestHH,],xrange=xrange,
+                           yrange=yrange,title=tH,subtitle=st)
+
+pt1step5W <- plotHypotheses(trueH,obs,lnHypW[bestHW,],xrange=xrange,
+                           yrange=yrange,title=tW,subtitle=st)
+
+pt1step5D <- plotHypotheses(trueH,obs,lnHypD[bestHD,],xrange=xrange,
+                           yrange=yrange,title=tD,subtitle=st)
+
+# step six: learner updates their estimate of the distribution over points, given the hypothesis distribution
+## Strong learner
+lnPtsH <- updatePoints(posProbPts[,,lAH],newPt,
+                       posterior=lnHypH$posterior,pts=lnPtsH)
+tH <- "Helpful Learner's actual point distribution"
+pt1step6H <- plotDistribution(allPts=lnPtsH,xrange=xrange,yrange=yrange,
+                          trueRectangle=trueH,obs=obs,whichDist="posterior",
+                          title=t, subtitle=st)
+
+## Weak Learner
+lnPtsW <- updatePoints(posProbPts[,,lAW],newPt,
+                       posterior=lnHypW$posterior,pts=lnPtsW)
+tW <- "Weak Learner's actual point distribution"
+pt1step6W <- plotDistribution(allPts=lnPtsW,xrange=xrange,yrange=yrange,
+                          trueRectangle=trueH,obs=obs,whichDist="posterior",
+                          title=t, subtitle=st)
+
+## Deceptive Learner
+lnPtsD <- updatePoints(posProbPts[,,lAD],newPt,
+                       posterior=lnHypW$posterior,pts=lnPtsD)
+tW <- "Deceptive Learner's actual point distribution"
+pt1step6D <- plotDistribution(allPts=lnPtsD,xrange=xrange,yrange=yrange,
+                          trueRectangle=trueH,obs=obs,whichDist="posterior",
+                          title=t, subtitle=st)
+
+
+
+
+pt1 <- ggarrange(pt1step1,pt1step3,pt1step4,pt1step5H,pt1step5W, pt1step5D, pt1step6H,pt1step6W, pt1step6D,ncol=3,nrow=3)
+pt1
+
+ggsave(paste0("figures/tlpairs/",dirname,"/step1.png"),
+       plot=pt1,device="png",
+       width=36,height=15, units="cm")
+
+```
+
+
+# The second data point
+
+We're going to do the same series of steps for the second data point, based on what was calculated earlier given the first.
+
+```{r echo=FALSE, fig.height7, fig.width=12, fig.align="center", message=FALSE, warning=FALSE}
+# first step: the teacher generates a sampling distribution over points
+tchPts$posterior <- getSamplingDistribution(allProbPts[,,tlA],consPts,tchPts,
+                                    trueHNum,priors=abs(tchHyp$posterior),
+                                    alpha=tchAlpha,obs=obs) 
+t <- paste0("Teacher sampling distribution: alpha=",tchAlpha)
+pt2step1 <- plotColourfulDistribution(allPts=tchPts,xrange=xrange,yrange=yrange,
+                          trueRectangle=trueH,obs=obs,
+                          title=t, subtitle=st)
+
+# step two: teacher samples the next point based on that distribution
+newPt <- sampleNextPoint(consPts,pts,trueHNum,abs(tchPts$posterior),obs=obs,
+                         maximise=maximise)
+obs <- rbind(obs,newPt)
+obs <- obs %>% filter(!is.na(x))
+
+# step three: teacher updates their estimate of the learner's distribution over hypotheses, given the point that was generated
+tchHyp <- updateHypotheses(allProbPts[,,tlA],consPts,newPt,tchHyp)
+bestH <- returnBestHypothesis(tchHyp,n=nBestH)
+t <- "Teacher hypothesis distribution for learner"
+pt2step3 <- plotHypotheses(trueH,obs,tchHyp[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st2)
+
+# step four: teacher updates their estimate of the learner's distribution over points, given the hypothesis distribution
+tchPts <- updatePoints(posProbPts[,,tlA],newPt,
+                       posterior=tchHyp$posterior,pts=tchPts)
+t <- "Teacher point distribution for learner"
+pt2step4 <- plotColourfulDistribution(allPts=tchPts,xrange=xrange,yrange=yrange,
+                          trueRectangle=trueH,obs=obs,
+                          title=t, subtitle=st)
+
+# step five: learners update their estimate of the hypotheses, given the point that was generated
+## Helpful learner
+lnHypH <- updateHypotheses(allProbPts[,,lAH],consPts,newPt,lnHypH)
+bestHH <- returnBestHypothesis(lnHypH,n=nBestH)
+
+## Weak learner
+lnHypW <- updateHypotheses(allProbPts[,,lAW],consPts,newPt,lnHypW)
+bestHW <- returnBestHypothesis(lnHypW,n=nBestH)
+
+## Deceptive learner
+lnHypD <- updateHypotheses(allProbPts[,,lAD],consPts,newPt,lnHypD)
+bestHD <- returnBestHypothesis(lnHypD,n=nBestH)
+
+tH <- "Helpful Learner's actual hypothesis distribution"
+tW <- "Weak Learner's actual hypothesis distribution"
+tD <- "Deceptive Learner's actual hypothesis distribution"
+
+pt2step5H <- plotHypotheses(trueH,obs,lnHypH[bestHH,],xrange=xrange,
+                           yrange=yrange,title=tH,subtitle=st)
+
+pt2step5W <- plotHypotheses(trueH,obs,lnHypW[bestHW,],xrange=xrange,
+                           yrange=yrange,title=tW,subtitle=st)
+
+pt2step5D <- plotHypotheses(trueH,obs,lnHypD[bestHD,],xrange=xrange,
+                           yrange=yrange,title=tD,subtitle=st)
+
+# step six: learner updates their estimate of the distribution over points, given the hypothesis distribution
+## Strong learner
+lnPtsH <- updatePoints(posProbPts[,,lAH],newPt,
+                       posterior=lnHypH$posterior,pts=lnPtsH)
+tH <- "Helpful Learner's actual point distribution"
+pt2step6H <- plotDistribution(allPts=lnPtsH,xrange=xrange,yrange=yrange,
+                          trueRectangle=trueH,obs=obs,whichDist="posterior",
+                          title=t, subtitle=st)
+
+## Weak Learner
+lnPtsW <- updatePoints(posProbPts[,,lAW],newPt,
+                       posterior=lnHypW$posterior,pts=lnPtsW)
+tW <- "Weak Learner's actual point distribution"
+pt2step6W <- plotDistribution(allPts=lnPtsW,xrange=xrange,yrange=yrange,
+                          trueRectangle=trueH,obs=obs,whichDist="posterior",
+                          title=t, subtitle=st)
+
+## Deceptive Learner
+lnPtsD <- updatePoints(posProbPts[,,lAD],newPt,
+                       posterior=lnHypW$posterior,pts=lnPtsD)
+tW <- "Deceptive Learner's actual point distribution"
+pt2step6D <- plotDistribution(allPts=lnPtsD,xrange=xrange,yrange=yrange,
+                          trueRectangle=trueH,obs=obs,whichDist="posterior",
+                          title=t, subtitle=st)
+
+
+
+
+pt2 <- ggarrange(pt2step1,pt2step3,pt2step4,pt2step5H,pt2step5W, pt2step5D, pt2step6H,pt2step6W, pt2step6D,ncol=3,nrow=3)
+pt2
+
+ggsave(paste0("figures/tlpairs/",dirname,"/step2.png"),
+       plot=pt2,device="png",
+       width=36,height=15, units="cm")
+
+```
+# The third data point
+
+We're going to do the same series of steps for the third data point, based on what was calculated earlier given the first and second.
+
+
+```{r echo=FALSE, fig.height=5, fig.width=12, fig.align="center", message=FALSE, warning=FALSE}
+
+# first step: the teacher generates a sampling distribution over points
+tchPts$posterior <- getSamplingDistribution(allProbPts[,,tlA],consPts,tchPts,
+                                    trueHNum,priors=abs(tchHyp$posterior),
+                                    alpha=tchAlpha,obs=obs) 
+t <- paste0("Teacher sampling distribution: alpha=",tchAlpha)
+pt3step1 <- plotColourfulDistribution(allPts=tchPts,xrange=xrange,yrange=yrange,
+                          trueRectangle=trueH,obs=obs,
+                          title=t, subtitle=st)
+
+# step two: teacher samples the next point based on that distribution
+newPt <- sampleNextPoint(consPts,pts,trueHNum,abs(tchPts$posterior),obs=obs,
+                         maximise=maximise)
+obs <- rbind(obs,newPt)
+obs <- obs %>% filter(!is.na(x))
+
+# step three: teacher updates their estimate of the learner's distribution over hypotheses, given the point that was generated
+tchHyp <- updateHypotheses(allProbPts[,,tlA],consPts,newPt,tchHyp)
+bestH <- returnBestHypothesis(tchHyp,n=nBestH)
+t <- "Teacher hypothesis distribution for learner"
+pt3step3 <- plotHypotheses(trueH,obs,tchHyp[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st2)
+
+# step four: teacher updates their estimate of the learner's distribution over points, given the hypothesis distribution
+tchPts <- updatePoints(posProbPts[,,tlA],newPt,
+                       posterior=tchHyp$posterior,pts=tchPts)
+t <- "Teacher point distribution for learner"
+pt3step4 <- plotColourfulDistribution(allPts=tchPts,xrange=xrange,yrange=yrange,
+                          trueRectangle=trueH,obs=obs,
+                          title=t, subtitle=st)
+
+
+# step five: learners update their estimate of the hypotheses, given the point that was generated
+## Helpful learner
+lnHypH <- updateHypotheses(allProbPts[,,lAH],consPts,newPt,lnHypH)
+bestHH <- returnBestHypothesis(lnHypH,n=nBestH)
+
+## Weak learner
+lnHypW <- updateHypotheses(allProbPts[,,lAW],consPts,newPt,lnHypW)
+bestHW <- returnBestHypothesis(lnHypW,n=nBestH)
+
+## Deceptive learner
+lnHypD <- updateHypotheses(allProbPts[,,lAD],consPts,newPt,lnHypD)
+bestHD <- returnBestHypothesis(lnHypD,n=nBestH)
+
+tH <- "Helpful Learner's actual hypothesis distribution"
+tW <- "Weak Learner's actual hypothesis distribution"
+tD <- "Deceptive Learner's actual hypothesis distribution"
+
+pt3step5H <- plotHypotheses(trueH,obs,lnHypH[bestHH,],xrange=xrange,
+                           yrange=yrange,title=tH,subtitle=st)
+
+pt3step5W <- plotHypotheses(trueH,obs,lnHypW[bestHW,],xrange=xrange,
+                           yrange=yrange,title=tW,subtitle=st)
+
+pt3step5D <- plotHypotheses(trueH,obs,lnHypD[bestHD,],xrange=xrange,
+                           yrange=yrange,title=tD,subtitle=st)
+
+# step six: learner updates their estimate of the distribution over points, given the hypothesis distribution
+## Strong learner
+lnPtsH <- updatePoints(posProbPts[,,lAH],newPt,
+                       posterior=lnHypH$posterior,pts=lnPtsH)
+tH <- "Helpful Learner's actual point distribution"
+pt3step6H <- plotDistribution(allPts=lnPtsH,xrange=xrange,yrange=yrange,
+                          trueRectangle=trueH,obs=obs,whichDist="posterior",
+                          title=t, subtitle=st)
+
+## Weak Learner
+lnPtsW <- updatePoints(posProbPts[,,lAW],newPt,
+                       posterior=lnHypW$posterior,pts=lnPtsW)
+tW <- "Weak Learner's actual point distribution"
+pt3step6W <- plotDistribution(allPts=lnPtsW,xrange=xrange,yrange=yrange,
+                          trueRectangle=trueH,obs=obs,whichDist="posterior",
+                          title=t, subtitle=st)
+
+## Deceptive Learner
+lnPtsD <- updatePoints(posProbPts[,,lAD],newPt,
+                       posterior=lnHypW$posterior,pts=lnPtsD)
+tW <- "Deceptive Learner's actual point distribution"
+pt3step6D <- plotDistribution(allPts=lnPtsD,xrange=xrange,yrange=yrange,
+                          trueRectangle=trueH,obs=obs,whichDist="posterior",
+                          title=t, subtitle=st)
+
+
+
+
+pt3 <- ggarrange(pt3step1,pt3step3,pt3step4,pt3step5H,pt3step5W, pt3step5D, pt3step6H,pt3step6W, pt3step6D,ncol=3,nrow=3)
+pt3
+
+ggsave(paste0("figures/tlpairs/",dirname,"/step3.png"),
+       plot=pt3,device="png",
+       width=36,height=15, units="cm")
+```
+
+
+# The fourth data point
+
+We're going to do the same series of steps for the fourth data point, based on what was calculated earlier given the first, second, and third.
+
+
+```{r echo=FALSE, fig.height=5, fig.width=12, fig.align="center", message=FALSE, warning=FALSE}
+
+# first step: the teacher generates a sampling distribution over points
+tchPts$posterior <- getSamplingDistribution(allProbPts[,,tlA],consPts,tchPts,
+                                    trueHNum,priors=abs(tchHyp$posterior),
+                                    alpha=tchAlpha,obs=obs) 
+t <- paste0("Teacher sampling distribution: alpha=",tchAlpha)
+pt4step1 <- plotColourfulDistribution(allPts=tchPts,xrange=xrange,yrange=yrange,
+                          trueRectangle=trueH,obs=obs,
+                          title=t, subtitle=st)
+
+# step two: teacher samples the next point based on that distribution
+newPt <- sampleNextPoint(consPts,pts,trueHNum,abs(tchPts$posterior),obs=obs,
+                         maximise=maximise)
+obs <- rbind(obs,newPt)
+obs <- obs %>% filter(!is.na(x))
+
+# step three: teacher updates their estimate of the learner's distribution over hypotheses, given the point that was generated
+tchHyp <- updateHypotheses(allProbPts[,,tlA],consPts,newPt,tchHyp)
+bestH <- returnBestHypothesis(tchHyp,n=nBestH)
+t <- "Teacher hypothesis distribution for learner"
+pt4step3 <- plotHypotheses(trueH,obs,tchHyp[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st2)
+
+# step four: teacher updates their estimate of the learner's distribution over points, given the hypothesis distribution
+tchPts <- updatePoints(posProbPts[,,tlA],newPt,
+                       posterior=tchHyp$posterior,pts=tchPts)
+t <- "Teacher point distribution for learner"
+pt4step4 <- plotColourfulDistribution(allPts=tchPts,xrange=xrange,yrange=yrange,
+                          trueRectangle=trueH,obs=obs,
+                          title=t, subtitle=st)
+
+
+# step five: learner updates their estimate of the hypotheses, given the point that was generated
+lnHyp <- updateHypotheses(allProbPts[,,lA],consPts,newPt,lnHyp)
+bestH <- returnBestHypothesis(lnHyp,n=nBestH)
+t <- "Learner's actual hypothesis distribution"
+pt4step5 <- plotHypotheses(trueH,obs,lnHyp[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# step six: learner updates their estimate of the distribution over points, given the hypothesis distribution
+lnPts <- updatePoints(posProbPts[,,lA],newPt,
+                       posterior=lnHyp$posterior,pts=lnPts)
+t <- "Learner's actual point distribution"
+pt4step6 <- plotDistribution(allPts=lnPts,xrange=xrange,yrange=yrange,
+                          trueRectangle=trueH,obs=obs,whichDist="posterior",
+                          title=t, subtitle=st)
+
+
+pt4 <- ggarrange(pRect,pt4step1,pt4step3,pt4step4,pt4step5,pt4step6,ncol=3,nrow=2)
+pt4
+
+ggsave(paste0("figures/tlpairs/",dirname,"/step4.png"),
+       plot=pt4,device="png",
+       width=36,height=15, units="cm")
+
+```
+
+
+At the end, we save everything.
+
+```{r echo=FALSE}
+# save all of this as RData file
+filename = paste0("results/",dirname,".RData")
+save(xrange,yrange,trueH,trueHNum,lnAlpha,lnPts,lnHyp,tchAlpha,
+     tchLnAlpha,tchPts,tchHyp,obs,maximise,file=filename)
+
+```

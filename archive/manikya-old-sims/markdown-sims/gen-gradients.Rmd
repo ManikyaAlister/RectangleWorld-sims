@@ -1,0 +1,93 @@
+---
+title: "Generalisation Gradients"
+author: "Manikya Aluster"
+date: "2022-12-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+source(here("functions/generic-functions.R"))
+source(here("functions/alphaGridDist.R"))
+source(here("functions/pedagogical-learner.R"))
+source(here("functions/optimiseAlpha.R"))
+```
+
+I want to visualise the probability distribution of all rectangles for a given model and set of observations. This way I can get a better idea of a. the differences in predictions of each model and b. where a participant's chosen rectangle falls on that distribution, to get a sense of how conservative they are being. 
+
+### Set up rectangle world  
+
+```{r}
+# Make borders
+borders = makeBorders(0:10)
+
+# I generated some observations earlier which seemed to show some distinctions between models 
+load(here("obsTest.Rdata"))
+obs
+```
+
+### Grid search for each model and these observations
+
+```{r}
+gridDist= alphaGridSearchDist(borders = borders, observations = obs)
+gridDist[,"alpha"] = as.numeric(gridDist[,"alpha"])
+posteriors = gridDist[gridDist[,"alpha"]==1,][,c("x1", "x2", "y1", "y2", "posterior")]
+colnames(posteriors) = c(colnames(posteriors)[1:4],"pa1")
+  
+for (i in as.character(seq(0.8,-1,-.2))){
+  filter = gridDist[gridDist[,"alpha"]==i,"posterior"]
+  posteriors = cbind(posteriors,filter)
+}
+
+colnames = c("x1", "y1", "x2", "y2", "pa1", "pa.8", "pa.6", "pa.4", "pa.2", "pa0", "pa-.2", "pa-.4", "pa-.6", "pa-.8", "pa-1")
+
+colnames(posteriors) = colnames
+
+# Order so the data frame is descending order for alpha = 1
+d_plot = posteriors[order(posteriors[,"pa1"]),]
+
+```
+
+### Plot
+
+```{r}
+rectangles = 1:length(posteriors[,1])
+
+plot(rectangles, d_plot[,"pa1"], "l")
+lines(rectangles, d_plot[,"pa.8"], col = "darkblue")
+lines(rectangles, d_plot[,"pa.6"], col = "blue")
+lines(rectangles, d_plot[,"pa.4"], col = "lightblue")
+lines(rectangles, d_plot[,"pa.2"], col = "lightgreen")
+lines(rectangles, d_plot[,"pa0"], col = "green")
+lines(rectangles, d_plot[,"pa-.2"], col = "darkgreen")
+lines(rectangles, d_plot[,"pa-.2"], col = "darkred")
+lines(rectangles, d_plot[,"pa-.4"], col = "red")
+lines(rectangles, d_plot[,"pa-.6"], col = "tomato")
+lines(rectangles, d_plot[,"pa-.8"], col = "yellow")
+lines(rectangles, d_plot[,"pa1"], col = "tan")
+
+
+```
+
+By the looks of the above plot, the 25th rectangle should be best fit by alpha = 0.8. Let's checkk that. 
+
+```{r}
+rect = d_plot[25,1:4]
+grid = alphaGridSearch(borders,obs)
+debugonce(fitAlpha)
+fit = fitAlpha(partRectangle = rect, gridSearch = grid)
+
+```
+
+```{r}
+# new fit algorithm 
+
+alphaProbs = gridDist[c(gridDist[,1]==rect[1] & gridDist[,1]==rect[2] & gridDist[,1]==rect[3] & gridDist[,4]==rect[4]),]
+
+learner.8 = pedLearner(borders, obs, alpha = 0.8)
+leraner1 = pedLearner(borders, obs, alpha = 1)
+
+```
+
+
