@@ -11,11 +11,11 @@ H <- 10
 # Size of the true rectangle
 trueRectSize <- "small"
 # Teacher's alpha
-tchAlpha <- -1
+tchAlpha <- 1
 # Alpha the teacher thinks the learner thinks the teacher has
 tchLnAlpha <- 1
 # learner Alpha 
-lnAlpha <- -1
+lnAlpha <- 1
 # Number of best hypotheses plotted
 nBestH <- 3
 # Configure whether the teacher is choosing the best point or sampling proportional to distribution
@@ -28,5 +28,5 @@ experimentScenario <- "explore-scenarios"
 
 # Generate block scenario -------------------------------------------------
 
-block <- createExperimentBlock(trueRectSize = trueRectSize, tchAlpha = tchAlpha, tchLnAlpha = 1, prior = prior, scenarioCode = experimentScenario, lnAlpha = lnAlpha)
+block <- createExperimentBlock(trueRectSize = trueRectSize, tchAlpha = tchAlpha, tchLnAlpha = 1, prior = prior, scenarioCode = experimentScenario, lnAlpha = lnAlpha, rect = c(2,2,6,6))
 block

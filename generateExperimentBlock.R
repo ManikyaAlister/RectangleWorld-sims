@@ -102,6 +102,7 @@ createExperimentBlock = function(trueRectSize = "small",
   }
   
   tchHyp$posterior <- tchHyp$prior
+  lnHyp$posterior <- lnHyp$prior
   
   # empty vecotr to fill with the names of plots
   plots <- NULL
