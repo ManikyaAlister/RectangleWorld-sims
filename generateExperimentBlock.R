@@ -104,6 +104,7 @@ createExperimentBlock = function(trueRectSize = "small",
   tchHyp$posterior <- tchHyp$prior
   lnHyp$posterior <- lnHyp$prior
   
+  trialJson <- list()
   # empty vecotr to fill with the names of plots
   plots <- NULL
   for (i in 1:nTrials) {
@@ -142,13 +143,13 @@ createExperimentBlock = function(trueRectSize = "small",
     
   
     ## Create json data corresponding to the coded experiment grid structure describing all possible points and whether they were observed.
-    trialJson <- tchPts %>%
+    trialJson[[i]] <- tchPts %>%
       mutate(col = x + 0.5,
              row = y + 0.5,
              observed = "none") %>%
       select(row, col, observed)
     
-    trialJson[obs[, "name"], "observed"] <- obs[, "category"]
+    trialJson[[i]][obs[, "name"], "observed"] <- obs[, "category"]
 
     
     # step three: teacher updates their estimate of the learner's distribution over hypotheses, given the point that was generated
@@ -206,15 +207,17 @@ createExperimentBlock = function(trueRectSize = "small",
  dir.create(here(paste0("experiment-scenarios/",directory,"/data/",scenarioCode,"/")))
   
   ## vector of all observations in a block
-  save(obs, file = here(
-    paste0(
-      "experiment-scenarios/",directory,"/data/",scenarioCode,"/",
-      scenarioCode,
-      "-obs.Rdata"
-    )
-  ))
-  ## List with all observations in each trial within a block
-  save(trialObs, file = here(
+  # save(obs, file = here(
+  #   paste0(
+  #     "experiment-scenarios/",directory,"/data/",scenarioCode,"/",
+  #     scenarioCode,
+  #     "-obs.Rdata"
+  #   )
+  # ))
+  
+ ## List with all observations in each trial within a block
+  expData = list(trueRect = trueH, trialJson = trialJson, obsOnly = obs)
+  save(expData, file = here(
     paste0(
       "experiment-scenarios/",directory,"/data/",scenarioCode,"/",
       scenarioCode,
@@ -223,15 +226,15 @@ createExperimentBlock = function(trueRectSize = "small",
   ))
   
   ## json data
-  save(trialJson, file = here(
-    paste0(
-      "experiment-scenarios/",directory,"/data/",scenarioCode,"/",
-      scenarioCode,
-      "-trialJson-t",
-      i,
-      ".Rdata"
-    )
-  ))
+  # save(trialJson, file = here(
+  #   paste0(
+  #     "experiment-scenarios/",directory,"/data/",scenarioCode,"/",
+  #     scenarioCode,
+  #     "-trialJson-t",
+  #     i,
+  #     ".Rdata"
+  #   )
+  # ))
   
   # return
   blockScenario

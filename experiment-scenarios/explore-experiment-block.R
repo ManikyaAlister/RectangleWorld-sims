@@ -23,7 +23,7 @@ maximise <- TRUE
 # set prior
 prior <- "normal"
 # set experiment scenario
-experimentScenario <- "explore-scenarios"
+experimentScenario <- "custom"
 
 
 # Generate block scenario -------------------------------------------------

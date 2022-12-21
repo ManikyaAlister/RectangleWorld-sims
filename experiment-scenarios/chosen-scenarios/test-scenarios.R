@@ -45,7 +45,8 @@ for (i in 1:length(experimentRectanglesIndex)){
 rect <- as.vector(as.matrix(experimentRectangles[i,])) 
 
 # Configure scenario code for saving 
-scenarioCode <- paste0(i,"-",experimentRectanglesIndex[i],"-tchA",tchAlpha, "-lnA",lnAlpha,"tchLnA",tchLnAlpha,"-prior-",prior)
-  
+#scenarioCode <- paste0(i,"-",experimentRectanglesIndex[i],"-tchA",tchAlpha, "-lnA",lnAlpha,"tchLnA",tchLnAlpha,"-prior-",prior)
+scenarioCode <- paste0(i,"-",experimentRectanglesIndex[i],"-tchA",tchAlpha)
+
 block <- createExperimentBlock(trueRectSize = trueRectSize, tchAlpha = tchAlpha, rect = rect, prior = prior, lnAlpha = lnAlpha, tchLnAlpha = tchLnAlpha, scenarioCode = scenarioCode)
 }
