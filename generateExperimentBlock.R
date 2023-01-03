@@ -5,6 +5,7 @@
 #############################
 library(here)
 library(ggpubr)
+library(jsonlite)
 
 #' Generate an experiment block for the rectangle game (teacher observations from a true rectangle)
 #'
@@ -33,7 +34,9 @@ createExperimentBlock = function(trueRectSize = "small",
                                  H = 10,
                                  rect = "random",
                                  prior = "normal",
-                                 scenarioCode = "exploritory") {
+                                 scenarioCode = "exploritory",
+                                 trialIds = c(1,3,4,5,6,7,8,9)
+                                 ) {
   # Set up   --------------------------------------------------------
   
   # Source functions
@@ -104,7 +107,15 @@ createExperimentBlock = function(trueRectSize = "small",
   tchHyp$posterior <- tchHyp$prior
   lnHyp$posterior <- lnHyp$prior
   
-  trialJson <- list()
+  # Collect clue data for experiment
+  #trialJson <- list()
+  blockData <- list()
+  blockData[["id"]] <- paste0("t",trialIds[i])
+  blockData[["groundTruth"]] <- data.frame("x1" = trueH[1], "y1" = trueH[2], "x2" = trueH[3], "x4"= trueH[4])
+  blockData[["width"]] <- H
+  blockData[["height"]] <- H
+  blockData[["observations"]] <- NULL
+  
   # empty vecotr to fill with the names of plots
   plots <- NULL
   for (i in 1:nTrials) {
@@ -143,14 +154,14 @@ createExperimentBlock = function(trueRectSize = "small",
     
   
     ## Create json data corresponding to the coded experiment grid structure describing all possible points and whether they were observed.
-    trialJson[[i]] <- tchPts %>%
-      mutate(col = x + 0.5,
-             row = y + 0.5,
-             observed = "none") %>%
-      select(row, col, observed)
-    
-    trialJson[[i]][obs[, "name"], "observed"] <- obs[, "category"]
-
+    # trialJson[[i]] <- tchPts %>%
+    #   mutate(col = x + 0.5,
+    #          row = y + 0.5,
+    #          observed = "none") %>%
+    #   select(row, col, observed)
+    # 
+    # trialJson[[i]][obs[, "name"], "observed"] <- obs[, "category"]
+    blockData[["observations"]] <- rbind(blockData[["observations"]], newPt) 
     
     # step three: teacher updates their estimate of the learner's distribution over hypotheses, given the point that was generated
     tchHyp <- updateHypotheses(allProbPts[, , tlA], consPts, newPt, tchHyp)
@@ -216,14 +227,27 @@ createExperimentBlock = function(trueRectSize = "small",
   # ))
   
  ## List with all observations in each trial within a block
-  expData = list(trueRect = trueH, trialJson = trialJson, obsOnly = obs)
-  save(expData, file = here(
+  #expData = list(trueRect = trueH, trialJson = trialJson, obsOnly = obs)
+ rownames(blockData[["observations"]]) <- NULL
+ blockData[["observations"]] <- select(blockData[["observations"]], -c(name, index))
+ 
+ save(blockData, file = here(
     paste0(
       "experiment-scenarios/",directory,"/data/",scenarioCode,"/",
       scenarioCode,
       "trial-obs.Rdata"
     )
   ))
+ 
+ blockDataJson <- toJSON(blockData, pretty = TRUE, auto_unbox = TRUE)
+ 
+ write(blockDataJson, file = here(
+   paste0(
+     "experiment-scenarios/",directory,"/data/",scenarioCode,"/",
+     scenarioCode,
+     "trial-obs.json"
+   )
+ ))
   
   ## json data
   # save(trialJson, file = here(

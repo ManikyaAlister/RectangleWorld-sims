@@ -23,10 +23,10 @@ maximise <- TRUE
 # set prior
 prior <- "normal"
 # set experiment scenario
-experimentScenario <- "custom"
+experimentScenario <- "custom1"
 
 
 # Generate block scenario -------------------------------------------------
-
+debugonce(createExperimentBlock)
 block <- createExperimentBlock(trueRectSize = trueRectSize, tchAlpha = tchAlpha, tchLnAlpha = 1, prior = prior, scenarioCode = experimentScenario, lnAlpha = lnAlpha, rect = c(2,2,6,6))
 block

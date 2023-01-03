@@ -1,0 +1,35 @@
+{
+  "id": "t7",
+  "groundTruth": [
+    {
+      "x1": 8,
+      "y1": 2,
+      "x2": 9,
+      "x4": 8
+    }
+  ],
+  "width": 10,
+  "height": 10,
+  "observations": [
+    {
+      "x": 8.5,
+      "y": 2.5,
+      "category": "positive"
+    },
+    {
+      "x": 7.5,
+      "y": 2.5,
+      "category": "negative"
+    },
+    {
+      "x": 9.5,
+      "y": 2.5,
+      "category": "negative"
+    },
+    {
+      "x": 8.5,
+      "y": 1.5,
+      "category": "negative"
+    }
+  ]
+}
