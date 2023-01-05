@@ -53,12 +53,12 @@ rectangles
 #' @param xrange vector describing the x axis (default 0:10)
 #' @param yrange vector describing the y axis (default 0:10)
 #' @return A dataframe with two columns, x and y, where each row is a unique point
-findAllPoints = function(xrange=0:10,yrange=0:10){
+findAllPoints = function(xrange=1:10,yrange=1:10){
   lowx <- min(xrange)
   highx <- max(xrange)-1
   lowy <- min(yrange)
   highy <- max(yrange)-1
-  pts <- floor(expand.grid(lowx:highx,lowy:highy))+0.5
+  pts <- floor(expand.grid(lowx:highx,lowy:highy))
 
   allPts <- data.frame(pts)
   colnames(allPts) <- c("x","y")
