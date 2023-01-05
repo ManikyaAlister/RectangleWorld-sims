@@ -10,23 +10,23 @@
   "height": 10,
   "observations": [
     {
-      "x": 9,
-      "y": 7,
+      "x": 8.5,
+      "y": 7.5,
       "observed": "positive"
     },
     {
-      "x": 8,
-      "y": 7,
+      "x": 7.5,
+      "y": 7.5,
       "observed": "negative"
     },
     {
-      "x": 10,
-      "y": 7,
+      "x": 9.5,
+      "y": 7.5,
       "observed": "negative"
     },
     {
-      "x": 9,
-      "y": 8,
+      "x": 8.5,
+      "y": 8.5,
       "observed": "negative"
     }
   ]

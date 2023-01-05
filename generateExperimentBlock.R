@@ -244,8 +244,8 @@ createExperimentBlock = function(trueRectSize = "small",
   #expData = list(trueRect = trueH, trialJson = trialJson, obsOnly = obs)
  rownames(blockData[["observations"]]) <- NULL
  blockData[["observations"]] <- select(blockData[["observations"]], -c(name, index))
- blockData[["observations"]][,"x"] <- blockData[["observations"]][,"x"]+0.5
- blockData[["observations"]][,"y"] <- H - (blockData[["observations"]][,"y"]+0.5) ## IN EXPERIMENT Y COUNTS FROM THE TOP OF THE GRID (hence need to inverse, H-y)
+ blockData[["observations"]][,"x"] <- blockData[["observations"]][,"x"]
+ blockData[["observations"]][,"y"] <- H - (blockData[["observations"]][,"y"]) ## IN EXPERIMENT Y COUNTS FROM THE TOP OF THE GRID (hence need to inverse, H-y)
  colnames(blockData[["observations"]]) <- c("x", "y", "observed")
  
  save(blockData, file = here(
