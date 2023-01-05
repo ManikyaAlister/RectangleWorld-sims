@@ -1,35 +1,33 @@
 {
-  "id": "t8",
-  "groundTruth": [
-    {
-      "x1": 2,
-      "y1": 2,
-      "x2": 4,
-      "x4": 4
-    }
-  ],
+  "id": "h8",
+  "groundTruth": {
+    "x1": 2,
+    "y1": 8,
+    "x2": 4,
+    "y2": 6
+  },
   "width": 10,
   "height": 10,
   "observations": [
     {
-      "x": 2.5,
-      "y": 2.5,
-      "category": "positive"
+      "x": 3,
+      "y": 7,
+      "observed": "positive"
     },
     {
-      "x": 2.5,
-      "y": 4.5,
-      "category": "negative"
+      "x": 3,
+      "y": 5,
+      "observed": "negative"
     },
     {
-      "x": 4.5,
-      "y": 2.5,
-      "category": "negative"
+      "x": 5,
+      "y": 7,
+      "observed": "negative"
     },
     {
-      "x": 2.5,
-      "y": 1.5,
-      "category": "negative"
+      "x": 3,
+      "y": 8,
+      "observed": "negative"
     }
   ]
 }

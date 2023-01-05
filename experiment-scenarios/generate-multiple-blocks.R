@@ -1,7 +1,7 @@
 rm(list = ls())
 library(here)
 source(here("generateExperimentBlock.R"))
-# Explore the block scenarios chosen for the experiment. 
+# Explore the block scenarios chosen for the experiment.
 
 # Configure block parameters ----------------------------------------------
 
@@ -10,23 +10,23 @@ H <- 10
 # Size of the true rectangle
 trueRectSize <- "medium"
 # Teacher's alpha
-tchAlpha <- -1
+tchAlpha <- 1
 tchLnAlpha <- 1
 # Learner's actual alpha for the teacher (participant predictions)
-lnAlpha <- -1
+lnAlpha <- 1
 # Number of best hypotheses plotted
 nBestH <- 3
 # Configure whether the teacher is choosing the best point or sampling proportional to distribution
 maximise <- TRUE
 # set prior
 prior <- "normal"
-# set trial IDs 
-trialIDs <- c(1,3,4,5,6,7,8,9)
+# set trial IDs
+trialIDs <- c(1, 3, 4, 5, 6, 7, 8, 9)
 
 # Provider helpfulness condition
-if(tchAlpha == 1 & lnAlpha == 1){
+if (tchAlpha == 1 & lnAlpha == 1) {
   cond <- "helpful"
-} else if (tchAlpha == 0 & tchLnAlpha == 0){
+} else if (tchAlpha == 0 & tchLnAlpha == 0) {
   cond <- "random"
 } else if (tchAlpha == -1 & tchLnAlpha == -1) {
   cond <- "uninformative"
@@ -34,16 +34,17 @@ if(tchAlpha == 1 & lnAlpha == 1){
   cond <- "misleading"
 }
 
-# load data 
-fileSeg <- paste0("x0to",H,"y0to",H)
-fn <- paste0("datafiles/",fileSeg,".RData")
+# load data
+fileSeg <- paste0("x0to", H, "y0to", H)
+fn <- paste0("datafiles/", fileSeg, ".RData")
 load(here(fn))
 
 # vector of rectangles chosen for scenarios currently (manually chosen)
-experimentRectanglesIndex <- c(645, 1774, 1778, 2315, 1069, 1855, 365, 1792)
+experimentRectanglesIndex <-
+  c(645, 1774, 1778, 2315, 1069, 1855, 365, 1792)
 experimentRectangles <- hyp[experimentRectanglesIndex, 1:4]
 
-# Figure out experimental condition 
+# Figure out experimental condition
 # if(lnAlpha > 0){
 #   cond <- "Trusting-learner"
 # } else if (lnAlpha == 0){
@@ -52,13 +53,24 @@ experimentRectangles <- hyp[experimentRectanglesIndex, 1:4]
 #   cond <- "Suspicious-learner"
 # }
 
-# Loop through all blocks 
-for (i in 1:length(experimentRectanglesIndex)){
-# choose block rectangle from all scenario rectangles 
-rect <- as.vector(as.matrix(experimentRectangles[i,])) 
-
-# Configure scenario code for saving 
-scenarioCode <- paste0(trialIDs[i],"-",experimentRectanglesIndex[i],"-",cond)
-
-block <- createExperimentBlock(trueRectSize = trueRectSize, tchAlpha = tchAlpha, rect = rect, prior = prior, lnAlpha = lnAlpha, tchLnAlpha = tchLnAlpha, scenarioCode = scenarioCode, trialIds = trialIDs)
+# Loop through all blocks
+for (i in 1:length(experimentRectanglesIndex)) {
+  # choose block rectangle from all scenario rectangles
+  rect <- as.vector(as.matrix(experimentRectangles[i, ]))
+  
+  # Configure scenario code for saving
+  scenarioCode <-
+    paste0(trialIDs[i], "-", experimentRectanglesIndex[i], "-", cond)
+  
+  block <-
+    createExperimentBlock(
+      trueRectSize = trueRectSize,
+      tchAlpha = tchAlpha,
+      rect = rect,
+      prior = prior,
+      lnAlpha = lnAlpha,
+      tchLnAlpha = tchLnAlpha,
+      scenarioCode = scenarioCode,
+      trialIds = trialIDs
+    )
 }

@@ -1,5 +1,5 @@
 {
-  "id": "t7",
+  "id": "m7",
   "groundTruth": [
     {
       "x1": 8,
@@ -12,23 +12,23 @@
   "height": 10,
   "observations": [
     {
-      "x": 0.5,
-      "y": 0.5,
+      "x": 10,
+      "y": 1,
       "category": "negative"
     },
     {
-      "x": 9.5,
-      "y": 0.5,
+      "x": 1,
+      "y": 1,
       "category": "negative"
     },
     {
-      "x": 8.5,
-      "y": 0.5,
+      "x": 9,
+      "y": 1,
       "category": "negative"
     },
     {
-      "x": 1.5,
-      "y": 0.5,
+      "x": 2,
+      "y": 1,
       "category": "negative"
     }
   ]

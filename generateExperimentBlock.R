@@ -65,6 +65,20 @@ createExperimentBlock = function(trueRectSize = "small",
   # Alpha the teacher thinks the learner thinks the teacher has
   tchLnAlpha <- ifelse(tchLnAlpha == "same", tchAlpha, tchLnAlpha)
   
+  
+  # Provider helpfulness condition
+  if (tchAlpha == 1 & lnAlpha == 1) {
+    condId <- "h"
+  } else if (tchAlpha == 0 & tchLnAlpha == 0) {
+    condId <- "r"
+  } else if (tchAlpha == -1 & tchLnAlpha == -1) {
+    condId <- "u"
+  } else if (tchAlpha == -1 & tchLnAlpha == 1) {
+    condId <- "m" 
+  } else{
+    condId <- "t"
+  }
+  
   # In case user wants to test a custom rectangle
   if (!is.character(rect)) {
     trueH <- rect
@@ -110,8 +124,8 @@ createExperimentBlock = function(trueRectSize = "small",
   # Collect clue data for experiment
   #trialJson <- list()
   blockData <- list()
-  blockData[["id"]] <- paste0("t",trialIds[i])
-  blockData[["groundTruth"]] <- data.frame("x1" = trueH[1], "y1" = trueH[2], "x2" = trueH[3], "x4"= trueH[4])
+  blockData[["id"]] <- paste0(condId,trialIds[i])
+  blockData[["groundTruth"]] <- list("x1" = trueH[1], "y1" = H-trueH[2], "x2" = trueH[3], "y2"= H-trueH[4]) ## IN EXPERIMENT Y COUNTS FROM THE TOP OF THE GRID (hence need to inverse, H-y)
   blockData[["width"]] <- H
   blockData[["height"]] <- H
   blockData[["observations"]] <- NULL
@@ -230,6 +244,9 @@ createExperimentBlock = function(trueRectSize = "small",
   #expData = list(trueRect = trueH, trialJson = trialJson, obsOnly = obs)
  rownames(blockData[["observations"]]) <- NULL
  blockData[["observations"]] <- select(blockData[["observations"]], -c(name, index))
+ blockData[["observations"]][,"x"] <- blockData[["observations"]][,"x"]+0.5
+ blockData[["observations"]][,"y"] <- H - (blockData[["observations"]][,"y"]+0.5) ## IN EXPERIMENT Y COUNTS FROM THE TOP OF THE GRID (hence need to inverse, H-y)
+ colnames(blockData[["observations"]]) <- c("x", "y", "observed")
  
  save(blockData, file = here(
     paste0(
