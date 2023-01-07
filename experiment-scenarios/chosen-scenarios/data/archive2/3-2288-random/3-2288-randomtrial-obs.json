@@ -1,0 +1,33 @@
+{
+  "id": "r3",
+  "groundTruth": {
+    "x1": 3,
+    "y1": 9,
+    "x2": 8,
+    "y2": 2
+  },
+  "width": 10,
+  "height": 10,
+  "observations": [
+    {
+      "x": 2,
+      "y": 10,
+      "category": "negative"
+    },
+    {
+      "x": 8,
+      "y": 5,
+      "category": "positive"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "category": "positive"
+    },
+    {
+      "x": 5,
+      "y": 6,
+      "category": "positive"
+    }
+  ]
+}

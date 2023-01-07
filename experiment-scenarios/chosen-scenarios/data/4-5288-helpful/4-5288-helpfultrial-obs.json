@@ -1,0 +1,33 @@
+{
+  "id": "h4",
+  "groundTruth": {
+    "x1": 6,
+    "y1": 9,
+    "x2": 8,
+    "y2": 2
+  },
+  "width": 10,
+  "height": 10,
+  "observations": [
+    {
+      "x": 5,
+      "y": 6,
+      "observed": "negative"
+    },
+    {
+      "x": 6,
+      "y": 6,
+      "observed": "positive"
+    },
+    {
+      "x": 9,
+      "y": 6,
+      "observed": "negative"
+    },
+    {
+      "x": 6,
+      "y": 9,
+      "observed": "negative"
+    }
+  ]
+}
