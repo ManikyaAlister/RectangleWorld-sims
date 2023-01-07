@@ -1,7 +1,10 @@
 rm(list = ls())
 library(here)
 source(here("generateExperimentBlock.R"))
+source(here("genericFunctions.R"))
 # Explore the block scenarios chosen for the experiment.
+
+
 
 # Configure block parameters ----------------------------------------------
 
@@ -10,10 +13,10 @@ H <- 10
 # Size of the true rectangle
 trueRectSize <- "medium"
 # Teacher's alpha
-tchAlpha <- 1
-tchLnAlpha <- 1
+tchAlpha <- -1
+tchLnAlpha <- -1
 # Learner's actual alpha for the teacher (participant predictions)
-lnAlpha <- 1
+lnAlpha <- -1
 # Number of best hypotheses plotted
 nBestH <- 3
 # Configure whether the teacher is choosing the best point or sampling proportional to distribution
@@ -21,7 +24,7 @@ maximise <- TRUE
 # set prior
 prior <- "normal"
 # set trial IDs
-trialIDs <- c(1, 3, 4, 5, 6, 7, 8, 9)
+trialIDs <- c(1,3,4,5,6,7,8,9)
 
 # Provider helpfulness condition
 if (tchAlpha == 1 & lnAlpha == 1) {
@@ -40,8 +43,20 @@ fn <- paste0("datafiles/", fileSeg, ".RData")
 load(here(fn))
 
 # vector of rectangles chosen for scenarios currently (manually chosen)
-experimentRectanglesIndex <-
-  c(645, 1774, 1778, 2315, 1069, 1855, 365, 1792)
+
+rectangles <- list(
+c(2,3,7,6),
+c(2,2,8,8),
+c(5,2,8,8),
+c(2,2,9,9),
+c(2,3,9,6),
+c(8,3,9,8),
+c(3,3,4,4),
+c(4,4,8,8)
+)
+
+experimentRectanglesIndex <- getRectangleIndex(rectangle = rectangles, hyp = hyp, nRectangles = length(hyp[, 1]))
+
 experimentRectangles <- hyp[experimentRectanglesIndex, 1:4]
 
 # Figure out experimental condition
@@ -60,8 +75,8 @@ for (i in 1:length(experimentRectanglesIndex)) {
   
   # Configure scenario code for saving
   scenarioCode <-
-    paste0(trialIDs[i], "-", experimentRectanglesIndex[i], "-", cond)
-  
+    paste0(trialIDs[i], "-", as.numeric(paste(rectangles[[i]], collapse = "")), "-", cond)
+
   block <-
     createExperimentBlock(
       trueRectSize = trueRectSize,

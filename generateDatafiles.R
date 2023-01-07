@@ -3,8 +3,8 @@ source(here("genericFunctions.R"))
 
 # generates the hypotheses and points for xrange by yrange space
 
-xrange <- 1:10   # x axis range
-yrange <- 1:10   # y axis range
+xrange <- 0:10   # x axis range
+yrange <- 0:10   # y axis range
 alphas <- c(-5,-2,-1,-0.5,-0.1,0,0.1,0.5,1,2,5)  # range of alphas in calculation
 
 # generate all of the hypotheses in this space

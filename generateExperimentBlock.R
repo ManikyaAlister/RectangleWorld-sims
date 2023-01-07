@@ -60,6 +60,7 @@ createExperimentBlock = function(trueRectSize = "small",
   nTrials <- 4
   # Draw the index of a rectangle from all possible rectangles.
   trueHNum <- createRectangle(hyp, trueRectSize)
+  
   # Coordinates of rectangle
   trueH <- getCoordinates(hyp, trueHNum)
   # Alpha the teacher thinks the learner thinks the teacher has
@@ -115,7 +116,7 @@ createExperimentBlock = function(trueRectSize = "small",
   
   # set initial prior: prior is just the posterior from the last prior
   if (prior == "normal"){
-    tchHyp$prior <- normalPrior(hyp$size)
+    tchHyp$prior <- normalPrior(hyp$size) ## CHECK THIS
   }
   
   tchHyp$posterior <- tchHyp$prior
@@ -125,7 +126,8 @@ createExperimentBlock = function(trueRectSize = "small",
   #trialJson <- list()
   blockData <- list()
   blockData[["id"]] <- paste0(condId,trialIds[i])
-  blockData[["groundTruth"]] <- list("x1" = trueH[1], "y1" = H-trueH[2], "x2" = trueH[3], "y2"= H-trueH[4]) ## IN EXPERIMENT Y COUNTS FROM THE TOP OF THE GRID (hence need to inverse, H-y)
+  ## TO CONVERT TO EXPERIMENT GRID, NEED TO ADD 1 TO X1 and Y1
+  blockData[["groundTruth"]] <- list("x1" = trueH[1]+1, "y1" = (H-trueH[2])+1, "x2" = trueH[3], "y2"= H-trueH[4]) ## IN EXPERIMENT Y COUNTS FROM THE TOP OF THE GRID (hence need to inverse, H-y)
   blockData[["width"]] <- H
   blockData[["height"]] <- H
   blockData[["observations"]] <- NULL
@@ -231,22 +233,16 @@ createExperimentBlock = function(trueRectSize = "small",
   ## Make a new directory for all the data within a given scenario
  dir.create(here(paste0("experiment-scenarios/",directory,"/data/",scenarioCode,"/")))
   
-  ## vector of all observations in a block
-  # save(obs, file = here(
-  #   paste0(
-  #     "experiment-scenarios/",directory,"/data/",scenarioCode,"/",
-  #     scenarioCode,
-  #     "-obs.Rdata"
-  #   )
-  # ))
-  
- ## List with all observations in each trial within a block
-  #expData = list(trueRect = trueH, trialJson = trialJson, obsOnly = obs)
+# Convert from cartesian coordinates to grid coordinates for experiment, and format for JSON
+# Important things to keep in mind: 
+# In experiment, y counts from the top of the grid so it needs to be inverse. 
+# 0.5 needs to be added to points so that they correspond with grid rows in the experiment.  
+ 
  rownames(blockData[["observations"]]) <- NULL
  blockData[["observations"]] <- select(blockData[["observations"]], -c(name, index))
- blockData[["observations"]][,"x"] <- blockData[["observations"]][,"x"]
- blockData[["observations"]][,"y"] <- H - (blockData[["observations"]][,"y"]) ## IN EXPERIMENT Y COUNTS FROM THE TOP OF THE GRID (hence need to inverse, H-y)
- colnames(blockData[["observations"]]) <- c("x", "y", "observed")
+ blockData[["observations"]][,"x"] <- blockData[["observations"]][,"x"] + 0.5
+ blockData[["observations"]][,"y"] <- (H - blockData[["observations"]][,"y"]) + 0.5  ## IN EXPERIMENT Y COUNTS FROM THE TOP OF THE GRID (hence need to inverse, H-y)
+ colnames(blockData[["observations"]]) <- c("x","y","observed")
  
  save(blockData, file = here(
     paste0(
