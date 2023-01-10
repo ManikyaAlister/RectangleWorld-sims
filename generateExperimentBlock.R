@@ -116,7 +116,7 @@ createExperimentBlock = function(trueRectSize = "small",
   
   # set initial prior: prior is just the posterior from the last prior
   if (prior == "normal"){
-    tchHyp$prior <- normalPrior(hyp$size) ## CHECK THIS
+    lnHyp$prior <- normalPrior(hyp$size) ## CHECK THIS
   }
   
   tchHyp$posterior <- tchHyp$prior
@@ -127,7 +127,7 @@ createExperimentBlock = function(trueRectSize = "small",
   blockData <- list()
   blockData[["id"]] <- paste0(condId,trialIds[i])
   ## TO CONVERT TO EXPERIMENT GRID, NEED TO ADD 1 TO X1 and Y1
-  blockData[["groundTruth"]] <- list("x1" = trueH[1]+1, "y1" = (H-trueH[2])+1, "x2" = trueH[3], "y2"= H-trueH[4]) ## IN EXPERIMENT Y COUNTS FROM THE TOP OF THE GRID (hence need to inverse, H-y)
+  blockData[["groundTruth"]] <- list("x1" = trueH[1]+1, "y1" = (H-trueH[2]), "x2" = trueH[3], "y2"= (H-trueH[4])+1) ## IN EXPERIMENT Y COUNTS FROM THE TOP OF THE GRID (hence need to inverse, H-y)
   blockData[["width"]] <- H
   blockData[["height"]] <- H
   blockData[["observations"]] <- NULL

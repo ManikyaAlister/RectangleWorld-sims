@@ -30,7 +30,8 @@ H <- 10
 allAlphas <- c(1,0.5,0.1,0,-0.1, -0.5, -1)
 
 # visualise target blocks
-target1 <- multiAlphaPredictions(observationsT1, save = TRUE)
+debugonce(multiAlphaPredictions)
+target1 <- multiAlphaPredictions(observationsT1, save = TRUE, allAlphas = c(-1,1))
 target1
 target2 <- multiAlphaPredictions(observationsT2, save = TRUE)
 target2
