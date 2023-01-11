@@ -3,10 +3,14 @@ rm(list = ls())
 source(here("simulateMultipleAlphas.R"))
 
 trueRect1 <- c(6,8,9,5)
-trueRect2 <- 10-trueRect1
+trueRect2 <- (10-trueRect1)+1
+# Minor, but just need to reverse order so small coordinates are at the start
+trueRect2 <- c(trueRect2[3], trueRect2[4], trueRect2[1],trueRect2[2])
+
 # Make target observations
 observationsT1 <- data.frame(x = c(5.5, 8.5,5.5,9.5), y = c(2.5,5.5,5.5,3.5), category = c("positive","positive","positive","negative"))
 
+# Second target trial is just the first target trial inverted
 observationsT2 <- observationsT1 %>%
   mutate(x = 10-x,
          y = 10-y)
@@ -30,7 +34,7 @@ H <- 10
 allAlphas <- c(1,0.5,0.1,0,-0.1, -0.5, -1)
 
 # visualise target blocks
-debugonce(multiAlphaPredictions)
+#debugonce(multiAlphaPredictions)
 target1 <- multiAlphaPredictions(observationsT1, save = TRUE, allAlphas = c(-1,1))
 target1
 target2 <- multiAlphaPredictions(observationsT2, save = TRUE)

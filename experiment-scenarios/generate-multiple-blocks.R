@@ -13,10 +13,10 @@ H <- 10
 # Size of the true rectangle
 trueRectSize <- "medium"
 # Teacher's alpha
-tchAlpha <- -1
-tchLnAlpha <- -1
+tchAlpha <- 1
+tchLnAlpha <- 1
 # Learner's actual alpha for the teacher (participant predictions)
-lnAlpha <- -1
+lnAlpha <- 1
 # Number of best hypotheses plotted
 nBestH <- 3
 # Configure whether the teacher is choosing the best point or sampling proportional to distribution
