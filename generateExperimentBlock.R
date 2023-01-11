@@ -169,14 +169,7 @@ createExperimentBlock = function(trueRectSize = "small",
     tchPts[as.character(newPt["name"]), "selected"] = TRUE
     
   
-    ## Create json data corresponding to the coded experiment grid structure describing all possible points and whether they were observed.
-    # trialJson[[i]] <- tchPts %>%
-    #   mutate(col = x + 0.5,
-    #          row = y + 0.5,
-    #          observed = "none") %>%
-    #   select(row, col, observed)
-    # 
-    # trialJson[[i]][obs[, "name"], "observed"] <- obs[, "category"]
+    ## Create data corresponding to the coded experiment grid structure describing all possible points and whether they were observed.
     blockData[["observations"]] <- rbind(blockData[["observations"]], newPt) 
     
     # step three: teacher updates their estimate of the learner's distribution over hypotheses, given the point that was generated
@@ -233,7 +226,7 @@ createExperimentBlock = function(trueRectSize = "small",
   ## Make a new directory for all the data within a given scenario
  dir.create(here(paste0("experiment-scenarios/",directory,"/data/",scenarioCode,"/")))
   
-# Convert from cartesian coordinates to grid coordinates for experiment, and format for JSON
+# Convert from Cartesian coordinates to grid coordinates for experiment, and format for JSON
 # Important things to keep in mind: 
 # In experiment, y counts from the top of the grid so it needs to be inverse. 
 # 0.5 needs to be added to points so that they correspond with grid rows in the experiment.  
@@ -262,16 +255,6 @@ createExperimentBlock = function(trueRectSize = "small",
    )
  ))
   
-  ## json data
-  # save(trialJson, file = here(
-  #   paste0(
-  #     "experiment-scenarios/",directory,"/data/",scenarioCode,"/",
-  #     scenarioCode,
-  #     "-trialJson-t",
-  #     i,
-  #     ".Rdata"
-  #   )
-  # ))
   
   # return
   blockScenario
