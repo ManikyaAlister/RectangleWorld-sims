@@ -35,7 +35,7 @@ multiAlphaPredictions = function(observations, allAlphas = c(-1,0,1),H = 10, sav
     lnHyps[[alpha]] <- hyp
     ## Flat prior unless normal is specified. 
     if (prior == "normal") {
-      lnHyps[[alpha]]$prior <- normalPrior(hyp$size, 50, 15)
+      lnHyps[[alpha]]$prior <- normalPrior(hyp$size)
     }
     # Prior is always the posterior of the previous iteration, so on the first iteration the posterior is the prior
     lnHyps[[alpha]]$posterior <- lnHyps[[alpha]]$prior

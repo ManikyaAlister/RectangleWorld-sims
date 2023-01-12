@@ -36,7 +36,7 @@ simulateExperimentBlock = function(observations,
   
   # set initial prior over hypotheses
   if (prior == "normal") {
-    lnHyp$prior <- normalPrior(hyp$size, mean = 50, sd = 15)
+    lnHyp$prior <- normalPrior(hyp$size)
   }
   
   # prior is just the posterior from the last trial
