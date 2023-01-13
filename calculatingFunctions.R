@@ -424,11 +424,10 @@ updatePoints = function(probPts, newPt, posterior, pts) {
 #' Set prior densities for each hypothesis 
 #'
 #' @param sizes Vector of sizes for each hypothesis
-#' @param mean Mean of the normal distribution
-#' @param sd Standard deviation of the normal distribution
-#'
+#' @param mean Mean of the normal distribution. Median rectangle size is 27, so that's default mean. 
+#' @param sd Standard deviation of the normal distribution. 
 #' @return Vector of probability densities for each hypothesis
-normalPrior <- function(sizes, mean = 50, sd = 10){
+normalPrior <- function(sizes, mean = 27, sd = 25){
   prior <-  dnorm(sizes, mean, sd)
   prior
 }

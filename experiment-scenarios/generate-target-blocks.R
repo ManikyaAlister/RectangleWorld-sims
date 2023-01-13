@@ -2,10 +2,13 @@ library(jsonlite)
 rm(list = ls())
 source(here("simulateMultipleAlphas.R"))
 
-trueRect1 <- c(6,8,9,5)
-trueRect2 <- (10-trueRect1)+1
-# Minor, but just need to reverse order so small coordinates are at the start
-trueRect2 <- c(trueRect2[3], trueRect2[4], trueRect2[1],trueRect2[2])
+targetRect1 <- c(5,2,9,6)
+targetRect2 <- 10-targetRect1
+targetRect2 <- c(targetRect2[3:4],targetRect2[1:2]) # flip the order so smallest coordinate pair at the front
+
+# Convert from Cartesian to grid format (for experiment)
+targetGridRect1 <- c(targetRect1[1]+1, (10-targetRect1[2]), targetRect1[3], (10-targetRect1[4])+1)
+targetGridRect2 <- c(targetRect2[1]+1, (10-targetRect2[2]), targetRect2[3], (10-targetRect2[4])+1)
 
 # Make target observations
 observationsT1 <- data.frame(x = c(5.5, 8.5,5.5,9.5), y = c(2.5,5.5,5.5,3.5), category = c("positive","positive","positive","negative"))
@@ -16,16 +19,26 @@ observationsT2 <- observationsT1 %>%
          y = 10-y)
 
 
-# Convert to experiment format (not json, just grid structure instead of coordinate structure)
-t1json <- observationsT1 %>%
+# Convert to experiment format  (grid structure instead of Cartesian structure)
+gridObsT1 <- observationsT1 %>%
   mutate(x = x+0.5,
          y = (10-y)+0.5)
 
-t2json <- observationsT2 %>%
+gridObsT2 <- observationsT2 %>%
   mutate(x = x+0.5,
          y = (10-y)+0.5)
 
-toJSON(t1json, pretty = TRUE, auto_unbox = TRUE)
+# Combine all block data into list 
+targetTrial1 = list("groundTruth" = targetRect1, "observations" = observationsT1)
+targetTrialGrid1 = list("groundTruth" = targetGridRect1, "observations" = gridObsT1)
+
+targetTrial2 = list("groundTruth" = targetRect2, "observations" = observationsT2)
+targetTrialGrid2 = list("groundTruth" = targetGridRect2, "observations" = gridObsT2)
+
+save(targetTrial1, file = here("experiment-scenarios/target-blocks/data/target-trial-1-Cartesian.Rdata"))
+save(targetTrial2, file = here("experiment-scenarios/target-blocks/data/target-trial-2-Cartesian.Rdata"))
+
+# Plot
 
 # Size of rectangle world grid. 
 H <- 10
