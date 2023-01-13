@@ -5,10 +5,6 @@ source(here("getLearnerHypDistributions.R"))
 
 # Simulate learner guesses  -----------------------------------------------
 
-# For target block 1
-load(here("experiment-scenarios/target-blocks/data/target-trial-1-Cartesian.Rdata"))
-observations = targetTrial1$observations
-
 
 # Sample rectangles at the probability predicted for a given alpha learner
 simulateLearnerGuesses = function(observations, alpha, trial, nRectangles, prior = "normal"){
@@ -18,9 +14,16 @@ simulateLearnerGuesses = function(observations, alpha, trial, nRectangles, prior
   # Sample from rectangles
   sampleIndexes <- sample(dist$index, size = nRectangles, prob = dist$posterior, replace = TRUE)
   # Get the coordinates of the rectangles
-  sampleRects <- dist[sampleIndexes, c("x1","y1","x2","y2")]
+  sampleRects <- NULL
+  for (i in 1:nRectangles){
+    index <- sampleIndexes[i]
+    # Get the row of coordinates corresponding to the dampled index
+    sampleCoords <- dist[dist[,"index"] == index, c("x1","y1","x2","y2")]
+    # Combine into data frame
+    sampleRects <- rbind(sampleRects,sampleCoords)
+  }
   #return
-  sampleRects
+  sampleRects <- cbind(sampleRects,sampleIndexes)
 }
 
 # Get posterior probability of multiple learner guesses under different alphas 
@@ -48,8 +51,3 @@ getMultiAlphaPosteriors = function(learnerRectangles,
   allPosteriors <- as.data.frame(allPosteriors)
   allPosteriors
 }
-
-
-
-a1n50o2pr25_rects <- simulateLearnerGuesses(observations, alpha = 1, trial = 2, nRectangles = 100, prior = "normal")
-a1n50o2_pr25posteriors <- getMultiAlphaPosteriors(learnerRectangles = a1n50o2_rects, observations, prior = "normal")

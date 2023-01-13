@@ -116,7 +116,8 @@ rectangleAlphaPosteriors = function(learnerRectangle, observations, nTrials = 1,
   for(i in 1:length(alphasToSearch)){
     alpha =  alphasToSearch[i]
     dist <- getLearnerHypDistribution(observations, alpha = alpha, nTrials = nTrials, prior = prior)
-    learnerRectangle <- dist[[1]][hypIndex,]
+    distUnlist <- dist[[1]]
+    learnerRectangle <- distUnlist[distUnlist[,"index"]==hypIndex,]
     prob <- cbind(alpha, learnerRectangle[,"posterior"], hypIndex)
     alphaPosteriors <- rbind(alphaPosteriors,prob)
   }

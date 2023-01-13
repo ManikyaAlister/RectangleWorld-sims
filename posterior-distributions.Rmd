@@ -127,7 +127,7 @@ lines(size4ordered,ordered4[,3], col = "blue")
 mtext("4th clue, negative")
 ```
 
-What about for another set of responses? Responses that weren't as alligned with how a helpful provider would choose points? 
+What about for another set of responses? Responses that weren't as aligned with how a helpful provider would choose points? 
 
 ```{r}
 observations = data.frame(x = c(2.5,4.5,2.5,2.5), y = c(2.5,4.5,4.5,1.5), category = c("positive", "positive", "positive", "negative"))
@@ -136,6 +136,16 @@ trustingLearner = getLearnerHypDistribution(observations, alpha = 1, nTrials = 4
 susLearner = getLearnerHypDistribution(observations, alpha = -1, nTrials = 4, prior = "flat")
 randomLearner = getLearnerHypDistribution(observations, alpha = 0, nTrials = 4, prior = "flat")
 ```
+
+
+```{r}
+plotHypPosteriorDistBySize = function(hypDist, trial){
+  learner = hypDist[[trial]]
+  sizeOrderedIndex <- order(learner[,"size"], decreasing = TRUE)
+  sizeOrdered <- learner[sizeOrdered,"size"]
+}
+```
+
 
 
 ```{r}
