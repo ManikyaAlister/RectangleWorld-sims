@@ -30,7 +30,6 @@ randomLearner = getLearnerHypDistribution(observations, alpha = 0, nTrials = 4, 
 
 ```{r}
 # 1 observation
-
 trustingLearner1 = trustingLearner[[1]]
 susLearner1 = susLearner[[1]]
 randomLearner1 = randomLearner[[1]]

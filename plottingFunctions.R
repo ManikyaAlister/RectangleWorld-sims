@@ -311,14 +311,18 @@ plotHeatmap = function(probPts, title="Hypothesis vs Points",
 #' @examples
 plotMeanPosteriorAlphas = function(posteriorsAlphas,
                                    generatingAlpha,
+                                   title = "",
                                    recoveory = TRUE) {
+  
+  generatingAlpha = as.character(generatingAlpha)
   posteriorsAlphas %>%
     group_by(alpha) %>%
     summarise(sum = sum(posterior), mean = mean(posterior)) %>%
     mutate(alpha = as.factor(alpha)) %>%
     ggplot() +
     geom_col(aes(x = alpha, y = mean), fill = "blue",alpha = 0.5) +
-    geom_vline(xintercept = "1", colour = "red") +
+    geom_vline(xintercept = generatingAlpha, colour = "red") +
+    labs(subtitle = title, x = "Mean Posterior") +
     theme_classic()
 }
 

@@ -1,10 +1,8 @@
 rm(list = ls())
 library(here)
 library(ggplot2)
-source(here("getLearnerHypDistributions.R"))
 
 # Simulate learner guesses  -----------------------------------------------
-
 
 # Sample rectangles at the probability predicted for a given alpha learner
 simulateLearnerGuesses = function(observations, alpha, trial, nRectangles, prior = "normal"){

@@ -1,0 +1,410 @@
+---
+title: "Recovery"
+author: "Manikya Alister"
+date: "2023-01-13"
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list = ls())
+library(here)
+library(ggpubr)
+source(here("plottingFunctions.R"))
+source(here("getLearnerHypDistributions.R"))
+```
+
+All of these analyses are on the observations that will be provided in the first target trial of the experiment. The second target trial is exactly the same but inverted, so there shouldn't be any difference in the model predictions. 
+
+# Analysis 1: Recovery
+
+In these first analyses I wanted to simulate multiple learner guesses from a particular alpha, and see if the alpha I used to generate the participant responses would have the highest posterior probability when averaging across all simulated participants. Specifically, what I did was:
+
+1. For each observation, generate the hypothesis distribution for each alpha learner (alpha 1, 0 , -1) (i.e., the posterior probability of each rectangle given the observations).
+
+2. I sampled from the hypothesis distribution (with replacement) at the probability of each hypothesis. So hypotheses that were more likely under a given alpha were sampled more. 
+
+3. Then, I took these sampled hypotheses (simulated participant guesses about the true rectangle after a given observation) and then calculated the posterior of those guesses for a range of rectangles. That left me with with the plots you can see below. 
+
+Although they original parameter isn't perfectly recovered, there's pretty good discrimination between Positive, 0, and negative.  One of the main aims for these analyses was to try and see how many participants we would need to be able to see an effect. From the plots, it seems like 100 participants per condition should be reasonaable. 
+
+## Normal prior over hypothesis size (M = 27, SD = 25)
+```{r message = FALSE}
+
+# alpha = 1, 100 participants 
+load(here("recovery/data/a1n100o1pr25.RData"))
+load(here("recovery/data/a1n100o2pr25.RData"))
+load(here("recovery/data/a1n100o3pr25.RData"))
+load(here("recovery/data/a1n100o4pr25.RData"))
+
+load(here("recovery/data/a0n100o1pr25.RData"))
+load(here("recovery/data/a0n100o2pr25.RData"))
+load(here("recovery/data/a0n100o3pr25.Rdata"))
+load(here("recovery/data/a0n100o4pr25.RData"))
+
+load(here("recovery/data/aNeg1n100o1pr25.RData"))
+load(here("recovery/data/aNeg1n100o2pr25.RData"))
+load(here("recovery/data/aNeg1n100o3pr25.Rdata"))
+load(here("recovery/data/aNeg1n100o4pr25.RData"))
+
+```
+
+* Red line indicates the alpha of the learner that generated the rectangles for that plot 
+
+```{r fig.height=10, fig.width=10}
+
+p1a1 <- plotMeanPosteriorAlphas(a1n100o1pr25_posteriors, 1)
+
+p2a1 <- plotMeanPosteriorAlphas(a1n100o2pr25_posteriors, 1)
+
+p3a1 <- plotMeanPosteriorAlphas(a1n100o3pr25_posteriors, 1)
+
+p4a1 <- plotMeanPosteriorAlphas(a1n100o4pr25_posteriors, 1)
+
+p1a0 <- plotMeanPosteriorAlphas(a0n100o1pr25_posteriors, 0)
+
+p2a0 <- plotMeanPosteriorAlphas(a0n100o2pr25_posteriors, 0)
+
+p3a0 <- plotMeanPosteriorAlphas(a0n100o3pr25_posteriors, 0)
+
+p4a0 <- plotMeanPosteriorAlphas(a0n100o4pr25_posteriors, 0)
+
+p1aNeg1 <- plotMeanPosteriorAlphas(aNeg1n100o1pr25_posteriors, -1)
+
+p2aNeg1 <- plotMeanPosteriorAlphas(aNeg1n100o2pr25_posteriors, -1)
+
+p3aNeg1 <- plotMeanPosteriorAlphas(aNeg1n100o3pr25_posteriors, -1)
+
+p4aNeg1 <- plotMeanPosteriorAlphas(aNeg1n100o4pr25_posteriors, -1)
+
+## Think about trying to put them on the same scale
+ggarrange(p1a1,p1a0, p1aNeg1, p2a1, p2a0, p2aNeg1, p3a1, p3a0, p3aNeg1, p4a1,p4a0,p4aNeg1, nrow = 4, ncol = 3)
+
+```
+
+What about a flat prior? 
+
+## Flat prior 
+
+```{r message = FALSE}
+
+# alpha = 1, 100 participants 
+load(here("recovery/data/a1n100o1prFlat.RData"))
+load(here("recovery/data/a1n100o2prFlat.RData"))
+load(here("recovery/data/a1n100o3prFlat.RData"))
+load(here("recovery/data/a1n100o4prFlat.RData"))
+
+load(here("recovery/data/a0n100o1prFlat.RData"))
+load(here("recovery/data/a0n100o2prFlat.RData"))
+load(here("recovery/data/a0n100o3prFlat.Rdata"))
+load(here("recovery/data/a0n100o4prFlat.RData"))
+
+load(here("recovery/data/aNeg1n100o1prFlat.RData"))
+load(here("recovery/data/aNeg1n100o2prFlat.RData"))
+load(here("recovery/data/aNeg1n100o3prFlat.Rdata"))
+load(here("recovery/data/aNeg1n100o4prFlat.RData"))
+
+```
+
+```{r fig.height=10, fig.width=10}
+
+p1a1 <- plotMeanPosteriorAlphas(a1n100o1prFlat_posteriors, 1, title = "Clue 1")
+
+p2a1 <- plotMeanPosteriorAlphas(a1n100o2prFlat_posteriors, 1, title = "Clue 2")
+
+p3a1 <- plotMeanPosteriorAlphas(a1n100o3prFlat_posteriors, 1, title = "Clue 3")
+
+p4a1 <- plotMeanPosteriorAlphas(a1n100o4prFlat_posteriors, 1, title = "Clue 4")
+
+p1a0 <- plotMeanPosteriorAlphas(a0n100o1prFlat_posteriors, 0)
+
+p2a0 <- plotMeanPosteriorAlphas(a0n100o2prFlat_posteriors, 0)
+
+p3a0 <- plotMeanPosteriorAlphas(a0n100o3prFlat_posteriors, 0)
+
+p4a0 <- plotMeanPosteriorAlphas(a0n100o4prFlat_posteriors, 0)
+
+p1aNeg1 <- plotMeanPosteriorAlphas(aNeg1n100o1prFlat_posteriors, -1)
+
+p2aNeg1 <- plotMeanPosteriorAlphas(aNeg1n100o2prFlat_posteriors, -1)
+
+p3aNeg1 <- plotMeanPosteriorAlphas(aNeg1n100o3prFlat_posteriors, -1)
+
+p4aNeg1 <- plotMeanPosteriorAlphas(aNeg1n100o4prFlat_posteriors, -1)
+
+## THink about trying to put them on the same scale
+ggarrange(p1a1,p1a0, p1aNeg1, p2a1, p2a0, p2aNeg1, p3a1, p3a0, p3aNeg1,p4a1,p4a0, p4aNeg1,nrow = 4, ncol = 3)
+
+```
+
+
+## Analysis 2: How often should we see certain rectangles drawn? 
+
+Below shows the probability distributions of all of the rectangles for an alpha 1, 0, and -1 learner. It's a little strange that alpha = 1 is so strong compared to the others, but I guess that's because most of the hypotheses are small and a = 1 has a high posterior for smaller hypotheses. Also, it's much easier for the probability to be concentrated on a few rectangles, since the teacher is trying to point them to a particular rectangle when alpha = 1. Anyway, what this shows is that under certain alphas, certain rectangles should be sampled more than others. Therefore, one analysis we could do is simply plot a histogram of all of the chosen rectangles and see whether they vary qualitatively across the different helpfulness conditions. I dezcribe this in more detail below.  
+
+```{r}
+# load data 
+load(here("experiment-scenarios/target-blocks/data/target-trial-1-Cartesian.Rdata"))
+
+observations = targetTrial1$observations
+
+trustingLearner = getLearnerHypDistribution(observations, alpha = 1, nTrials = 4, prior = "normal")
+susLearner = getLearnerHypDistribution(observations, alpha = -1, nTrials = 4, prior = "normal")
+randomLearner = getLearnerHypDistribution(observations, alpha = 0, nTrials = 4, prior = "normal")
+```
+
+
+```{r}
+# 1 observation
+trustingLearner1 = trustingLearner[[1]]
+susLearner1 = susLearner[[1]]
+randomLearner1 = randomLearner[[1]]
+
+# Order rectangle size
+size1orderedIndex <- order(trustingLearner1[,"size"], decreasing = TRUE)
+size1ordered <- trustingLearner1[size1orderedIndex, "size"]
+
+# combine different learners to 1 data frame
+combined1 <- cbind(susLearner1[,"posterior"], trustingLearner1[,"posterior"], randomLearner1[,"posterior"])
+
+# Order by rectangle size
+ordered1 <- combined1[size1orderedIndex,]
+
+
+```
+
+```{r}
+# 2 observations
+trustingLearner2 = trustingLearner[[2]]
+susLearner2 = susLearner[[2]]
+randomLearner2 = randomLearner[[2]]
+
+# Order rectangle size
+size2orderedIndex <- order(trustingLearner2[,"size"], decreasing = TRUE)
+size2ordered <- trustingLearner2[size2orderedIndex, "size"]
+
+
+# combine different learners to 1 data frame
+combined2<- cbind(susLearner2[,"posterior"], trustingLearner2[,"posterior"], randomLearner2[,"posterior"])
+# Order by the trusting learner's posterior
+ordered2 <- combined2[size2orderedIndex,]
+```
+
+```{r}
+# 3 observations
+trustingLearner3 = trustingLearner[[3]]
+susLearner3 = susLearner[[3]]
+randomLearner3 = randomLearner[[3]]
+
+# Order rectangle size
+size3orderedIndex <- order(trustingLearner3[,"size"], decreasing = TRUE)
+size3ordered <- trustingLearner3[size2orderedIndex, "size"]
+
+
+# combine different learners to 1 data frame
+combined3<- cbind(susLearner3[,"posterior"], trustingLearner3[,"posterior"], randomLearner3[,"posterior"])
+# Order by the trusting learner's posterior
+ordered3 <- combined3[size3orderedIndex,]
+```
+
+```{r}
+# 4 observations
+trustingLearner4 = trustingLearner[[4]]
+susLearner4 = susLearner[[4]]
+randomLearner4 = randomLearner[[4]]
+
+# Order rectangle size
+size4orderedIndex <- order(trustingLearner4[,"size"], decreasing = TRUE)
+size4ordered <- trustingLearner4[size4orderedIndex, "size"]
+
+
+# combine different learners to 1 data frame
+combined4<- cbind(susLearner4[,"posterior"], trustingLearner4[,"posterior"], randomLearner4[,"posterior"])
+# Order by the trusting learner's posterior
+ordered4 <- combined4[size4orderedIndex,]
+
+```
+
+```{r}
+# Plot 
+
+par(mfrow = c(2,2))
+
+
+plot(size1ordered,ordered1[,1], type = "l", ylim = c(0,0.005), col = "red", ylab = "Posterior", xlab = "Rectangle (ordered by size)")
+lines(size1ordered,ordered1[,2], col = "green")
+lines(size1ordered,ordered1[,3], col = "blue")
+mtext("1st clue, positive")
+
+plot(size2ordered,ordered2[,1], type = "l", ylim = c(0,0.05), col = "red", ylab = "Posterior", xlab = "Rectangle (ordered by size)")
+lines(size2ordered,ordered2[,2], col = "green")
+lines(size2ordered,ordered2[,3], col = "blue")
+mtext("2nd clue, positive")
+
+plot(size3ordered,ordered3[,1], type = "l", ylim = c(0,0.05), col = "red", ylab = "Posterior", xlab = "Rectangle (ordered by size)")
+lines(size3ordered,ordered3[,2], col = "green")
+lines(size3ordered,ordered3[,3], col = "blue")
+mtext("3rd clue, positive")
+
+plot(size4ordered,ordered4[,1], type = "l", ylim = c(0,0.1), col = "red", ylab = "Posterior", xlab = "Rectangle (ordered by size)")
+lines(size4ordered,ordered4[,2], col = "green")
+lines(size4ordered,ordered4[,3], col = "blue")
+mtext("4th clue, negative")
+```
+
+## Same as above but flat priors
+
+```{r}
+# load data 
+load(here("experiment-scenarios/target-blocks/data/target-trial-1-Cartesian.Rdata"))
+
+observations = targetTrial1$observations
+
+trustingLearner = getLearnerHypDistribution(observations, alpha = 1, nTrials = 4, prior = "flat")
+susLearner = getLearnerHypDistribution(observations, alpha = -1, nTrials = 4, prior = "flat")
+randomLearner = getLearnerHypDistribution(observations, alpha = 0, nTrials = 4, prior = "flat")
+```
+
+
+```{r}
+# 1 observation
+trustingLearner1 = trustingLearner[[1]]
+susLearner1 = susLearner[[1]]
+randomLearner1 = randomLearner[[1]]
+
+# Order rectangle size
+size1orderedIndex <- order(trustingLearner1[,"size"], decreasing = TRUE)
+size1ordered <- trustingLearner1[size1orderedIndex, "size"]
+
+# combine different learners to 1 data frame
+combined1 <- cbind(susLearner1[,"posterior"], trustingLearner1[,"posterior"], randomLearner1[,"posterior"])
+
+# Order by rectangle size
+ordered1 <- combined1[size1orderedIndex,]
+
+
+```
+
+```{r}
+# 2 observations
+trustingLearner2 = trustingLearner[[2]]
+susLearner2 = susLearner[[2]]
+randomLearner2 = randomLearner[[2]]
+
+# Order rectangle size
+size2orderedIndex <- order(trustingLearner2[,"size"], decreasing = TRUE)
+size2ordered <- trustingLearner2[size2orderedIndex, "size"]
+
+
+# combine different learners to 1 data frame
+combined2<- cbind(susLearner2[,"posterior"], trustingLearner2[,"posterior"], randomLearner2[,"posterior"])
+# Order by the trusting learner's posterior
+ordered2 <- combined2[size2orderedIndex,]
+```
+
+```{r}
+# 3 observations
+trustingLearner3 = trustingLearner[[3]]
+susLearner3 = susLearner[[3]]
+randomLearner3 = randomLearner[[3]]
+
+# Order rectangle size
+size3orderedIndex <- order(trustingLearner3[,"size"], decreasing = TRUE)
+size3ordered <- trustingLearner3[size2orderedIndex, "size"]
+
+
+# combine different learners to 1 data frame
+combined3<- cbind(susLearner3[,"posterior"], trustingLearner3[,"posterior"], randomLearner3[,"posterior"])
+# Order by the trusting learner's posterior
+ordered3 <- combined3[size3orderedIndex,]
+```
+
+```{r}
+# 4 observations
+trustingLearner4 = trustingLearner[[4]]
+susLearner4 = susLearner[[4]]
+randomLearner4 = randomLearner[[4]]
+
+# Order rectangle size
+size4orderedIndex <- order(trustingLearner4[,"size"], decreasing = TRUE)
+size4ordered <- trustingLearner4[size4orderedIndex, "size"]
+
+
+# combine different learners to 1 data frame
+combined4<- cbind(susLearner4[,"posterior"], trustingLearner4[,"posterior"], randomLearner4[,"posterior"])
+# Order by the trusting learner's posterior
+ordered4 <- combined4[size4orderedIndex,]
+
+```
+
+```{r}
+# Plot 
+
+par(mfrow = c(2,2))
+
+
+plot(size1ordered,ordered1[,1], type = "l", ylim = c(0,0.005), col = "red", ylab = "Posterior", xlab = "Rectangle (ordered by size)")
+lines(size1ordered,ordered1[,2], col = "green")
+lines(size1ordered,ordered1[,3], col = "blue")
+mtext("1st clue, positive")
+
+plot(size2ordered,ordered2[,1], type = "l", ylim = c(0,0.05), col = "red", ylab = "Posterior", xlab = "Rectangle (ordered by size)")
+lines(size2ordered,ordered2[,2], col = "green")
+lines(size2ordered,ordered2[,3], col = "blue")
+mtext("2nd clue, positive")
+
+plot(size3ordered,ordered3[,1], type = "l", ylim = c(0,0.05), col = "red", ylab = "Posterior", xlab = "Rectangle (ordered by size)")
+lines(size3ordered,ordered3[,2], col = "green")
+lines(size3ordered,ordered3[,3], col = "blue")
+mtext("3rd clue, positive")
+
+plot(size4ordered,ordered4[,1], type = "l", ylim = c(0,0.1), col = "red", ylab = "Posterior", xlab = "Rectangle (ordered by size)")
+lines(size4ordered,ordered4[,2], col = "green")
+lines(size4ordered,ordered4[,3], col = "blue")
+mtext("4th clue, negative")
+```
+
+As I mentioned above, a much simpler but less fine grained approach would be to just plot a frequency histogram of the rectangles generated by participants in each condition. In the helpful condition, the histogram should resemble the green line above, with far more rectangles being chosen for the higher probability rectangles for a given alpha. This isn't particularly easily simulated though, because the probability distributions for the suspicious learner is still quite flat. As you can see below, even when you set alpha really extreme (5 and -5), 100 participants isn't really enough to get a nice distribution of rectangles for the suspicious condition, even though I guess they are reasonably different from each other. There's not much of a distribution for alpha = 5 because once it get's that high, it's really unlikely that you'll get anything except a few  rectangles that are very tight around the observations. 
+
+```{r fig.width=20, fig.height = 15}
+
+# Sample rectangles from a probability distribution for a set of observations. 
+
+hypHist = function(observations, alpha = 1, trial = 1, nRectangles = 100, prior = "flat"){
+  dist <- simulateLearnerGuesses(observations, alpha = alpha, trial = trial, nRectangles = nRectangles, prior = prior)
+  order <- order(dist[,"size"])
+  orderedDist <- dist[order,]
+  
+  orderedDist %>% 
+  ggplot2::ggplot() +
+  geom_bar(aes(x = as.factor(sampleIndexes)))+
+  labs(subtitle = paste0("alpha = ", alpha, " trial = ", trial), x = "Rectangle Index (smallest to largest)", y = "Frequency sampled")
+}
+
+plots = list(
+
+a1o1 <- hypHist(observations, alpha = 5, trial = 1, nRectangles = 100, prior = "flat"),
+a0o1 <- hypHist(observations, alpha = 0, trial = 1, nRectangles = 100, prior = "flat"),
+aNeg1o1 <- hypHist(observations, alpha = -5, trial = 1, nRectangles = 100, prior = "flat"),
+
+a1o2 <- hypHist(observations, alpha = 5, trial = 2, nRectangles = 100, prior = "flat"),
+a0o2 <- hypHist(observations, alpha = 0, trial = 2, nRectangles = 100, prior = "flat"),
+aNeg1o2 <- hypHist(observations, alpha = -5, trial = 2, nRectangles = 100, prior = "flat"),
+
+a1o3 <- hypHist(observations, alpha = 5, trial = 3, nRectangles = 100, prior = "flat"),
+a0o3 <- hypHist(observations, alpha = 0, trial = 3, nRectangles = 100, prior = "flat"),
+aNeg1o3 <- hypHist(observations, alpha = -5, trial = 3, nRectangles = 100, prior = "flat"),
+
+a1o4 <- hypHist(observations, alpha = 5, trial = 4, nRectangles = 100, prior = "flat"),
+a0o4 <- hypHist(observations, alpha = 0, trial = 4, nRectangles = 100, prior = "flat"),
+aNeg1o4 <- hypHist(observations, alpha = -5, trial = 4, nRectangles = 100, prior = "flat")
+)
+
+ggarrange(plotlist = plots, nrow = 4, ncol = 3)
+
+```
+
+
+* One thing I haven't accounted for in any of these simulations where I aggregate multiple rectangles is that there are simply more rectangles that are smaller, which means they're more likely to be chosen and because smaller rectangles have such high posteriors for a = 1, that could be why we see such low discriminatory. But I thought the model would have accounted for that. 
