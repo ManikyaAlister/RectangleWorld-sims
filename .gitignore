@@ -3,3 +3,4 @@
 .RData
 .Ruserdata
 .DS_store
+experiment-1/data/raw/*
