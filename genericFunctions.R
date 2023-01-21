@@ -1,18 +1,25 @@
 library(tidyverse)
 
-getRectangleIndex = function(rectangle, hyp, nRectangles) {
+getRectangleIndex = function(rectangle, hyp = NULL, nRectangles, H = 10) {
+  if (is.null(hyp)){
+      fileSeg <- paste0("x0to", H, "y0to", H)
+      fn <- paste0("datafiles/", fileSeg, ".RData")
+      load(here(fn))
+  }
   rectanglesIndex <- c()
-  hyp$index = 1:nRectangles
-  for (i in 1:length(rectangle)) {
-    if(is.list(rectangle)){
+  hyp$index = 1:length(hyp[,1])
+  for (i in 1:nRectangles) {
+    if (is.data.frame(rectangle)) {
+      rect <- as.vector(as.matrix(rectangle[i,c("x1","y1","x2","y2")]))
+    } else if(is.list(rectangle)){
       rect <- rectangle[[i]]
-    } else {
+    } else if (is.vector(rectangle)) {
       rect <- rectangle
-    }
+    } 
     index <-
       hyp[hyp[, "x1"] == rect[1] &
             hyp[, "y1"] == rect[2] &
-            hyp[, "x2"] == rect[3] & hyp[, "y2"] == rect[4], ]["index"]
+            hyp[, "x2"] == rect[3] & hyp[, "y2"] == rect[4],]["index"]
     index <- as.numeric(index)
     rectanglesIndex <- c(rectanglesIndex, index)
     

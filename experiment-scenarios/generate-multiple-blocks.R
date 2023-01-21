@@ -13,10 +13,10 @@ H <- 10
 # Size of the true rectangle
 trueRectSize <- "medium"
 # Teacher's alpha
-tchAlpha <- 1
-tchLnAlpha <- 1
+tchAlpha <- 0
+tchLnAlpha <- 0
 # Learner's actual alpha for the teacher (participant predictions)
-lnAlpha <- 1
+lnAlpha <- 0
 # Number of best hypotheses plotted
 nBestH <- 3
 # Configure whether the teacher is choosing the best point or sampling proportional to distribution
@@ -24,7 +24,7 @@ maximise <- TRUE
 # set prior
 prior <- "normal"
 # set trial IDs
-trialIDs <- c(1,3,4,5,6,7,8,9)
+trialIDs <- c(3)
 
 # Provider helpfulness condition
 if (tchAlpha == 1 & lnAlpha == 1) {
@@ -44,16 +44,19 @@ load(here(fn))
 
 # vector of rectangles chosen for scenarios currently (manually chosen)
 
-rectangles <- list(
-c(2,3,7,6),
-c(2,2,8,8),
-c(5,2,8,8),
-c(2,2,9,9),
-c(2,3,9,6),
-c(8,3,9,8),
-c(3,3,4,4),
-c(4,4,8,8)
-)
+# rectangles <- list(
+# c(2,3,7,6),
+# c(2,2,8,8),
+# c(5,2,8,8),
+# c(2,2,9,9),
+# c(2,3,9,6),
+# c(8,3,9,8),
+# c(3,3,4,4),
+# c(4,4,8,8)
+# )
+
+rectangles <- list()
+rectangles[[1]] <- c(1,1,9,8)
 
 experimentRectanglesIndex <- getRectangleIndex(rectangle = rectangles, hyp = hyp, nRectangles = length(hyp[, 1]))
 

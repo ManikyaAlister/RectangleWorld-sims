@@ -166,7 +166,7 @@ getMultiAlphaPosteriors = function(learnerRectangles,
                                    prior = "normal") {
   allPosteriors <- NULL
   for (i in 1:length(learnerRectangles[, 1])) {
-    rect <- as.vector(learnerRectangles[i, ])
+    rect <- as.vector(as.matrix(learnerRectangles[i, c("x1","y1","x2","y2")]))
     posteriors <-
       rectangleAlphaPosteriors(
         learnerRectangle = rect,
