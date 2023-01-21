@@ -1,0 +1,328 @@
+---
+title: "Exploration of 10x10 hypothesis space"
+author: "Andrew Perfors"
+---
+
+Let's begin by loading up the pre-calculated files so we are more resource friendly and can do everything a lot faster.
+
+```{r setup, include=FALSE}
+# We'll begin by loading up the libraries and data we need, as always.
+knitr::opts_chunk$set(echo = TRUE)
+ rm(list=ls())
+
+# size of hypothesis space
+H <- 10
+version <- 1
+weak <- 0
+helpful <- 2
+deceptive <- -2
+
+# loading the libraries
+library(tidyverse)
+library(here)
+library(ggplot2)
+library(ggpubr)
+library(viridis)
+
+# sourcing our files
+source(here("genericFunctions.R"))
+source(here("calculatingFunctions.R"))
+source(here("plottingFunctions.R"))
+
+# load the data
+fileSeg <- paste0("x0to",H,"y0to",H)
+fn <- paste0("datafiles/",fileSeg,".RData")
+fileSeg <- paste0("x0to",H,"y0to",H,"v",version)
+load(here(fn))
+
+# identify which alpha is weak (wA), helpful (hA), and deceptive (dA)
+wA <- which(alphas==weak)
+hA <- which(alphas==helpful)
+dA <- which(alphas==deceptive)
+```
+
+# What do we have?
+
+*xrange*: the x-axis range for our hypothesis space: `r xrange`
+
+*yrange*: the y-axis range for our hypothesis space: `r yrange`
+
+*alphas*: the values of alpha I precalculated: `r alphas`
+
+*hyp*: all possible hypotheses in this space: there are *nHyp* = `r nHyp`
+
+*pts*: all of the points in this space: there are *nPts* = `r nPts`
+
+*posProbPts*: a 3d array of size *nPts* x *nHyp* x *length(alphas)*. This calculating the probability of generating each point assuming it is positive given each hypothesis and each alpha. This is all possible likelihoods (for the positive observations) we need to know.
+
+*negProbPts*: a 3d array of size *nPts* x *nHyp* x *length(alphas)*. This calculating the probability of generating each point assuming it is negative given each hypothesis and each alpha. This is all possible likelihoods (for the negative observations) we need to know.
+
+*allProbPts*: a 3d array of size *nPts* x *nHyp* x *length(alphas)*. This calculating the probability of generating each point whether it is positive or negative (i.e. with both of those summed together), given each hypothesis and each alpha. This is all possible likelihoods (for both positive and negative observations) we need to know.
+
+*consPts*: a 2d array of size *nPts* x *nHyp*. For each point and hypothesis, this is TRUE if that point is contained within that hypothesis and FALSE otherwise. Useful as a quick lookup. 
+
+
+# What does this look like before data?
+
+We can actually do a bunch of sanity checks and basic analyses even before seeing any data, so let's start. First, let's look at our hypotheses. We can plot the probability of each of the *positive* points and each of the *negative* points using a heatmap. This looks as expected: the middle point is the most probable positive one (since that is where there are most hypotheses) and it is the least probable negative one. Indeed, they should be mirror images of each other; that is exactly what we observe, so that's a nice indication that this is set up right. We can do an extra sanity check on that by looking at the distribution of probabilities over *all* datapoints, positive or negative. That should be completely uniform, and so it is.
+
+```{r echo=FALSE, fig.height=3, fig.width=9, fig.align="center", message=FALSE, warning=FALSE}
+
+# first calculate the probability of each of the points
+# shouldn't change anything because the prior/posterior are uniform
+# we'll do it for alpha=0, i.e., weakly sampled so nothing fancy
+# then we have to normalise
+
+# calculate the probability at each point and hypothesis
+allPosPtProbs <- sweep(posProbPts[,,wA],2,hyp$prior,"*")
+allNegPtProbs <- sweep(negProbPts[,,wA],2,hyp$prior,"*")
+allPtProbs <- sweep(allProbPts[,,wA],2,hyp$prior,"*")
+
+initPtsNeg <- pts
+initPtsPos <- pts
+initPtsAll <- pts
+
+# the probability of each point is the sum over all hypotheses, normalised
+initPtsNeg$posterior <- rowSums(allNegPtProbs)/sum(allNegPtProbs)
+initPtsPos$posterior <- rowSums(allPosPtProbs)/sum(allPosPtProbs)
+initPtsAll$posterior <- rowSums(allPtProbs)/sum(allPtProbs)
+
+pPos <- plotDistribution(allPts=initPtsPos,xrange=xrange,yrange=yrange,
+                         subtitle="Positive hypotheses",
+                         title="Initial distribution")
+pNeg <- plotDistribution(allPts=initPtsNeg,xrange=xrange,yrange=yrange,
+                         subtitle="Negative hypotheses",
+                         title="Initial distribution")
+pAll <- plotDistribution(allPts=initPtsAll,xrange=xrange,yrange=yrange,
+                         subtitle="All hypotheses",
+                         title="Initial distribution")
+
+p <- ggarrange(pPos,pNeg,pAll,ncol=3)
+p
+
+
+ggsave(paste0("figures/basic/initialDist",fileSeg,".png"),
+       plot=p,device="png",
+       width=24,height=8, units="cm")
+```
+
+Let's also randomly generate three different **true rectangles** of different sizes, just so we can again sanity check things to make sure it is acting sensibly regardless of what those are. They are drawn below.
+
+```{r echo=FALSE, fig.height=3, fig.width=9, fig.align="center", message=FALSE, warning=FALSE}
+
+# get number of hypothesis corresponding to rectangle created
+smTrueNum <- createRectangle(hyp,size="small")
+medTrueNum <- createRectangle(hyp,size="medium")
+lgTrueNum <- createRectangle(hyp,size="large")
+
+# get coordinates of rectangle created
+smTrue <- getCoordinates(hyp,smTrueNum)
+medTrue <- getCoordinates(hyp,medTrueNum)
+lgTrue <- getCoordinates(hyp,lgTrueNum)
+
+# plot the rectangles
+pSmall <- plotHypotheses(smTrue,obs=NA,rects=NA,xrange,yrange,
+                         title="Small hypothesis",
+                         subtitle=paste0("Size = ",findSize(smTrue)))
+pMedium <- plotHypotheses(medTrue,obs=NA,rects=NA,xrange,yrange,
+                         title="Medium hypothesis",
+                         subtitle=paste0("Size = ",findSize(medTrue)))
+pLarge <- plotHypotheses(lgTrue,obs=NA,rects=NA,xrange,yrange,
+                         title="Large hypothesis",
+                         subtitle=paste0("Size = ",findSize(lgTrue)))
+
+p <- ggarrange(pSmall,pMedium,pLarge,ncol=3)
+p
+
+ggsave(paste0("figures/basic/trueHypotheses",fileSeg,".png"),
+       plot=p,device="png",
+       width=24,height=8, units="cm")
+
+```
+# Let's make some learner/teacher pairs. Each pair is a list with the following: 
+**trueRectangle**: coordinates of the true hypothesis the teacher knows (x1,y1,x2,y2)
+
+**lnAlpha**: the alpha value that the learner assumes the teacher has
+
+**lnPts**: the set of points tracked by the learner. Each row is a point. The columns are: *x* (the x coordinate of that point); *y* (the y coordinate of that point); *selected* (TRUE if the teacher has provided that point; initialised to FALSE); *type* ("positive" or "negative", initialised to NA since no points have been seen at the start); *prior* (the prior probability of each point, initialised to be uniform); and *posterior* (posterior probability of each point, initialised to be uniform). As the learner sees new points, they update *selected*, *type*, and *posterior*.
+
+**lnHyp**: the set of hypotheses tracked by the learner. Each row is a hypothesis. The columns are: *x1,y1,x2,y2* (the coordinates of that hypothesis) *size* (the size of that hypothesis); *negSize* (the size of the space around the hypothesis); *prior* (their priors over hypotheses, initialised to be uniform); *nPos* and *nNeg* (the number of positive and negative points seen so far; initialised to zero); *consPos* and *consNeg* (TRUE if the positive/negative points seen so far are all consistent with that hypothesis; initialised to TRUE because none have been seen so far); *likePos* and *likeNeg* (the probability of having seen those positive/negative datapoints given that hypothesis. zero if they are not consistent); *posterior* (posterior probability of that hypothesis, based on combining the prior with likePos and likeNeg). As the learner sees new points, they update everything after the *prior* column.
+
+**tchAlpha**: the alpha value that the teacher has
+
+**tchLnAlpha**: the alpha value the teacher assumes the learner has about them
+
+**tchPts**: the set of points tracked by the teacher Each row is a point. The columns are: *x* (the x coordinate of that point); *y* (the y coordinate of that point); *selected* (TRUE if the teacher has provided that point; initialised to FALSE); *type* ("positive" or "negative", initialised to NA since no points have been seen at the start); *prior* (the prior probability of each point, initialised to be uniform); and *posterior* (posterior probability of each point, initialised to be uniform). As the teacher provides new points, they update *selected*, *type*, and *posterior*. Note that their values might be different than the learner's in *lnPts* if they are wrong about what the learner's assumed alpha is.
+
+
+# Sampling data when teacher and learner share the same assumptions
+
+We are next going to try to sample data from different hypotheses. First, let's just look at the first data point. We can vary the information provider's alpha as well as the alpha they assume about the learner. 
+
+```{r echo=FALSE, fig.height=12, fig.width=9, fig.align="center", message=FALSE, warning=FALSE}
+
+# weak teacher, small true hypothesis
+pWSWdist <- getSamplingDistribution(allProbPts[,,wA],consPts,pts,
+                                    smTrueNum,alpha=weak) 
+
+pts$posterior <- pWSWdist
+pWSW <- plotColourfulDistribution(allPts=pts,xrange=xrange,yrange=yrange,
+                          trueRectangle=smTrue,
+                          title="Weak teacher, first point",
+                          subtitle="Assumes learner thinks the same")
+
+# helpful teacher, small true hypothesis
+pHSHdist <- getSamplingDistribution(allProbPts[,,hA],consPts,pts,
+                                    smTrueNum,alpha=helpful) 
+pts$posterior <- pHSHdist
+pHSH <- plotColourfulDistribution(allPts=pts,xrange=xrange,yrange=yrange,
+                          trueRectangle=smTrue,
+                          title="Helpful teacher, first point",
+                          subtitle="Assumes learner thinks the same")
+
+# deceptive teacher, small true hypothesis
+pDSDdist <- getSamplingDistribution(allProbPts[,,dA],consPts,pts,
+                                    smTrueNum,alpha=deceptive) 
+pts$posterior <- pDSDdist
+pDSD <- plotColourfulDistribution(allPts=pts,xrange=xrange,yrange=yrange,
+                          trueRectangle=smTrue,
+                          title="Deceptive teacher, first point",
+                          subtitle="Assumes learner thinks the same")
+
+# weak teacher, medium true hypothesis
+pWMWdist <- getSamplingDistribution(allProbPts[,,wA],consPts,pts,
+                                    medTrueNum,alpha=weak) 
+pts$posterior <- pWMWdist
+pWMW <- plotColourfulDistribution(allPts=pts,xrange=xrange,yrange=yrange,
+                          trueRectangle=medTrue,
+                          title="Weak teacher, first point",
+                          subtitle="Assumes learner thinks the same")
+
+# helpful teacher, medium true hypothesis
+pHMHdist <- getSamplingDistribution(allProbPts[,,hA],consPts,pts,
+                                    medTrueNum,alpha=helpful) 
+pts$posterior <- pHMHdist
+pHMH <- plotColourfulDistribution(allPts=pts,xrange=xrange,yrange=yrange,
+                          trueRectangle=medTrue,
+                          title="Helpful teacher, first point",
+                          subtitle="Assumes learner thinks the same")
+
+# deceptive teacher, medium true hypothesis
+pDMDdist <- getSamplingDistribution(allProbPts[,,dA],consPts,pts,
+                                    medTrueNum,alpha=deceptive) 
+pts$posterior <- pDMDdist
+pDMD <- plotColourfulDistribution(allPts=pts,xrange=xrange,yrange=yrange,
+                          trueRectangle=medTrue,
+                          title="Deceptive teacher, first point",
+                          subtitle="Assumes learner thinks the same")
+
+# weak teacher, large true hypothesis
+pWLWdist <- getSamplingDistribution(allProbPts[,,wA],consPts,pts,
+                                    lgTrueNum,alpha=weak) 
+pts$posterior <- pWLWdist
+pWLW <- plotColourfulDistribution(allPts=pts,xrange=xrange,yrange=yrange,
+                          trueRectangle=lgTrue,
+                          title="Weak teacher, first point",
+                          subtitle="Assumes learner thinks the same")
+
+# helpful teacher, large true hypothesis
+pHLHdist <- getSamplingDistribution(allProbPts[,,hA],consPts,pts,
+                                    lgTrueNum,alpha=helpful) 
+pts$posterior <- pHLHdist
+pHLH <- plotColourfulDistribution(allPts=pts,xrange=xrange,yrange=yrange,
+                          trueRectangle=lgTrue,
+                          title="Helpful teacher, first point",
+                          subtitle="Assumes learner thinks the same")
+
+# deceptive teacher, large true hypothesis
+pDLDdist <- getSamplingDistribution(allProbPts[,,dA],consPts,pts,
+                                    lgTrueNum,alpha=deceptive) 
+pts$posterior <- pDLDdist
+pDLD <- plotColourfulDistribution(allPts=pts,xrange=xrange,yrange=yrange,
+                          trueRectangle=lgTrue,
+                          title="Deceptive teacher, first point",
+                          subtitle="Assumes learner thinks the same")
+
+
+ps <- ggarrange(pDSD,pWSW,pHSH,pDMD,pWMW,pHMH,
+                pDLD,pWLW,pHLH,ncol=3,nrow=3)
+ps
+
+ggsave(paste0("figures/basic/firstPoints",fileSeg,".png"),
+       plot=ps,device="png",
+       width=24,height=24, units="cm")
+
+```
+
+# Sampling data when teacher and learner don't share the same assumptions
+
+We're still looking at just the first datapoint, but now this is where the teacher assumes the learner is different from them. I'm not going to look at the weak teacher or weak learner because that's the same for everything.
+
+```{r echo=FALSE, fig.height=12, fig.width=9, fig.align="center", message=FALSE, warning=FALSE}
+
+# helpful teacher, small true hypothesis, assumes deceptive
+pHSDdist <- getSamplingDistribution(allProbPts[,,dA],consPts,pts,
+                                    smTrueNum,alpha=helpful) 
+pts$posterior <- pHSDdist
+pHSD <- plotColourfulDistribution(allPts=pts,xrange=xrange,yrange=yrange,
+                          trueRectangle=smTrue,
+                          title="Helpful teacher, first point",
+                          subtitle="Assumes learner thinks deceptive")
+
+
+# deceptive teacher, small true hypothesis, assumes helpful
+pDSHdist <- getSamplingDistribution(allProbPts[,,hA],consPts,pts,
+                                    smTrueNum,alpha=deceptive) 
+pts$posterior <- pDSHdist
+pDSH <- plotColourfulDistribution(allPts=pts,xrange=xrange,yrange=yrange,
+                          trueRectangle=smTrue,
+                          title="Deceptive teacher, first point",
+                          subtitle="Assumes learner thinks helpful")
+
+
+# helpful teacher, medium true hypothesis, assumes deceptive
+pHMDdist <- getSamplingDistribution(allProbPts[,,dA],consPts,pts,
+                                    medTrueNum,alpha=helpful) 
+pts$posterior <- pHMDdist
+pHMD <- plotColourfulDistribution(allPts=pts,xrange=xrange,yrange=yrange,
+                          trueRectangle=medTrue,
+                          title="Helpful teacher, first point",
+                          subtitle="Assumes learner thinks deceptive")
+
+
+# deceptive teacher, medium true hypothesis, assumes helpful
+pDMHdist <- getSamplingDistribution(allProbPts[,,hA],consPts,pts,
+                                    medTrueNum,alpha=deceptive) 
+pts$posterior <- pDMHdist
+pDMH <- plotColourfulDistribution(allPts=pts,xrange=xrange,yrange=yrange,
+                          trueRectangle=medTrue,
+                          title="Deceptive teacher, first point",
+                          subtitle="Assumes learner thinks helpful")
+
+# helpful teacher, large true hypothesis, assumes deceptive
+pHLDdist <- getSamplingDistribution(allProbPts[,,dA],consPts,pts,
+                                    lgTrueNum,alpha=helpful) 
+pts$posterior <- pHLDdist
+pHLD <- plotColourfulDistribution(allPts=pts,xrange=xrange,yrange=yrange,
+                          trueRectangle=lgTrue,
+                          title="Helpful teacher, first point",
+                          subtitle="Assumes learner thinks deceptive")
+
+
+# deceptive teacher, large true hypothesis, assumes helpful
+pDLHdist <- getSamplingDistribution(allProbPts[,,hA],consPts,pts,
+                                    lgTrueNum,alpha=deceptive) 
+pts$posterior <- pDLHdist
+pDLH <- plotColourfulDistribution(allPts=pts,xrange=xrange,yrange=yrange,
+                          trueRectangle=lgTrue,
+                          title="Deceptive teacher, first point",
+                          subtitle="Assumes learner thinks helpful")
+
+ps <- ggarrange(pDSH,pHSD,pDMH,pHMD,pDLH,pHLD,ncol=2,nrow=3)
+ps
+
+ggsave(paste0("figures/basic/firstPointsOpposite",fileSeg,".png"),
+       plot=ps,device="png",
+       width=16,height=24, units="cm")
+
+```

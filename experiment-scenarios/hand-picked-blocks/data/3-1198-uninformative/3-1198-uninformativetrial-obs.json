@@ -1,0 +1,33 @@
+{
+  "id": "u3",
+  "groundTruth": {
+    "x1": 2,
+    "y1": 9,
+    "x2": 9,
+    "y2": 3
+  },
+  "width": 10,
+  "height": 10,
+  "observations": [
+    {
+      "x": 10,
+      "y": 1,
+      "observed": "negative"
+    },
+    {
+      "x": 9,
+      "y": 1,
+      "observed": "negative"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "observed": "negative"
+    },
+    {
+      "x": 8,
+      "y": 1,
+      "observed": "negative"
+    }
+  ]
+}
