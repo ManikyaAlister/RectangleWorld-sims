@@ -311,12 +311,14 @@ plotHeatmap = function(probPts, title="Hypothesis vs Points",
 #' @examples
 plotMeanPosteriorAlphas = function(posteriorsAlphas,
                                    generatingAlpha,
+                                   alphas = c(-5,-2, -1, -0.5,-0.1,0,0.1,0.5, 1, 2, 5),
                                    title = "",
                                    recovery = TRUE,
                                    median = FALSE) {
   
   generatingAlpha = as.character(generatingAlpha)
   posteriorsAlphas %>%
+    filter(alpha %in% alphas) %>%
     group_by(alpha) %>%
     summarise(sum = sum(posterior), mean = mean(posterior), median = median(posterior)) %>%
     mutate(alpha = as.factor(alpha)) %>%

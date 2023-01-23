@@ -6,9 +6,9 @@
 # cd Documents/Projects/RectangleWorld/RectangleWorld-sims/
 
 # If you try to run all 64 at once everything slows down HEAPS on 16GB of ram. ~ 20 is okay. 
-for ii in $(seq 1 20)
+for ii in $(seq 40 64)
   do
-  Rscript experiment-1/modelling/03_fit-model-flat.R $ii &
+  Rscript experiment-1/modelling/03.2_fit-model-flat.R $ii &
   done
 # wait %%
 # # run ~20 in a parallel then run the next batch once first batch is finished.

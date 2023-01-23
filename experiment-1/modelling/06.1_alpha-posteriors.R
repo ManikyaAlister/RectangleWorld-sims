@@ -86,3 +86,4 @@ for (i in 1:length(tb8[,1])){
 tb8_posteriors <- ggarrange(plotlist = all_plots, ncol = 4, nrow = 32/4)
 ggsave(plot = tb8_posteriors, filename = here("experiment-1/modelling/05_plots/tb8_posteriors_mean.png"), height = 10, width = 12)
 
+
