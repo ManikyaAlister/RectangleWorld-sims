@@ -324,7 +324,7 @@ plotMeanPosteriorAlphas = function(posteriorsAlphas,
     {if(median == FALSE)geom_col(aes(x = alpha, y = mean), fill = "blue",alpha = 0.5)} +
     {if(median)geom_col(aes(x = alpha, y = median), fill = "blue",alpha = 0.5)} +
     {if(recovery)geom_vline(xintercept = generatingAlpha, colour = "red")} +
-    labs(subtitle = title, x = "Mean Posterior") +
+    labs(subtitle = title, x = "Alpha") +
     theme_classic()
 }
 

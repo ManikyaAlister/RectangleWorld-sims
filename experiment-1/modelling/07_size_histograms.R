@@ -34,9 +34,43 @@ all_dists %>%
   theme_classic()+
   facet_grid(~clue)
 
-# Participant data 
+
+# Participant data  -------------------------------------------------------
+
+# function to create a histogram of chosen rectangles by size
+sizeHist = function(data){
+  data %>%
+    mutate(index = as.character(index)) %>%
+    group_by(cond, size_resp) %>%
+    arrange(size_resp) %>%
+    ggplot()+
+    geom_bar(aes(x = as.factor(size_resp)))+
+    geom_vline(xintercept = "228", colour = "red")+
+    facet_wrap(~clue+cond, ncol = 4, scales = "free")
+}
+
+# Order the conditions variable for better plottinh
+d_cartesian <- d_cartesian %>% 
+  mutate(cond = factor(cond, levels = c("MS", "US", "RS", "HS", "MN", "UN", "RN", "HN")))
+
 tb2 <- d_cartesian %>%
   filter(block == 2)
+tb8 <- d_cartesian %>%
+  filter(block == 8)
+tb8mc <- d_cartesian %>%
+  filter(block == 8 & man_check == TRUE)
+
+
+
+sizeHistTb2 <- sizeHist(tb2)
+ggsave(filename = "experiment-1/modelling/05_plots/size-hist-tb2.png", plot = sizeHistTb2, height = 15, width = 15)
+
+sizeHistTb8 <- sizeHist(tb8)
+ggsave(filename = "experiment-1/modelling/05_plots/size-hist-tb8.png", plot = sizeHistTb8, height = 15, width = 15)
+
+sizeHistTb8Mc <- sizeHist(tb8mc)
+ggsave(filename = "experiment-1/modelling/05_plots/size-hist-tb8-mc.png", plot = sizeHistTb8Mc, height = 15, width = 15)
+
 
 tb2 %>%
   mutate(index = as.character(index)) %>%
@@ -44,11 +78,12 @@ tb2 %>%
   arrange(size_resp) %>%
   count() %>%
   ggplot()+
+  geom_bar(aes(x = as.factor(size_resp)))+
   #geom_col(aes(x = as.factor(size_resp), y = n, fill = cond,), position = "dodge")+
-  geom_line(aes(x = as.factor(size_resp), y = n, colour = cond, group = cond))+
+  #geom_line(aes(x = as.factor(size_resp), y = n, colour = cond, group = cond))+
   #geom_vline(xintercept = "228", colour = "red")+
   xlab("size")+
-  facet_wrap(~clue, scales = "free")
+  facet_wrap(~cond)
   
 
 # Participant data 
@@ -93,4 +128,20 @@ tb8 %>%
   geom_vline(xintercept = "228", colour = "red")+
   facet_wrap(~cond, ncol = 4)
 
+# line graphs collapsed across clue 
+
+tb2 <- d_cartesian %>%
+  filter(block == 2)
+
+tb2 %>%
+  mutate(index = as.character(index)) %>%
+  group_by(cond, size_resp, clue) %>%
+  arrange(size_resp) %>%
+  count() %>%
+  ggplot()+
+  #geom_col(aes(x = as.factor(size_resp), y = n, fill = cond,), position = "dodge")+
+  geom_line(aes(x = as.factor(size_resp), y = n, colour = cond, group = cond))+
+  #geom_vline(xintercept = "228", colour = "red")+
+  xlab("size")+
+  facet_wrap(~clue, scales = "free")
 

@@ -51,7 +51,7 @@ ggsave(plot = tb2_posteriors, filename = here("experiment-1/modelling/05_plots/t
 
 # Target Block 8 (Second target Block) ----------------------------------------------------------
 tb8 <-all_conditions %>%
-  filter(targetBlocks == 2) 
+  filter(targetBlocks == 8) 
 
 # set up empty list to fill with plots 
 all_plots = list()
