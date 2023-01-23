@@ -1,0 +1,12 @@
+here() starts at /Users/manikyaalister/Documents/Projects/RectangleWorld/RectangleWorld-sims
+here() starts at /Users/manikyaalister/Documents/Projects/RectangleWorld/RectangleWorld-sims
+here() starts at /Users/manikyaalister/Documents/Projects/RectangleWorld/RectangleWorld-sims
+Error in gzfile(file) : invalid 'description' argument
+Calls: load -> gzfile
+Error in gzfile(file) : invalid 'description' argument
+Calls: load -> gzfile
+Execution halted
+Error in gzfile(file) : invalid 'description' argument
+Calls: load -> gzfile
+Execution halted
+Execution halted
