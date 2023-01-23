@@ -29,6 +29,21 @@ d_cartesian <- data %>%
 indexes = getRectangleIndex(d_cartesian, nRectangles = length(d_cartesian[,1]))
 d_cartesian$index = indexes
 
+# rectangle sizes 
+d_cartesian$size_resp = apply(d_cartesian[,c("x1", "y1", "x2", "y2")], 1, findSize)
+d_cartesian$size_truth = apply(d_cartesian[,c("ground_truth_x1", "ground_truth_y1", "ground_truth_x2", "ground_truth_y2")], 1, findSize)
+
+# did the participant guess taht they were in the correct condition? 
+d_cartesian <- d_cartesian %>%
+  mutate(man_check = case_when(
+    cond == "HS" | cond == "HN" & follow_up == "r_helpful" ~ TRUE,
+    cond == "RS" | cond == "RN" & follow_up == "r_random" ~ TRUE,
+    cond == "US" | cond == "UN" & follow_up == "r_uninformative" ~ TRUE,
+    cond == "MS" | cond == "MN" & follow_up == "r_misleading" ~ TRUE,
+    TRUE ~ FALSE
+  ))
+
+save(d_cartesian, file = here("experiment-1/data/derived/data_cartesian.Rdata"))
 
 #' Title
 #'
@@ -47,8 +62,13 @@ getBlockResponses = function(data, targetBlock, clue, cond){
 all_conditions <- expand.grid(
 clues = c(1:4),
 targetBlocks = c(2,8),
-conditions = unique(data$cond)
+conditions = unique(d_cartesian$cond)
 )
+
+all_conditions <- all_conditions %>%
+  mutate(conditions = factor(conditions, levels = c("MS", "US", "RS", "HS", "MN", "UN", "RN", "HN")))
+
+save(all_conditions, file = here("experiment-1/data/derived/all_conditions.R"))
 
 # Generate a data set for each condition
 for (i in 1:length(all_conditions[,1])){
@@ -60,4 +80,3 @@ for (i in 1:length(all_conditions[,1])){
 }
 
 
-## Think about how to make this more efficient

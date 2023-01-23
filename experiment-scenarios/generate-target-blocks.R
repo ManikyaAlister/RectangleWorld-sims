@@ -52,3 +52,12 @@ target1 <- multiAlphaPredictions(observationsT1, save = TRUE, allAlphas = c(-1,1
 target1
 target2 <- multiAlphaPredictions(observationsT2, save = TRUE)
 target2
+
+# saving with as generic name -- necessary for model fits (todo if time: make this less hacky)
+targetBlock <- targetTrial1
+save(targetBlock, file = here("experiment-scenarios/target-blocks/data/target-block-2-Cartesian.Rdata"))
+
+targetBlock <- targetTrial2
+save(targetBlock, file = here("experiment-scenarios/target-blocks/data/target-block-8-Cartesian.Rdata"))
+
+

@@ -84,6 +84,12 @@ getLearnerHypDistribution = function(observations,
     # Select relevant information
     lnHypClean <- lnHypClean[,c("index", "x1", "y1", "x2", "y2", "prior", "posterior", "size")]
     
+    lnHypClean <- cbind(lnHypClean, alpha, clue = i)
+    
+    sizeOrder <- order(lnHypClean[,"size"])
+    
+    lnHypClean <- lnHypClean[sizeOrder,]
+    
     # Record the learner distribution over hypotheses for this trial
     learnerHypDist[[i]] <- lnHypClean
   }
@@ -166,6 +172,7 @@ getMultiAlphaPosteriors = function(learnerRectangles,
                                    prior = "normal") {
   allPosteriors <- NULL
   for (i in 1:length(learnerRectangles[, 1])) {
+    print(i)
     rect <- as.vector(as.matrix(learnerRectangles[i, c("x1","y1","x2","y2")]))
     posteriors <-
       rectangleAlphaPosteriors(
