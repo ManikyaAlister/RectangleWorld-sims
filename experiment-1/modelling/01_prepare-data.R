@@ -36,10 +36,17 @@ d_cartesian$size_truth = apply(d_cartesian[,c("ground_truth_x1", "ground_truth_y
 # did the participant guess taht they were in the correct condition? 
 d_cartesian <- d_cartesian %>%
   mutate(man_check = case_when(
-    cond == "HS" | cond == "HN" & follow_up == "r_helpful" ~ TRUE,
-    cond == "RS" | cond == "RN" & follow_up == "r_random" ~ TRUE,
-    cond == "US" | cond == "UN" & follow_up == "r_uninformative" ~ TRUE,
-    cond == "MS" | cond == "MN" & follow_up == "r_misleading" ~ TRUE,
+    cond == "HN" & follow_up == "r_helpful" ~ TRUE,
+    cond == "RN" & follow_up == "r_random" ~ TRUE,
+    cond == "UN" & follow_up == "r_uninformative" ~ TRUE,
+    cond == "MN" & follow_up == "r_misleading" ~ TRUE,
+    cond == "HS" & follow_up == "r_helpful" ~ TRUE,
+    cond == "RS" & follow_up == "r_random" ~ TRUE,
+    cond == "US" & follow_up == "r_uninformative" ~ TRUE,
+    cond == "MS" & follow_up == "r_misleading" ~ TRUE,
+    # okay if participants couldn;t distinguish between misleading and uninformative 
+    cond == "US" & follow_up == "r_misleading" ~ TRUE,
+    cond == "MS" & follow_up == "r_uninformative" ~ TRUE,
     TRUE ~ FALSE
   ))
 

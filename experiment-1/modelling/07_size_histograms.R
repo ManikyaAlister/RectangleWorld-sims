@@ -49,6 +49,18 @@ sizeHist = function(data){
     facet_wrap(~clue+cond, ncol = 4, scales = "free")
 }
 
+sizeProportion = function(data){
+  data %>%
+    mutate(index = as.character(index),) %>%
+    group_by(cond, size_resp) %>%
+    summarise(proporion = count(index)/length(unique()))
+    arrange(size_resp) %>%
+    ggplot()+
+    geom_bar(aes(x = as.factor(size_resp)))+
+    geom_vline(xintercept = "228", colour = "red")+
+    facet_wrap(~clue+cond, ncol = 4, scales = "free")
+}
+
 # Order the conditions variable for better plottinh
 d_cartesian <- d_cartesian %>% 
   mutate(cond = factor(cond, levels = c("MS", "US", "RS", "HS", "MN", "UN", "RN", "HN")))
@@ -59,17 +71,23 @@ tb8 <- d_cartesian %>%
   filter(block == 8)
 tb8mc <- d_cartesian %>%
   filter(block == 8 & man_check == TRUE)
+tb8mcCs <- d_cartesian %>%
+  filter(block == 8 & man_check == TRUE & cond %in% c("MS", "US", "RS", "HS"))
 
 
 
 sizeHistTb2 <- sizeHist(tb2)
-ggsave(filename = "experiment-1/modelling/05_plots/size-hist-tb2.png", plot = sizeHistTb2, height = 15, width = 15)
+ggsave(filename = "experiment-1/modelling/05_plots/size-hist-tb2-sf.png", plot = sizeHistTb2, height = 15, width = 15)
 
 sizeHistTb8 <- sizeHist(tb8)
-ggsave(filename = "experiment-1/modelling/05_plots/size-hist-tb8.png", plot = sizeHistTb8, height = 15, width = 15)
+ggsave(filename = "experiment-1/modelling/05_plots/size-hist-tb8-sf.png", plot = sizeHistTb8, height = 15, width = 15)
 
 sizeHistTb8Mc <- sizeHist(tb8mc)
-ggsave(filename = "experiment-1/modelling/05_plots/size-hist-tb8-mc.png", plot = sizeHistTb8Mc, height = 15, width = 15)
+ggsave(filename = "experiment-1/modelling/05_plots/size-hist-tb8-mc-sf.png", plot = sizeHistTb8Mc, height = 15, width = 15)
+
+sizeHistTb8McCs <- sizeHist(tb8mcCs)
+ggsave(filename = "experiment-1/modelling/05_plots/size-hist-tb8-mc-cover-sf.png", plot = sizeHistTb8McCs, height = 15, width = 15)
+
 
 
 tb2 %>%
