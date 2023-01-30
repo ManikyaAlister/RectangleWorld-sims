@@ -46,11 +46,11 @@ sizeHist = function(data){
     ggplot()+
     geom_bar(aes(x = as.factor(size_resp)))+
     geom_vline(xintercept = "228", colour = "red")+
+    ylim(c(0,70))+
     facet_wrap(~clue+cond, ncol = 4, scales = "free")
 }
 
 sizeProportion = function(data){
-  data %>%
     mutate(index = as.character(index),) %>%
     group_by(cond, size_resp) %>%
     summarise(proporion = count(index)/length(unique()))

@@ -214,9 +214,9 @@ simulateLearnerGuesses = function(observations,
   dist <-
     getLearnerHypDistribution(observations[1:trial, ],
                               alpha = alpha,
-                              nTrials = 1,
+                              nTrials = length(1:trial),
                               prior = prior)
-  dist <- dist[[1]]
+  dist <- dist[[trial]]
   # Sample from rectangles with the probability corresponding to the actual probability of choosing that rectangle for alpha
   sampleIndexes <-
     sample(

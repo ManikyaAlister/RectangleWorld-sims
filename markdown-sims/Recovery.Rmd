@@ -385,21 +385,21 @@ hypHist = function(observations, alpha = 1, trial = 1, nRectangles = 100, prior 
 
 plots = list(
 
-a1o1 <- hypHist(observations, alpha = 5, trial = 1, nRectangles = 100, prior = "flat"),
+a1o1 <- hypHist(observations, alpha = 1, trial = 1, nRectangles = 100, prior = "flat"),
 a0o1 <- hypHist(observations, alpha = 0, trial = 1, nRectangles = 100, prior = "flat"),
-aNeg1o1 <- hypHist(observations, alpha = -5, trial = 1, nRectangles = 100, prior = "flat"),
+aNeg1o1 <- hypHist(observations, alpha = -1, trial = 1, nRectangles = 100, prior = "flat"),
 
-a1o2 <- hypHist(observations, alpha = 5, trial = 2, nRectangles = 100, prior = "flat"),
+a1o2 <- hypHist(observations, alpha = 1, trial = 2, nRectangles = 100, prior = "flat"),
 a0o2 <- hypHist(observations, alpha = 0, trial = 2, nRectangles = 100, prior = "flat"),
-aNeg1o2 <- hypHist(observations, alpha = -5, trial = 2, nRectangles = 100, prior = "flat"),
+aNeg1o2 <- hypHist(observations, alpha = -1, trial = 2, nRectangles = 100, prior = "flat"),
 
-a1o3 <- hypHist(observations, alpha = 5, trial = 3, nRectangles = 100, prior = "flat"),
+a1o3 <- hypHist(observations, alpha = 1, trial = 3, nRectangles = 100, prior = "flat"),
 a0o3 <- hypHist(observations, alpha = 0, trial = 3, nRectangles = 100, prior = "flat"),
-aNeg1o3 <- hypHist(observations, alpha = -5, trial = 3, nRectangles = 100, prior = "flat"),
+aNeg1o3 <- hypHist(observations, alpha = -1, trial = 3, nRectangles = 100, prior = "flat"),
 
-a1o4 <- hypHist(observations, alpha = 5, trial = 4, nRectangles = 100, prior = "flat"),
+a1o4 <- hypHist(observations, alpha = 1, trial = 4, nRectangles = 100, prior = "flat"),
 a0o4 <- hypHist(observations, alpha = 0, trial = 4, nRectangles = 100, prior = "flat"),
-aNeg1o4 <- hypHist(observations, alpha = -5, trial = 4, nRectangles = 100, prior = "flat")
+aNeg1o4 <- hypHist(observations, alpha = -1, trial = 4, nRectangles = 100, prior = "flat")
 )
 
 ggarrange(plotlist = plots, nrow = 4, ncol = 3)

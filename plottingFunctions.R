@@ -314,7 +314,7 @@ plotMeanPosteriorAlphas = function(posteriorsAlphas,
                                    alphas = c(-5,-2, -1, -0.5,-0.1,0,0.1,0.5, 1, 2, 5),
                                    title = "",
                                    recovery = TRUE,
-                                   median = FALSE) {
+                                   stat = "mean") {
   
   generatingAlpha = as.character(generatingAlpha)
   posteriorsAlphas %>%
@@ -323,9 +323,11 @@ plotMeanPosteriorAlphas = function(posteriorsAlphas,
     summarise(sum = sum(posterior), mean = mean(posterior), median = median(posterior)) %>%
     mutate(alpha = as.factor(alpha)) %>%
     ggplot() +
-    {if(median == FALSE)geom_col(aes(x = alpha, y = mean), fill = "blue",alpha = 0.5)} +
-    {if(median)geom_col(aes(x = alpha, y = median), fill = "blue",alpha = 0.5)} +
+    {if(stat == "mean")geom_col(aes(x = alpha, y = mean), fill = "blue",alpha = 0.5)} +
+    {if(stat == "median")geom_col(aes(x = alpha, y = median), fill = "blue",alpha = 0.5)} +
+    {if(stat == "sum")geom_col(aes(x = alpha, y = sum), fill = "blue",alpha = 0.5)} +
     {if(recovery)geom_vline(xintercept = generatingAlpha, colour = "red")} +
+    #ylim(c(0,0.005))+
     labs(subtitle = title, x = "Alpha") +
     theme_classic()
 }
@@ -349,3 +351,179 @@ plotRawPosteriorAlphas = function(posteriorAlphas, generatingAlpha){
     geom_vline(xintercept = generatingAlpha, colour = "red") 
 }
 
+plotPosteriors = function(sum_data, all_data, statistic, block, exp, scales = "free", man_check = FALSE){
+  plot <- sum_data %>% 
+    mutate(alpha = as.factor(alpha)) %>% 
+    ggplot()+
+    {if(statistic == "mean")geom_col(aes(x = alpha, y = mean))} +
+    {if(statistic == "median")geom_col(aes(x = alpha, y = median, fill = alpha), alpha = 1)}+
+    {if(statistic == "sum")geom_col(aes(x = Alpha, y = sum))}+
+    {if(statistic == "prob")geom_col(aes(x = Alpha, y = Probability))}+
+    theme_classic()+
+    #geom_jitter(data = all_data, aes(x = alpha, y = posterior, colour = alpha), alpha = 0.5)+
+    scale_color_brewer(palette = "RdYlGn")+
+    scale_fill_brewer(palette = "RdYlGn")+
+    labs(x = "Alpha", y = "Posterior Probability of Guesses")+
+    #{if(scales == "free")facet_wrap(~cond+clue, ncol = 4, scales = "free")}+
+    #{if(scales == "fixed")facet_wrap(~cond+clue, ncol = 4)}+
+    theme(#axis.text.x=element_blank(),
+          axis.ticks.x=element_blank(),
+          #axis.text.y=element_blank(),
+          axis.ticks.y=element_blank(),
+          text = element_text(size = 18),
+          #plot.margin = margin(0, 0, 0, 0, "cm"),
+          legend.position = "none",
+          
+          )
+  plot
+  # if(man_check){
+  #   ggsave(plot = plot, filename = here(paste0("experiment-",exp,"/modelling/05_plots/b-",block,"-",statistic,"posterior-mc.png")))
+  # }else{
+  #   ggsave(plot = plot, filename = here(paste0("experiment-",exp,"/modelling/05_plots/b-",block,"-",statistic,"posterior.png")))
+  # }
+  # plot
+}
+
+sizeHist = function(data){
+  data %>%
+    mutate(index = as.character(index)) %>%
+    group_by(cond, size_resp) %>%
+    arrange(size_resp) %>%
+    ggplot()+
+    geom_bar(aes(x = as.factor(size_resp)))+
+    geom_vline(xintercept = "228", colour = "red")+
+    ylim(c(0,50))+
+    facet_wrap(~clue+cond, ncol = 4, scales = "free")
+}
+
+
+plotHeatMaps = function(d, all_conditions, experiment){
+  # function to vectorise isInRect function
+  applyIsInRect <- function(df, rectangle) {
+    inRectangle <- apply(df[,c("x","y")], 1, function(p) isInRectangle(p, rectangle))
+    return(inRectangle)
+  }
+  
+  # Set up grid of all possible points
+  x  = seq(0.5, 9.5)
+  y = seq(0.5, 9.5)
+  pts = expand.grid(x,y)
+  colnames(pts) = c("x","y")
+  
+  # Find out how many conditions there are
+  nConds = length(all_conditions[,1])
+  
+  # Empty list to fill with plots for arrange
+  plotList = list()
+  
+  # Loop through each condition, creating a seperate heat map for each
+  for (condId in 1:nConds){
+    # Get condition data (block, conditions, clue number)
+    b <- all_conditions[condId,"targetBlocks"]
+    condition <- all_conditions[condId,"conditions"]
+    clueNum <- all_conditions[condId,"clues"]
+    
+    # Filter data based on those conditions
+    data <- d %>%
+      filter(cond == condition & clue == clueNum & block == b)
+    
+    # Find out how many participant responses there are
+    nResp <- length(data[,1])
+    
+    # Empty data frame to fill with the points contained with a participant response
+    ptsIn <- NULL
+    
+    # Loop through each participant response, seeing which grid cells/points were contained within each response
+    for (j in 1:nResp) {
+      rect <- c(data[j,"x1"], data[j,"y1"], data[j,"x2"], data[j,"y2"])
+      isIn <- applyIsInRect(pts, rect)
+      ptsIn <- cbind(ptsIn, isIn)
+    }
+    # Calculate how many times a point was contained within a given response
+    sums <- rowSums(ptsIn)
+    
+    # Convert to probability
+    probs <- sums/sum(sums)
+    
+    # Combine into a single data frame
+    ptProbs  <- cbind(pts, probs) 
+    
+    # Save data
+    if (experiment == "sim") {
+    save(ptProbs, file = here(paste0("experiment-scenarios/heatmap/data/derived/point-probs/pp-",condition,"-b-",b,"-c-",clueNum,".Rdata")))
+    } else {
+      save(ptProbs, file = here(paste0("experiment-",experiment,"/data/derived/point-probs/pp-",condition,"-b-",b,"-c-",clueNum,".Rdata")))
+      
+    }
+    
+    
+    # Load clues pertaining to condition
+    if(b == 2){
+      load(here("experiment-scenarios/target-blocks/data/target-block-2-Cartesian.Rdata"))
+    } else if(b == 8){
+      load(here("experiment-scenarios/target-blocks/data/target-block-8-Cartesian.Rdata"))
+    }
+    
+    # Rename columns for plot legend
+    ptProbs <- rename(ptProbs, Probability = probs)
+    
+    
+    # Get observations pertaining to condtition
+    obs <- targetBlock$observations[1:clueNum,]
+    
+    if(condition == "HS"){
+      fullCond <- "Helpful, Cover Story"
+    } else if (condition == "HN") {
+      fullCond <- "Helpful, No Cover Story"
+    } else if(condition == "MS"){
+      fullCond <- "Misleading, Cover Story"
+    } else if (condition == "MN") {
+      fullCond <- "Misleading, No Cover Story"
+    } else if(condition == "US"){
+      fullCond <- "Uninformative, Cover Story"
+    } else if (condition == "UN") {
+      fullCond <- "Uninformative, No Cover Story"
+    } else if(condition == "RS"){
+      fullCond <- "Random, Cover Story"
+    } else if (condition == "RN") {
+      fullCond <- "Helpful, No Cover Story"}
+    
+    #st = fullCond
+    
+    #colourScale <- c("white","lightpink", "hotpink","lightblue","blue","navyblue")
+    colourScale <- c("white","hotpink", "navy")
+    
+    # Plot heat map for that condition
+    heatMap <- ptProbs %>% ggplot() +
+      geom_raster(aes(x = ptProbs[,1], y = ptProbs[,2], fill = Probability))+
+      scale_fill_gradientn(colours = colourScale)+
+      geom_rect(aes(xmin = data[1,"ground_truth_x1"], ymin = data[1,"ground_truth_y1"], xmax = data[1,"ground_truth_x2"], ymax = data[1,"ground_truth_y2"]), alpha = 0, colour = "yellow", linetype = 4, linewidth = 0.2)+
+      geom_point(data = obs, aes(x = x, y = y, colour = category), size = 7)+
+      scale_colour_manual(values = c("positive" = "green", "negative" = "red"))+
+      #{if ( clueNum == 1)labs(subtitle = st)} +
+      guides(color = FALSE)+
+      theme_void()+
+      theme(axis.text.x=element_blank(),
+            axis.ticks.x=element_blank(),
+            axis.text.y=element_blank(),
+            axis.ticks.y=element_blank(),
+            text = element_text(size = 4),
+            plot.margin = margin(0, 0, 0, 0, "cm"),
+            legend.position = "none")+
+      labs(x = "", y = "")
+    if (experiment == "sim"){
+      ggsave(filename = here(paste0("experiment-scenarios/heatmap/plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")))
+      
+    }
+    ggsave(filename = here(paste0("experiment-",experiment,"/modelling/05_plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")))
+    
+    # Save plot to list 
+    plotList[[condId]] <- heatMap
+    # track progress in console
+    print(condId)
+  }
+  # Create and save plot 
+  plot <- ggarrange(plotlist = plotList, common.legend = TRUE, ncol = 4, nrow = 8, widths = c(1,1, 1,1), heights = c(2,2,2,2), legend = c("bottom","left"))
+  ggsave(plot = plot, filename = here(paste0("experiment-",experiment,"/modelling/05_plots/heatmap-all-b",b,".png")))
+  plot
+}

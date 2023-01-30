@@ -65,6 +65,6 @@ plotResponse = function(data, cond, nBlocks = 8){
   ggsave(filename = here(paste0("experiment-1/subject-level-analysis/02_figures/",expCond,"-",pid,".png")))
 }
 
-# examples
+# example
 tm = sampleParticipant("US", d_cartesian)
-plotResponse(tm, "misleading")
+plotResponse(tm, "uninformative")
