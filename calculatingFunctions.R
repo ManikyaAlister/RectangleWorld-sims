@@ -129,7 +129,7 @@ getSamplingDistribution = function(probPts, consPts, pts, targetHyp, priors=NULL
   postPts <- sweep(probPts,2,priors,"*")
   # calculate posterior of the target hypothesis if that point is chosen
   postTH <- postPts[,targetHyp]/rowSums(postPts)
-  postTH <- (postTH/sum(postTH,na.rm=TRUE))^alpha
+  postTH <- (postTH/sum(postTH,na.rm=TRUE))^alpha ## This is where the teacher applies their goals 
   # remove the observations so it's not going into the calculation
   if (!is.null(nrow(obs))) {
     postTH[obs$index] <- 0

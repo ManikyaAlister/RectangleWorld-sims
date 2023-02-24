@@ -5,7 +5,6 @@ library(ggpubr)
 
 source(here("plottingFunctions.R"))
 source(here("calculatingFunctions.R"))
-source(here("plottingFunctions.R"))
 load(here("experiment-1/data/derived/all_conditions.R"))
 load(here("experiment-1/data/derived/data_cartesian.Rdata"))
 
