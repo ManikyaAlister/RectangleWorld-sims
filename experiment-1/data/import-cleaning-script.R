@@ -166,7 +166,27 @@ cleaning_fun = function(raw_data, nClues, nBlocks) {
   data
 }
 
+
+
 data <- cleaning_fun(d_json, nBlocks = nBlocks, nClues = nClues)
+
+# error in US and MS conditions for Experiment 1 first run, so need import from second run  --------
+
+# define valid conditions from this run 
+validConds <- c("HS", "RS", "UN", "MN", "HN", "RN")
+
+# filter so data frame only contains data from those conditions
+data_1 <- data %>%
+  filter(cond %in% validConds)
+
+# load data from second run
+load(here("experiment-1-rerun/data/clean/clean_data.rdata"))
+
+# rename
+data_2 <- data 
+
+# combine first run with second run
+data <- rbind(data_1,data_2)
 
 save(data, file =  here("experiment-1/data/clean/clean_data.rdata"))
 

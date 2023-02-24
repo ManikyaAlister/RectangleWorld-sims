@@ -56,7 +56,7 @@ d_cartesian <- d_cartesian %>%
 
 save(d_cartesian, file = here("experiment-1/data/derived/data_cartesian.Rdata"))
 
-#' Title
+#' Filter data by block, clue, and cond
 #'
 #' @param data Full clean data frame
 #' @param targetBlock Which block to filter by 
