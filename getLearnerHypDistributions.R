@@ -10,6 +10,9 @@ library(ggplot2)
 #' @param prior Whether the prior is "normal" (normally distributed over size, M = 50, SD =15; default), or "flat". 
 #' @param alpha Alpha of the learner. How helpful the learner assumes the teacher is being. Default is 1. 
 #' @param nTrials Number of trials to to iterate over, assuming one observation is shown each trial. 
+#' @param recursion Whether the learner is thinking about what the teacher thinks they know. Currently coded so that the teachers alpha 
+#' and the learner's alpha is always the same. The teacher's assumption about the learner for a given alpha needs to be pre-calculated in 
+#' datafiles/ (currently only done for alpha = 1 (H), -1 (D), and 0 (W) 3/5/23)
 #'
 #' @return Data frame containing columns for: index of each rectangle, coordinates of each rectangle, prior, and posterior. 
 #'
@@ -18,7 +21,8 @@ getLearnerHypDistribution = function(observations,
                                      H = 10,
                                      prior = "normal",
                                      alpha = 1,
-                                     nTrials = 4) {
+                                     nTrials = 4,
+                                     recursion = FALSE) {
   # Source functions
   source(here("genericFunctions.R"))
   source(here("calculatingFunctions.R"))
@@ -31,6 +35,28 @@ getLearnerHypDistribution = function(observations,
     load(here(fn)) 
   }
   
+  # Recursive learner 
+  
+  # rename recursive all prob points array so it is generic
+  if (recursion == TRUE){
+    fileSeg <- paste0("x0to", H, "y0to", H)
+    fn <- paste0("datafiles/", fileSeg, "recursiveMain.RData")
+    load(here(fn)) 
+    if (alpha < 0){
+      # learner assumes teacher is deceptive (and teacher knows)
+      recursion <- paste0("D",abs(alpha)) # "D1", "H1", or "W"
+    } else if (alpha >0){
+      # learner assumes teacher is helpful (and teacher knows)
+      recursion <- paste0("H",alpha)
+    } else {
+      # learner assumes teacher is weak/random (and teacher knows)
+      recursion <- paste0("W",alpha)
+    }
+    recursionFile <- paste0(recursion,"allProbPts")
+    allProbPts <- get(recursionFile)
+  }
+  
+  
   
   # Create indexing column for points (necessary for updating hypotheses)
   pts$index = 1:length(pts[, 1])
@@ -41,15 +67,11 @@ getLearnerHypDistribution = function(observations,
   # All hypotheses tracked by the learner
   lnHyp <- hyp
   
-  
-  # All points tracked by the learner
-  #lnPts <- pts
-  
   # set initial prior over hypotheses
   if (prior == "normal") {
     lnHyp$prior <- normalPrior(hyp$size)
   }
-  
+
   # prior is just the posterior from the last trial
   lnHyp$posterior <- lnHyp$prior
   
