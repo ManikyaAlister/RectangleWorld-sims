@@ -1,8 +1,12 @@
-# raw data
-experiment-1/data/raw/*
-
 # recursive output
 datafiles/x0to10y0to10recursiveMain.RData
+
+#.DS_store
+.DS_store
+
+#raw data
+experiment-1/data/raw/*
+
 
 # History files
 .Rhistory

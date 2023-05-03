@@ -69,7 +69,7 @@ getPtIndex = function(pt){
   index
 }
 
-# If there is already a point distribution, this function attempts to apply a new 
+# If there is already a point X hypothesis distribution, this function attempts to apply a new 
 # point X hypothesis distribution on top of that with new alpha. 
 updateProbabilityOfPoints = function(hyp,pts,whichObs,alpha=0, ptDist){
   nHyp <- nrow(hyp)
@@ -82,7 +82,7 @@ updateProbabilityOfPoints = function(hyp,pts,whichObs,alpha=0, ptDist){
     for (h in 1:nHyp) {
       if (isInRectangle(c(pts[p,1],pts[p,2]),c(hyp$x1[h],hyp$y1[h],hyp$x2[h],hyp$y2[h]))) {
         if (whichObs=="pos") {
-          consPt[p,h] <- ptDist[p,h]*(1/hyp$size[h])^alpha
+          consPt[p,h] <- ptDist[p,h]*(1/hyp$size[h])^alpha # likelihood
         } 
       } else {
         if (whichObs=="neg") {
@@ -150,7 +150,7 @@ Given that the teacher knows this information, the learner needs to infer how pr
 
 So the learner is going to try to calculate pTeacher(d|h), which is the probability of each data point given each hypothesis. They'll do this by feeding in the point distribution the teacher thinks the learner has, then apply the transformation that the teacher would do to try and mislead them. 
 
-The learener can then use that to figure out the probability of each hypothesis given the data, pLearner(h|d).
+The learner can then use that to figure out the probability of each hypothesis given the data, pLearner(h|d).
 
 
 ```{r}

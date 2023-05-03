@@ -10,7 +10,6 @@ a1c1 = simulateLearnerGuesses(targetBlock$observations, alpha = 2, trial = 1, 10
 a1c1$cond = "HS"
 a1c1$clue = 1
 
-#debugonce(simulateLearnerGuesses)
 a1c4 = simulateLearnerGuesses(targetBlock$observations, alpha = 2, trial = 4, 100)
 a1c4$cond = "HS"
 a1c4$clue = 4
