@@ -1,5 +1,10 @@
 # recursive output
 datafiles/x0to10y0to10recursiveMain.RData
+datafiles/x0to10y0to10recursiveLow.RData
+datafiles/x0to10y0to10recursiveHigh.RData
+
+
+
 
 #.DS_store
 .DS_store
