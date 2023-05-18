@@ -2,39 +2,32 @@ rm(list = ls())
 
 #### Simulate Heatmaps ######
 library(here)
+library(ggpubr)
 source(here("getLearnerHypDistributions.R"))
 
 load(here("experiment-scenarios/target-blocks/data/target-block-8-Cartesian.Rdata"))
 
-a1c1 = simulateLearnerGuesses(targetBlock$observations, alpha = 2, trial = 1, 100)
-a1c1$cond = "HS"
-a1c1$clue = 1
+clue = 3
 
-#debugonce(simulateLearnerGuesses)
-a1c4 = simulateLearnerGuesses(targetBlock$observations, alpha = 2, trial = 4, 100)
-a1c4$cond = "HS"
-a1c4$clue = 4
+aPos = simulateLearnerGuesses(targetBlock$observations, alpha = 1, trial = clue, 100, prior = "flat")
+aPos$cond = "HS"
+aPos$clue = clue
 
 
-a0c1 = simulateLearnerGuesses(targetBlock$observations, alpha = 0, trial = 1, 100)
-a0c1$cond = "RS"
-a0c1$clue = 1
+a0 = simulateLearnerGuesses(targetBlock$observations, alpha = 0, trial = clue, 100, prior = "flat")
+a0$cond = "RS"
+a0$clue = clue
+
+aNeg = simulateLearnerGuesses(targetBlock$observations, alpha = -1, trial = clue, 100, prior = "flat")
+aNeg$cond = "MS"
+aNeg$clue = clue
+
+r_aNeg = simulateLearnerGuesses(targetBlock$observations, alpha = -1, trial = clue, 100, recursion = TRUE, prior = "flat")
+r_aNeg$cond = "US"
+r_aNeg$clue = clue
 
 
-a0c4 = simulateLearnerGuesses(targetBlock$observations, alpha = 0, trial = 4, 100)
-a0c4$cond = "RS"
-a0c4$clue = 4
-
-
-aNeg1c1 = simulateLearnerGuesses(targetBlock$observations, alpha = -2, trial = 1, 100)
-aNeg1c1$cond = "MS"
-aNeg1c1$clue = 1
-
-aNeg1c4 = simulateLearnerGuesses(targetBlock$observations, alpha = -2, trial = 4, 100)
-aNeg1c4$cond = "MS"
-aNeg1c4$clue = 4
-
-simData <- rbind(a1c1, a1c4, a0c1, a0c4, aNeg1c1, aNeg1c4)
+simData <- rbind(aPos, a0, aNeg, r_aNeg)
 simData$block <- 8
 trueR <- targetBlock$groundTruth
 simData$ground_truth_x1 <- trueR[1]
@@ -48,9 +41,15 @@ load(here("experiment-1/data/derived/all_conditions.R"))
 
 
 all_conditions <- all_conditions %>% 
-  filter(conditions %in% c("HS", "RS", "MS") & clues %in% c(1,4) & targetBlocks == 8)
+  filter(conditions %in% c("HS", "RS", "MS", "US") & clues %in% c(clue) & targetBlocks == 8)
 
 
 # Plot heat maps
 plotHeatMaps(d = simData, all_conditions = all_conditions, experiment = "sim")
 
+hyp <- getLearnerHypDistribution(obs = targetBlock$observations,  )
+pts <- expand.grid(x = seq(0.5,9.5,1), y = seq(0.5,9.5,1))
+#probPts <- findProbabilityOfPoints(hyp[[1]], pts = pts, whichObs = "pos") 
+probPts <- updatePoints()
+debugonce(plotDistribution)
+plotDistribution(obs = targetBlock$observations, trueRectangle = targetBlock$groundTruth, allPts = probPts)

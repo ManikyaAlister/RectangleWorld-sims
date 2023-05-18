@@ -261,6 +261,7 @@ plotHypotheses = function(r,obs=NA,rects=NA, xrange = 0:10,yrange=0:10,
 # **********************
 #     plotHeatmap
 # **********************
+# Abdy's version
 #' @title plotHeatmap
 #' @description Plots a heatmap corresponding to a pts x hyp matrix
 #' where the colour reflects the probability of them. 
@@ -363,7 +364,7 @@ plotPosteriors = function(sum_data, all_data, statistic, block, exp, scales = "f
     #geom_jitter(data = all_data, aes(x = alpha, y = posterior, colour = alpha), alpha = 0.5)+
     scale_color_brewer(palette = "RdYlGn")+
     scale_fill_brewer(palette = "RdYlGn")+
-    labs(x = "Alpha", y = "Posterior Probability of Guesses")+
+    labs(x = "", y = "")+
     #{if(scales == "free")facet_wrap(~cond+clue, ncol = 4, scales = "free")}+
     #{if(scales == "fixed")facet_wrap(~cond+clue, ncol = 4)}+
     theme(#axis.text.x=element_blank(),
@@ -397,6 +398,54 @@ sizeHist = function(data){
 }
 
 
+#' For plotting the size histograms and the models together
+#'
+#' @param data 
+#' @param condition 
+#' @param plotAlpha 
+#' @param prob_constant 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+sizeHistModel = function(data, condition, plotAlpha, prob_constant = 250){
+  
+  data <- data %>%
+    mutate(cover_cond = case_when(
+      cond == "HS" | cond == "HN" ~ "helpful",
+      cond == "MS" | cond == "MN" ~ "misleading", 
+      cond == "UN" | cond == "US" ~ "uninformative",
+      cond == "RS" | cond == "RN" ~ "random"
+    ))
+  
+  
+  data %>%
+    filter(cond == condition & cover_cond == plotAlpha) %>%
+    ggplot(aes(x = factor(size))) +
+    geom_col(aes(y = count, fill = cond)) +
+    geom_line(aes(y = prob*prob_constant, colour = factor(cover_cond), group = factor(cover_cond)), linewidth = 0.8, colour = "grey28")+ # get on same scale
+    #geom_line(aes(y = prob*prob_constant, colour = factor(cover_cond), group = factor(cover_cond)), linewidth = 0.8)+ # get on same scale
+    scale_fill_manual(values = c("HS" = "seagreen", "HN" = "seagreen", "RS" = "lightblue", "RN" = "lightblue", "MS" = "red", "MN" = "red", "UN" = "orange", "US" = "orange"))+
+    #geom_line(data = all_dists, aes(x = size, y = posterior, colour = Alpha))+
+    #scale_colour_manual(values = c("helpful" = "darkseagreen", "random" = "blue", "misleading" = "red3", "uninformative" = "yellow"))+
+    labs(y = "Count")+
+    #scale_y_continuous(sec.axis = sec_axis(~.*0.0005, name="Posterior")) +
+    theme_classic()+
+    ylim(c(0,86))+
+    theme(axis.text.x=element_blank(),
+          axis.title.x = element_blank(),
+          axis.ticks.x=element_blank(),
+          #axis.text.y=element_blank(),
+          #axis.ticks.y=element_blank(),
+          text = element_text(size = 12),
+          #strip.background = element_blank(),
+          #plot.margin = margin(-1, 0, -1, 0, "cm"),
+          strip.text = element_text(margin = margin(0,0,0,0, "cm"), size = 5),
+          legend.position = "none")
+  #facet_wrap(~cond+Experiment, ncol = 2)
+}
+
 plotHeatMaps = function(d, all_conditions, experiment){
   # function to vectorise isInRect function
   applyIsInRect <- function(df, rectangle) {
@@ -416,7 +465,7 @@ plotHeatMaps = function(d, all_conditions, experiment){
   # Empty list to fill with plots for arrange
   plotList = list()
   
-  # Loop through each condition, creating a seperate heat map for each
+  # Loop through each condition, creating a separate heat map for each
   for (condId in 1:nConds){
     # Get condition data (block, conditions, clue number)
     b <- all_conditions[condId,"targetBlocks"]
@@ -456,17 +505,11 @@ plotHeatMaps = function(d, all_conditions, experiment){
       
     }
     
-    
     # Load clues pertaining to condition
-    if(b == 2){
-      load(here("experiment-scenarios/target-blocks/data/target-block-2-Cartesian.Rdata"))
-    } else if(b == 8){
-      load(here("experiment-scenarios/target-blocks/data/target-block-8-Cartesian.Rdata"))
-    }
+    load(here(paste0("experiment-scenarios/target-blocks/data/target-block-",b,"-Cartesian.Rdata")))
     
     # Rename columns for plot legend
     ptProbs <- rename(ptProbs, Probability = probs)
-    
     
     # Get observations pertaining to condtition
     obs <- targetBlock$observations[1:clueNum,]
@@ -492,6 +535,8 @@ plotHeatMaps = function(d, all_conditions, experiment){
     
     #colourScale <- c("white","lightpink", "hotpink","lightblue","blue","navyblue")
     colourScale <- c("white","hotpink", "navy")
+    #colourScale <- c("navy","hotpink")
+    
     
     # Plot heat map for that condition
     heatMap <- ptProbs %>% ggplot() +
@@ -512,10 +557,10 @@ plotHeatMaps = function(d, all_conditions, experiment){
             legend.position = "none")+
       labs(x = "", y = "")
     if (experiment == "sim"){
-      ggsave(filename = here(paste0("experiment-scenarios/heatmap/plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")))
+      ggsave(filename = here(paste0("experiment-scenarios/heatmap/plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 5, height = 5)
       
     }
-    ggsave(filename = here(paste0("experiment-",experiment,"/modelling/05_plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")))
+    ggsave(filename = here(paste0("experiment-",experiment,"/modelling/05_plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 9, height = 6)
     
     # Save plot to list 
     plotList[[condId]] <- heatMap
@@ -523,7 +568,7 @@ plotHeatMaps = function(d, all_conditions, experiment){
     print(condId)
   }
   # Create and save plot 
-  plot <- ggarrange(plotlist = plotList, common.legend = TRUE, ncol = 4, nrow = 8, widths = c(1,1, 1,1), heights = c(2,2,2,2), legend = c("bottom","left"))
-  ggsave(plot = plot, filename = here(paste0("experiment-",experiment,"/modelling/05_plots/heatmap-all-b",b,".png")))
-  plot
+  #plot <- ggarrange(plotlist = plotList, common.legend = TRUE, ncol = 4, nrow = 8, widths = c(1,1, 1,1), heights = c(2,2,2,2), legend = c("bottom","left"))
+  #ggsave(plot = plot, filename = here(paste0("experiment-",experiment,"/modelling/05_plots/heatmap-all-b",b,".png")))
+  #plot
 }

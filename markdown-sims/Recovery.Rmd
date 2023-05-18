@@ -408,3 +408,18 @@ ggarrange(plotlist = plots, nrow = 4, ncol = 3)
 
 
 * One thing I haven't accounted for in any of these simulations where I aggregate multiple rectangles is that there are simply more rectangles that are smaller, which means they're more likely to be chosen and because smaller rectangles have such high posteriors for a = 1, that could be why we see such low discriminatory. But I thought the model would have accounted for that. 
+
+# ALl trials at once 
+
+```{r}
+library(patchwork)
+load(here("recovery/data/a-1Alln100Flat.Rdata"))
+pNeg1 <-  plotMeanPosteriorAlphas(posteriorsAlphas = posteriors, generatingAlpha = -1, recovery = TRUE, stat = "mean")
+load(here("recovery/data/a0Alln100Flat.Rdata"))
+p0 <- plotMeanPosteriorAlphas(posteriorsAlphas = posteriors, generatingAlpha = 0, recovery = TRUE, stat = "mean")
+load(here("recovery/data/a1Alln100Flat.Rdata"))
+p1 <- plotMeanPosteriorAlphas(posteriorsAlphas = posteriors, generatingAlpha = 1, recovery = TRUE, stat = "mean")
+
+pNeg1 + p0 +p1
+```
+
