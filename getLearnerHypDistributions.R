@@ -35,24 +35,43 @@ getLearnerHypDistribution = function(observations,
     load(here(fn)) 
   }
   
-  # Recursive learner 
-  
-  # rename recursive all prob points array so it is generic
-  if (recursion == TRUE){
+  # Recursive learner
+  if (recursion == TRUE) {
     fileSeg <- paste0("x0to", H, "y0to", H)
-    fn <- paste0("datafiles/", fileSeg, "recursiveMain.RData")
-    load(here(fn)) 
-    if (alpha < 0){
-      # learner assumes teacher is deceptive (and teacher knows)
-      recursion <- paste0("D",abs(alpha)) # "D1", "H1", or "W"
-    } else if (alpha >0){
-      # learner assumes teacher is helpful (and teacher knows)
-      recursion <- paste0("H",alpha)
-    } else {
+    # learner assumes teacher is helpful (and teacher knows)
+    if (alpha > 0 & alpha < 1) {
+      fn <- paste0("datafiles/", fileSeg, "recursiveLow.RData")
+      load(here(fn))
+      recursionLevel <- paste0("H", str_replace(alpha, "0.", "0"))
+    } else if (alpha == 1) {
+      fn <- paste0("datafiles/", fileSeg, "recursiveMain.RData")
+      load(here(fn))
+      recursionLevel <- paste0("H", alpha)
+    } else if (alpha >= 2) {
+      fn <- paste0("datafiles/", fileSeg, "recursiveHigh.RData")
+      load(here(fn))
+      recursionLevel <- paste0("H", alpha)
       # learner assumes teacher is weak/random (and teacher knows)
-      recursion <- paste0("W",alpha)
+    } else if (alpha == 0) {
+      fn <- paste0("datafiles/", fileSeg, "recursiveMain.RData")
+      load(here(fn))
+      recursionLevel <- "W"
+    } else if (alpha == -1) {
+      fn <- paste0("datafiles/", fileSeg, "recursiveMain.RData")
+      load(here(fn))
+      recursionLevel <- paste0("D", abs(alpha))
+      # learner assumes teacher is deceptive (and teacher knows)
+    } else if (alpha < 0 & alpha > -1) {
+      fn <- paste0("datafiles/", fileSeg, "recursiveLow.RData")
+      load(here(fn))
+      recursionLevel <- paste0("D", str_replace(alpha, "-0.", "0"))
+    } else if (alpha <= -2) {
+      fn <- paste0("datafiles/", fileSeg, "recursiveHigh.RData")
+      load(here(fn))
+      recursionLevel <- paste0("D", abs(alpha))
     }
-    recursionFile <- paste0(recursion,"allProbPts")
+    # rename recursive all prob points array so it is generic
+    recursionFile <- paste0(recursionLevel, "allProbPts")
     allProbPts <- get(recursionFile)
   }
   
@@ -126,7 +145,8 @@ rectangleAlphaPosteriors = function(learnerRectangle,
                                     nTrials = 1,
                                     alphasToSearch = "all-alphas",
                                     H = 10,
-                                    prior = "normal") {
+                                    prior = "normal",
+                                    recursion = FALSE) {
   # Load the pre-calculated data if not loaded already
   if (!exists("hyp")) {
     fileSeg <- paste0("x0to", H, "y0to", H)
@@ -155,13 +175,25 @@ rectangleAlphaPosteriors = function(learnerRectangle,
   # Get the probability of the learners drawn rectangle for each alpha
   for (i in 1:length(alphasToSearch)) {
     alpha =  alphasToSearch[i]
-    dist <-
-      getLearnerHypDistribution(
-        observations,
-        alpha = alpha,
-        nTrials = nTrials,
-        prior = prior
-      )
+    if (recursion){
+      dist <-
+        getLearnerHypDistribution(
+          observations,
+          alpha = alpha,
+          nTrials = nTrials,
+          prior = prior,
+          recursion = TRUE
+        )
+    } else {
+      dist <-
+        getLearnerHypDistribution(
+          observations,
+          alpha = alpha,
+          nTrials = nTrials,
+          prior = prior
+        )
+    }
+    
     distUnlist <- dist[[1]]
     learnerRectangle <- distUnlist[distUnlist[, "index"] == hypIndex, ]
     prob <- cbind(alpha, learnerRectangle[, "posterior"], hypIndex)
@@ -191,20 +223,35 @@ getMultiAlphaPosteriors = function(learnerRectangles,
                                    nTrials = 1,
                                    alphasToSearch = "all-alphas",
                                    H = 10,
-                                   prior = "normal") {
+                                   prior = "normal",
+                                   recursion = FALSE) {
   allPosteriors <- NULL
   for (i in 1:length(learnerRectangles[, 1])) {
-    print(i)
+    print(paste0((i/length(learnerRectangles[,1])*100),"%"))
     rect <- as.vector(as.matrix(learnerRectangles[i, c("x1","y1","x2","y2")]))
-    posteriors <-
-      rectangleAlphaPosteriors(
-        learnerRectangle = rect,
-        observations = observations,
-        nTrials = nTrials,
-        alphasToSearch = alphasToSearch,
-        H = H,
-        prior = prior
-      )
+    if (recursion){
+      posteriors <-
+        rectangleAlphaPosteriors(
+          learnerRectangle = rect,
+          observations = observations,
+          nTrials = nTrials,
+          alphasToSearch = alphasToSearch,
+          H = H,
+          prior = prior,
+          recursion = TRUE
+        )
+    } else {
+      posteriors <-
+        rectangleAlphaPosteriors(
+          learnerRectangle = rect,
+          observations = observations,
+          nTrials = nTrials,
+          alphasToSearch = alphasToSearch,
+          H = H,
+          prior = prior
+        )
+    }
+
     allPosteriors <- rbind(allPosteriors, posteriors)
   }
   
@@ -231,13 +278,24 @@ simulateLearnerGuesses = function(observations,
                                   alpha,
                                   trial,
                                   nRectangles,
-                                  prior = "normal") {
+                                  prior = "normal",
+                                  recursion = FALSE) {
   # Get hypothesis (rectangle) distribution for a given set of clues and a given alpha
-  dist <-
-    getLearnerHypDistribution(observations[1:trial, ],
-                              alpha = alpha,
-                              nTrials = length(1:trial),
-                              prior = prior)
+  if (recursion) {
+    dist <-
+      getLearnerHypDistribution(observations[1:trial, ],
+                                alpha = alpha,
+                                nTrials = length(1:trial),
+                                prior = prior,
+                                recursion = TRUE)
+  } else {
+    dist <-
+      getLearnerHypDistribution(observations[1:trial, ],
+                                alpha = alpha,
+                                nTrials = length(1:trial),
+                                prior = prior)
+  }
+  
   dist <- dist[[trial]]
   # Sample from rectangles with the probability corresponding to the actual probability of choosing that rectangle for alpha
   sampleIndexes <-
@@ -259,4 +317,66 @@ simulateLearnerGuesses = function(observations,
   }
   #return
   sampleRects <- cbind(sampleRects, sampleIndexes)
+}
+
+
+#' Get the probability that learners of different alphas would have generated a given rectangle
+#'
+#' @param data Participant data filtered by block
+#' @param block Experiment block that you are examining (e.g., target block 2 or 8)
+#' @param alphas Vector of all of the alphas you are interested in fitting
+#'
+#' @return
+#' @export
+#'
+#' @examples
+fitAlphas = function(data, block, alphas = c(-5,-2,-1,-0.5,-0.1, 0, 0.1, 0.5, 1, 2, 5), recursion = FALSE) {
+  all_alpha_posteriors = NULL
+  # loop through all alphas
+  for (j in 1:length(alphas)) {
+    alpha = alphas[j]
+    all_posteriors = NULL
+    # loop through each clue
+    for (i in 1:length(data[, 1])) {
+      block = data[i, "block"]
+      clue = data[i, "clue"]
+      cond = data[i, "cond"]
+      # load pre-calculated probability distributions for the given experiment block and alpha. Make sure 
+      # that the block has been pre-calculated or the code will break. 
+            if (recursion == TRUE){
+        load(here(
+          paste0(
+            "experiment-scenarios/hypothesis-distributions/b-",
+            block,
+            "-dist-alpha_",
+            alpha,
+            "-recursive-learner.Rdata"
+          )
+        ))  
+      } else {
+        load(here(
+          paste0(
+            "experiment-scenarios/hypothesis-distributions/b-",
+            block,
+            "-dist-alpha_",
+            alpha,
+            ".Rdata"
+          )
+        ))
+      }
+      
+     
+      # get the observations corresponding to the clue number
+      resp_dist = dist[[clue]]
+      # take the posterior of participant's rectangle
+      posterior = resp_dist[resp_dist[, "index"] == data[i, "index"], ]
+      posterior = select(posterior,-prior)
+      # include whether respondent passed manipulation check
+      man_check = data[i,"man_check"]
+      posterior = cbind(posterior, cond, man_check)
+      all_posteriors = rbind(all_posteriors, posterior)
+    }
+    all_alpha_posteriors = rbind(all_alpha_posteriors, all_posteriors)
+  }
+  all_alpha_posteriors
 }

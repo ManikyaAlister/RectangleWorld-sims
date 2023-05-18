@@ -5,7 +5,7 @@ library(ggpubr)
 
 source(here("plottingFunctions.R"))
 source(here("calculatingFunctions.R"))
-load(here("experiment-2/data/derived/all_conditions.R"))
+load(here("experiment-2/data/derived/all_conditions.Rdata"))
 load(here("experiment-2/data/derived/data_cartesian.Rdata"))
 
 applyIsInRect <- function(df, rectangle) {
