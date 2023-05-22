@@ -446,7 +446,7 @@ sizeHistModel = function(data, condition, plotAlpha, prob_constant = 250){
   #facet_wrap(~cond+Experiment, ncol = 2)
 }
 
-plotHeatMaps = function(d, all_conditions, experiment){
+plotHeatMaps = function(d, all_conditions, experiment, target_blocks = c(2,8)){
   # function to vectorise isInRect function
   applyIsInRect <- function(df, rectangle) {
     inRectangle <- apply(df[,c("x","y")], 1, function(p) isInRectangle(p, rectangle))
@@ -468,9 +468,20 @@ plotHeatMaps = function(d, all_conditions, experiment){
   # Loop through each condition, creating a separate heat map for each
   for (condId in 1:nConds){
     # Get condition data (block, conditions, clue number)
-    b <- all_conditions[condId,"targetBlocks"]
+    b <- all_conditions[condId,"blocks"]
     condition <- all_conditions[condId,"conditions"]
     clueNum <- all_conditions[condId,"clues"]
+    
+    # get the provider helpfulness in each condition
+    if (condition == "HS" | condition == "HN") {
+      provider <- "helpful"
+    } else if (condition == "RS" | condition == "RN") {
+      provider <- "random"
+    } else if (condition == "MS" | condition == "MN") {
+      provider <- "misleading"
+    } else if (condition == "US" | condition == "UN") {
+      provider <- "uninformative"
+    }
     
     # Filter data based on those conditions
     data <- d %>%
@@ -505,14 +516,66 @@ plotHeatMaps = function(d, all_conditions, experiment){
       
     }
     
+    
     # Load clues pertaining to condition
-    load(here(paste0("experiment-scenarios/target-blocks/data/target-block-",b,"-Cartesian.Rdata")))
+    
+    # check if the block is a target block
+    if (b %in% target_blocks) {
+      load(here(paste0("experiment-scenarios/target-blocks/data/target-block-",b,"-Cartesian.Rdata")))
+      
+      # Get observations pertaining to condtition
+      obs <- targetBlock$observations[1:clueNum,]
+    } else {
+      # find folder that contains the block data for that condition
+      
+      # get initial directory
+      directory <- "experiment-scenarios/hand-picked-blocks/data"
+      
+      # Pattern to match the folder name
+      pattern <- paste0(".*",b,"-.*",provider)
+      
+      # Find folders matching the pattern in the directory
+      matching_directory <- list.files(directory, pattern = pattern, full.names = TRUE)
+      
+      # Check if any matching files were found
+      if (length(matching_directory) > 0) {
+        
+        # now load actual data files within directory
+        directory <- matching_directory
+        
+        # Pattern to match file name
+        pattern <- paste0(".*\\b", b, "-\\d+-", provider, ".*\\.Rdata")
+        #pattern <- paste0(".*\\b",b,".*",provider,".*\\.Rdata") 
+        
+        # Find files matching the pattern in the directory
+        matching_files <- list.files(directory, pattern = pattern, full.names = TRUE)
+        
+        
+        if (length(matching_files) > 0) {
+        
+        # Load the first matching file
+        load(here(matching_files[1]))
+        
+         } else {
+            print("no file matching specified directory")
+          }
+ 
+      } else {
+        # if no matching files, print error
+        print("no folder matching specified directory")
+      }
+      # Get observations pertaining to condtition
+      obs <- blockData$observations[1:clueNum,]
+      obs$category <- obs$observed
+      
+      # convert from experiment grid format to Cartesian format 
+      obs$x <- obs$x - 0.5
+      obs$y <- 10-(obs$y - 0.5)
+    }
     
     # Rename columns for plot legend
     ptProbs <- rename(ptProbs, Probability = probs)
     
-    # Get observations pertaining to condtition
-    obs <- targetBlock$observations[1:clueNum,]
     
     if(condition == "HS"){
       fullCond <- "Helpful, Cover Story"
@@ -542,7 +605,7 @@ plotHeatMaps = function(d, all_conditions, experiment){
     heatMap <- ptProbs %>% ggplot() +
       geom_raster(aes(x = ptProbs[,1], y = ptProbs[,2], fill = Probability))+
       scale_fill_gradientn(colours = colourScale)+
-      geom_rect(aes(xmin = data[1,"ground_truth_x1"], ymin = data[1,"ground_truth_y1"], xmax = data[1,"ground_truth_x2"], ymax = data[1,"ground_truth_y2"]), alpha = 0, colour = "yellow", linetype = 4, linewidth = 0.2)+
+      geom_rect(aes(xmin = data[1,"ground_truth_x1"], ymin = data[1,"ground_truth_y1"], xmax = data[1,"ground_truth_x2"], ymax = data[1,"ground_truth_y2"]), alpha = 0, colour = "yellow", linetype = 4, linewidth = 1.4)+
       geom_point(data = obs, aes(x = x, y = y, colour = category), size = 7)+
       scale_colour_manual(values = c("positive" = "green", "negative" = "red"))+
       #{if ( clueNum == 1)labs(subtitle = st)} +

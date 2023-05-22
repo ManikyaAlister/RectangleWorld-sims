@@ -9,7 +9,7 @@ exp = 1
 # Target block 8 ----------------------------------------------------------
 
 all_conditions <- all_conditions %>% 
-  filter(targetBlocks == 8 & clues == 4)
+  filter(blocks == 8 & clues == 4)
 
 for (i in 1:length(all_conditions[,1])){
   condition <- all_conditions[i,"conditions"]
