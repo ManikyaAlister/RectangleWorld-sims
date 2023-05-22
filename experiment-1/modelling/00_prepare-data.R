@@ -72,14 +72,14 @@ getBlockResponses = function(data, targetBlock, clue, cond){
 # Generate data sets
 all_conditions <- expand.grid(
 clues = c(1:4),
-targetBlocks = c(2,8),
+blocks = 1:8,
 conditions = unique(d_cartesian$cond)
 )
 
 all_conditions <- all_conditions %>%
   mutate(conditions = factor(conditions, levels = c("MS", "US", "RS", "HS", "MN", "UN", "RN", "HN")))
 
-save(all_conditions, file = here("experiment-1/data/derived/all_conditions.R"))
+save(all_conditions, file = here("experiment-1/data/derived/all_conditions.Rdata"))
 
 # Generate a data set for each condition
 for (i in 1:length(all_conditions[,1])){
