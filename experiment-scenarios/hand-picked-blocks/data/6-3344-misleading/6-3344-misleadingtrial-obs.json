@@ -1,0 +1,33 @@
+{
+  "id": "m8",
+  "groundTruth": {
+    "x1": 4,
+    "y1": 8,
+    "x2": 4,
+    "y2": 6
+  },
+  "width": 10,
+  "height": 10,
+  "observations": [
+    {
+      "x": 10,
+      "y": 10,
+      "observed": "negative"
+    },
+    {
+      "x": 1,
+      "y": 10,
+      "observed": "negative"
+    },
+    {
+      "x": 2,
+      "y": 10,
+      "observed": "negative"
+    },
+    {
+      "x": 3,
+      "y": 10,
+      "observed": "negative"
+    }
+  ]
+}
