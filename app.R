@@ -17,7 +17,7 @@ loadDataCartesian <- function(experiment) {
 ui <- fluidPage(theme = shinytheme("flatly"),
                 
                 # App title
-                titlePanel("Heatmap Visualization"),
+                titlePanel("Heatmap Visualization: Experiment Data"),
                 
                 # CSS styles
                 tags$head(
@@ -31,28 +31,20 @@ ui <- fluidPage(theme = shinytheme("flatly"),
       ")
                   )
                 ),
-                
-                
-                # Sidebar layout
-                sidebarLayout(
-                  
-                  # Sidebar panel
-                  sidebarPanel(
-                    
-                    # Experiment selection
-                    selectInput("experiment", "Experiment", choices = c(1, 2), selected = 1),
-                    
-                    # Block selection
-                    selectInput("b", "Block", choices = c(1, 2, 3, 4, 5, 6, 7, 8), selected = 1),
-                    
-                    # Clue number selection
-                    selectInput("clueNum", "Clue Number", choices = c(1, 2, 3, 4), selected = 1)
-                    
-                  ),
                   
                   # Main panel
                   mainPanel(
-                    
+                    # selection panel
+                    fluidRow(
+                      # Experiment selection
+                      column(3, selectInput("experiment", "Experiment", choices = c(1, 2), selected = 1)),
+                      # Block selection
+                      column(3, selectInput("b", "Block", choices = c(1, 2, 3, 4, 5, 6, 7, 8), selected = 1)),
+                      # Clue number selection
+                      column(3, selectInput("clueNum", "Clue Number", choices = c(1, 2, 3, 4), selected = 1))
+                      
+
+                    ),
                     # Heatmap plots and labels
                     fluidRow(
                       column(3, h3(textOutput("label1"), align = "center")),
@@ -80,7 +72,7 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     )
                     
                   )
-                )
+                
 )
 
 # Define server
