@@ -134,4 +134,5 @@ plotShinyHeatMaps = function(d, b, condition, clueNum, experiment, target_blocks
 
 }
 
-#plotShinyHeatMaps(b = 1, condition = "US", clueNum = 1, experiment = 1)
+#debugonce(plotShinyHeatMaps)
+#plotShinyHeatMaps(d = d_cartesian, b = 1, condition = "US", clueNum = 1, experiment = 1)
