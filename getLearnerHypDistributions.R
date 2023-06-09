@@ -315,8 +315,10 @@ simulateLearnerGuesses = function(observations,
     # Combine into data frame
     sampleRects <- rbind(sampleRects, sampleCoords)
   }
+  # rename index column 
+  index <- sampleIndexes
   #return
-  sampleRects <- cbind(sampleRects, sampleIndexes)
+  sampleRects <- cbind(sampleRects, index)
 }
 
 

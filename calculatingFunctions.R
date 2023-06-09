@@ -433,4 +433,115 @@ normalPrior <- function(sizes, mean = 27, sd = 25){
 }
 
 
+getPtProbs = function(d, all_conditions, experiment, target_blocks = c(2,8), H = 10){
+  nConds <- length(all_conditions[,1])
+  # Loop through each condition, creating a separate heat map for each
+  for (condId in 1:nConds){
+    
+    # Get condition data (block, conditions, clue number)
+    b <- all_conditions[condId,"blocks"]
+    condition <- all_conditions[condId,"conditions"]
+    clueNum <- all_conditions[condId,"clues"]
+    
+    # Filter data based on those conditions
+    data <- d %>%
+      filter(cond == condition & clue == clueNum & block == b)
+    
+    
+    # Set up grid of all possible points
+    x  = seq(0.5, 9.5)
+    y = seq(0.5, 9.5)
+    pts = expand.grid(x,y)
+    colnames(pts) = c("x","y")
+    
+    # get the provider helpfulness in each condition
+    if (condition == "HS" | condition == "HN") {
+      provider <- "helpful"
+    } else if (condition == "RS" | condition == "RN") {
+      provider <- "random"
+    } else if (condition == "MS" | condition == "MN") {
+      provider <- "misleading"
+    } else if (condition == "US" | condition == "UN") {
+      provider <- "uninformative"
+      recursion = TRUE
+    }
+    
+    
+    # Find out how many participant responses there are
+    nResp <- length(data[,1])
+    
+    # Empty data frame to fill with the points contained with a participant response
+    ptsIn <- NULL
+    
+    # function to vectorise isInRect function
+    applyIsInRect <- function(df, rectangle) {
+      inRectangle <- apply(df[,c("x","y")], 1, function(p) isInRectangle(p, rectangle))
+      return(inRectangle)
+    }
+    
+    # Loop through each participant response, seeing which grid cells/points were contained within each response
+    for (j in 1:nResp) {
+      rect <- c(data[j,"x1"], data[j,"y1"], data[j,"x2"], data[j,"y2"])
+      isIn <- applyIsInRect(pts, rect)
+      ptsIn <- cbind(ptsIn, isIn)
+    }
+    # Calculate how many times a point was contained within a given response
+    sums <- rowSums(ptsIn)
+    
+    # Convert to probability
+    probs <- sums/sum(sums)
+    
+    # Combine into a single data frame
+    pts$posterior <- probs
+    ptProbs  <- pts
+    
+    # Save data
+    if (experiment == "sim") {
+      save(ptProbs, file = here(paste0("experiment-scenarios/heatmap/data/derived/point-probs/pp-",condition,"-b-",b,"-c-",clueNum,".Rdata")))
+    } else {
+      save(ptProbs, file = here(paste0("experiment-",experiment,"/data/derived/point-probs/pp-",condition,"-b-",b,"-c-",clueNum,".Rdata")))
+      
+    }
+    
+  }
+}
+
+getHypProbs = function(d, all_conditions, experiment, target_blocks = c(2,8), H = 10){
+  nConds <- length(all_conditions[,1])
+  # Loop through each condition, creating a separate heat map for each
+  for (condId in 1:nConds){
+    
+    # Get condition data (block, conditions, clue number)
+    b <- all_conditions[condId,"blocks"]
+    condition <- all_conditions[condId,"conditions"]
+    clueNum <- all_conditions[condId,"clues"]
+    
+    # Filter data based on those conditions
+    data <- d %>%
+      filter(cond == condition & clue == clueNum & block == b)
+    
+    # load in pre-calculated hypotheses 
+    load(here("datafiles/x0to10y0to10.RData"))
+    
+    nHyp <- nrow(hyp)
+    hyp$index = 1:nHyp
+    
+    likelihood = c()
+    for(i in hyp$index) {
+      likelihood[i] = sum(d$index == i)
+    }
+    
+    hyp$likelihood = likelihood
+    hyp$posterior = (hyp$prior*hyp$likelihood)/sum(hyp$prior*hyp$likelihood)
+    
+    # Save data
+    if (experiment == "sim") {
+      save(hyp, file = here(paste0("experiment-scenarios/heatmap/data/derived/hyp-probs/hp-",condition,"-b-",b,"-c-",clueNum,".Rdata")))
+    } else {
+      save(hyp, file = here(paste0("experiment-",experiment,"/data/derived/hyp-probs/hp-",condition,"-b-",b,"-c-",clueNum,".Rdata")))
+      
+    }
+    
+  }
+}
 
