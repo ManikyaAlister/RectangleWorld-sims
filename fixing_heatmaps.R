@@ -130,6 +130,18 @@ plotHeatMaps2 = function(all_conditions, experiment, target_blocks = c(2,8), zer
     }
     
     
+    # get the provider helpfulness in each condition
+    if (condition == "HS" | condition == "HN") {
+      provider <- "helpful"
+    } else if (condition == "RS" | condition == "RN") {
+      provider <- "random"
+    } else if (condition == "MS" | condition == "MN") {
+      provider <- "misleading"
+    } else if (condition == "US" | condition == "UN") {
+      provider <- "uninformative"
+      recursion = TRUE
+    }
+    
     # Load clues pertaining to condition
     
     # check if the block is a target block

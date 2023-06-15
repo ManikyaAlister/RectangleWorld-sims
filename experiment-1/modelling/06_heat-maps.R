@@ -8,6 +8,8 @@ source(here("calculatingFunctions.R"))
 load(here("experiment-1/data/derived/all_conditions.Rdata"))
 load(here("experiment-1/data/derived/data_cartesian.Rdata"))
 
+source(here("fixing_heatmaps.R"))
+
 # Target blocks only 
 
 tb2 <- all_conditions %>% filter(blocks == 2)
@@ -23,7 +25,8 @@ nBlocks <- 8
 for (i in 1:nBlocks) {
   block_conds <- all_conditions %>%
   filter(blocks == i)
-  plotHeatMaps(d = d_cartesian, all_conditions = block_conds, experiment = 1)
+  getHypProbs(d = d_cartesian, all_conditions = block_conds, experiment = 1)
+  plotHeatMaps2(all_conditions = block_conds, experiment = 1)
 }
 
 

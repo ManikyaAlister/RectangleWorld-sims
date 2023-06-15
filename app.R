@@ -27,6 +27,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
           border: 1px solid #999;
           padding: 5px;
           margin-bottom: 10px;
+          
+          
         }
       ")
                   )
@@ -46,17 +48,17 @@ ui <- fluidPage(theme = shinytheme("flatly"),
 
                     ),
                     # Heatmap plots and labels
-                    fluidRow(
+                    fluidRow( 
                       column(3, h3(textOutput("label1"), align = "center")),
                       column(3, h3(textOutput("label2"), align = "center")),
                       column(3, h3(textOutput("label3"), align = "center")),
                       column(3, h3(textOutput("label4"), align = "center"))
                     ),
                     fluidRow(
-                      column(3, div(plotOutput("plot1"), class = "plot-outline")),
-                      column(3, div(plotOutput("plot2"), class = "plot-outline")),
-                      column(3, div(plotOutput("plot3"), class = "plot-outline")),
-                      column(3, div(plotOutput("plot4"), class = "plot-outline"))
+                      column(3, div(plotOutput("plot1", height = "250px"), class = "plot-outline")),
+                      column(3, div(plotOutput("plot2", height = "250px"), class = "plot-outline")),
+                      column(3, div(plotOutput("plot3", height = "250px"), class = "plot-outline")),
+                      column(3, div(plotOutput("plot4", height = "250px"), class = "plot-outline"))
                     ),
                     fluidRow(
                       column(3, h3(textOutput("label5"), align = "center")),
@@ -65,10 +67,10 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                       column(3, h3(textOutput("label8"), align = "center"))
                     ),
                     fluidRow(
-                      column(3, div(plotOutput("plot5"), class = "plot-outline")),
-                      column(3, div(plotOutput("plot6"), class = "plot-outline")),
-                      column(3, div(plotOutput("plot7"), class = "plot-outline")),
-                      column(3, div(plotOutput("plot8"), class = "plot-outline"))
+                      column(3, div(plotOutput("plot5", height = "250px"), class = "plot-outline")),
+                      column(3, div(plotOutput("plot6", height = "250px"), class = "plot-outline")),
+                      column(3, div(plotOutput("plot7", height = "250px"), class = "plot-outline")),
+                      column(3, div(plotOutput("plot8", height = "250px"), class = "plot-outline"))
                     )
                     
                   )

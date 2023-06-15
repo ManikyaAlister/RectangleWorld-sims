@@ -528,7 +528,7 @@ getHypProbs = function(d, all_conditions, experiment, target_blocks = c(2,8), H 
     
     likelihood = c()
     for(i in hyp$index) {
-      likelihood[i] = sum(d$index == i)
+      likelihood[i] = sum(data$index == i)
     }
     
     hyp$likelihood = likelihood

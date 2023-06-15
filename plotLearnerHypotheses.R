@@ -115,4 +115,6 @@ plotLearnerHypDistribution = function(observations,
   
   heatMapList
 }
-   
+
+test <- plotLearnerHypDistribution(observations = targetBlock$observations, alpha = -1, recursion = TRUE, prior = "flat")
+test[[3]]   

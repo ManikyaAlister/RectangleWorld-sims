@@ -10,22 +10,21 @@ source(here("plottingFunctions.R"))
 
 load(here("experiment-scenarios/target-blocks/data/target-block-8-Cartesian.Rdata"))
 
-clue = 4
+clue = 3
 
-aPos = simulateLearnerGuesses(targetBlock$observations, alpha = 1, trial = clue, 100, prior = "flat")
+aPos = simulateLearnerGuesses(targetBlock$observations, alpha = 1, trial = clue, 10000, prior = "flat")
 aPos$cond = "HS"
 aPos$clue = clue
 
-
-a0 = simulateLearnerGuesses(targetBlock$observations, alpha = 0, trial = clue, 100, prior = "flat")
+a0 = simulateLearnerGuesses(targetBlock$observations, alpha = 0, trial = clue, 10000, prior = "flat")
 a0$cond = "RS"
 a0$clue = clue
 
-aNeg = simulateLearnerGuesses(targetBlock$observations, alpha = -1, trial = clue, 100, prior = "flat")
+aNeg = simulateLearnerGuesses(targetBlock$observations, alpha = -1, trial = clue, 10000, prior = "flat")
 aNeg$cond = "MS"
 aNeg$clue = clue
 
-r_aNeg = simulateLearnerGuesses(targetBlock$observations, alpha = -1, trial = clue, 100, recursion = TRUE, prior = "flat")
+r_aNeg = simulateLearnerGuesses(targetBlock$observations, alpha = -1, trial = clue, 10000, recursion = TRUE, prior = "flat")
 r_aNeg$cond = "US"
 r_aNeg$clue = clue
 
