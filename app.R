@@ -48,23 +48,11 @@ ui <- fluidPage(theme = shinytheme("flatly"),
 
                     ),
                     # Heatmap plots and labels
-                    fluidRow( 
-                      column(3, h3(textOutput("label1"), align = "center")),
-                      column(3, h3(textOutput("label2"), align = "center")),
-                      column(3, h3(textOutput("label3"), align = "center")),
-                      column(3, h3(textOutput("label4"), align = "center"))
-                    ),
                     fluidRow(
                       column(3, div(plotOutput("plot1", height = "250px"), class = "plot-outline")),
                       column(3, div(plotOutput("plot2", height = "250px"), class = "plot-outline")),
                       column(3, div(plotOutput("plot3", height = "250px"), class = "plot-outline")),
                       column(3, div(plotOutput("plot4", height = "250px"), class = "plot-outline"))
-                    ),
-                    fluidRow(
-                      column(3, h3(textOutput("label5"), align = "center")),
-                      column(3, h3(textOutput("label6"), align = "center")),
-                      column(3, h3(textOutput("label7"), align = "center")),
-                      column(3, h3(textOutput("label8"), align = "center"))
                     ),
                     fluidRow(
                       column(3, div(plotOutput("plot5", height = "250px"), class = "plot-outline")),
