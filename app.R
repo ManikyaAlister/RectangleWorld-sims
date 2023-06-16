@@ -17,7 +17,7 @@ loadDataCartesian <- function(experiment) {
 ui <- fluidPage(theme = shinytheme("flatly"),
                 
                 # App title
-                titlePanel("Heatmap Visualization: Experiment Data"),
+                titlePanel("Heatmaps of Learner Rectangles"),
                 
                 # CSS styles
                 tags$head(
@@ -49,6 +49,18 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                     ),
                     # Heatmap plots and labels
                     fluidRow(
+                      h3("Model Predictions")
+                    ),
+                    fluidRow(
+                      column(3, div(plotOutput("plotSim1", height = "250px"), class = "plot-outline")),
+                      column(3, div(plotOutput("plotSim2", height = "250px"), class = "plot-outline")),
+                      column(3, div(plotOutput("plotSim3", height = "250px"), class = "plot-outline")),
+                      column(3, div(plotOutput("plotSim4", height = "250px"), class = "plot-outline"))
+                    ),
+                    fluidRow(
+                      h3("Experiment Data")
+                    ),
+                    fluidRow(
                       column(3, div(plotOutput("plot1", height = "250px"), class = "plot-outline")),
                       column(3, div(plotOutput("plot2", height = "250px"), class = "plot-outline")),
                       column(3, div(plotOutput("plot3", height = "250px"), class = "plot-outline")),
@@ -65,6 +77,8 @@ ui <- fluidPage(theme = shinytheme("flatly"),
                 
 )
 
+
+
 # Define server
 server <- function(input, output) {
   
@@ -74,44 +88,64 @@ server <- function(input, output) {
     loadDataCartesian(experiment)
   })
   
+  
+  # Simulated data 
+  output$plotSim1 <- renderPlot({
+    plotShinyHeatMaps( b = input$b, condition = "HS", clueNum = input$clueNum, experiment = "sim")
+  })
+  
+  output$plotSim2 <- renderPlot({
+    plotShinyHeatMaps( b = input$b, condition = "RS", clueNum = input$clueNum, experiment = "sim")
+  })
+  
+  output$plotSim3 <- renderPlot({
+    plotShinyHeatMaps( b = input$b, condition = "MS", clueNum = input$clueNum, experiment = "sim")
+  })
+  
+  output$plotSim4 <- renderPlot({
+    plotShinyHeatMaps( b = input$b, condition = "US", clueNum = input$clueNum, experiment = "sim")
+  })
+  
+  # Experiment data
+  
   # Plot 1
   output$plot1 <- renderPlot({
-    plotShinyHeatMaps(d = d_cartesian(), b = input$b, condition = "HS", clueNum = input$clueNum, experiment = input$experiment)
+    plotShinyHeatMaps( b = input$b, condition = "HS", clueNum = input$clueNum, experiment = input$experiment)
   })
   
   # Plot 2
   output$plot2 <- renderPlot({
-    plotShinyHeatMaps(d = d_cartesian(), b = input$b, condition = "RS", clueNum = input$clueNum, experiment = input$experiment)
+    plotShinyHeatMaps( b = input$b, condition = "RS", clueNum = input$clueNum, experiment = input$experiment)
   })
   
   # Plot 3
   output$plot3 <- renderPlot({
-    plotShinyHeatMaps(d = d_cartesian(), b = input$b, condition = "MS", clueNum = input$clueNum, experiment = input$experiment)
+    plotShinyHeatMaps( b = input$b, condition = "MS", clueNum = input$clueNum, experiment = input$experiment)
   })
   
   # Plot 4
   output$plot4 <- renderPlot({
-    plotShinyHeatMaps(d = d_cartesian(), b = input$b, condition = "US", clueNum = input$clueNum, experiment = input$experiment)
+    plotShinyHeatMaps( b = input$b, condition = "US", clueNum = input$clueNum, experiment = input$experiment)
   })
   
   # Plot 5
   output$plot5 <- renderPlot({
-    plotShinyHeatMaps(d = d_cartesian(), b = input$b, condition = "HN", clueNum = input$clueNum, experiment = input$experiment)
+    plotShinyHeatMaps( b = input$b, condition = "HN", clueNum = input$clueNum, experiment = input$experiment)
   })
   
   # Plot 6
   output$plot6 <- renderPlot({
-    plotShinyHeatMaps(d = d_cartesian(), b = input$b, condition = "RN", clueNum = input$clueNum, experiment = input$experiment)
+    plotShinyHeatMaps( b = input$b, condition = "RN", clueNum = input$clueNum, experiment = input$experiment)
   })
   
   # Plot 7
   output$plot7 <- renderPlot({
-    plotShinyHeatMaps(d = d_cartesian(), b = input$b, condition = "MN", clueNum = input$clueNum, experiment = input$experiment)
+    plotShinyHeatMaps( b = input$b, condition = "MN", clueNum = input$clueNum, experiment = input$experiment)
   })
   
   # Plot 8
   output$plot8 <- renderPlot({
-    plotShinyHeatMaps(d = d_cartesian(), b = input$b, condition = "UN", clueNum = input$clueNum, experiment = input$experiment)
+    plotShinyHeatMaps( b = input$b, condition = "UN", clueNum = input$clueNum, experiment = input$experiment)
   })
   
   # Reactive expression to generate labels

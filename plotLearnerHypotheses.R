@@ -10,7 +10,7 @@ plotLearnerHypDistribution = function(observations,
   source(here("plottingFunctions.R"))
   
   # Load the pre-calculated data if not loaded already 
-  if(!exists("hyp")){
+  if(!exists("xrange")){
     fileSeg <- paste0("x0to", H, "y0to", H)
     fn <- paste0("datafiles/", fileSeg, ".RData")
     load(here(fn)) 
@@ -116,5 +116,8 @@ plotLearnerHypDistribution = function(observations,
   heatMapList
 }
 
+load(here("experiment-scenarios/target-blocks/data/target-block-8-Cartesian.Rdata"))
 test <- plotLearnerHypDistribution(observations = targetBlock$observations, alpha = -1, recursion = TRUE, prior = "flat")
 test[[3]]   
+
+

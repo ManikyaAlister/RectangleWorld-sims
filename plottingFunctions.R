@@ -141,7 +141,8 @@ plotDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
     
     pRect <- pRect +
       geom_rect(data=trueR, mapping=aes(xmin=x1,xmax=x2,ymin=y1,ymax=y2), 
-                color="yellow", fill=NA,linetype="dashed")
+                color="yellow", fill=NA,linetype="dashed")+
+      theme(axis.title = element_blank())
 
     
   # add in observations if they exist
@@ -447,10 +448,19 @@ sizeHistModel = function(data, condition, plotAlpha, prob_constant = 250){
 }
 
 plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zeroA = 6, H = 10){
+  # get load experiment obs function 
+  source(here("genericFunctions.R"))
+  # get update points function 
+  source(here("calculatingFunctions.R"))
   
   nConds <- length(all_conditions[,1])
   # upload pre-calculated positive point probabilities for an alpha of zero (just for plotting clarity)
-  load(here("datafiles/x0to10y0to10.RData"))
+  # Load the pre-calculated data if not loaded already 
+  if(!exists("xrange")){
+    fileSeg <- paste0("x0to", H, "y0to", H)
+    fn <- paste0("datafiles/", fileSeg, ".RData")
+    load(here(fn)) 
+  }
   
   # Loop through each condition, creating a separate heat map for each
   for (condId in 1:nConds){
@@ -482,59 +492,7 @@ plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zero
     
     # Load clues pertaining to condition
     
-    # check if the block is a target block
-    if (b %in% target_blocks) {
-      load(here(paste0("experiment-scenarios/target-blocks/data/target-block-",b,"-Cartesian.Rdata")))
-      
-      # Get observations pertaining to condition
-      obs <- targetBlock$observations[1:clueNum,]
-    } else {
-      # find folder that contains the block data for that condition
-      
-      # get initial directory
-      directory <- "experiment-scenarios/hand-picked-blocks/data"
-      
-      # Pattern to match the folder name
-      pattern <- paste0(".*",b,"-.*",provider)
-      
-      # Find folders matching the pattern in the directory
-      matching_directory <- list.files(directory, pattern = pattern, full.names = TRUE)
-      
-      # Check if any matching files were found
-      if (length(matching_directory) > 0) {
-        
-        # now load actual data files within directory
-        directory <- matching_directory
-        
-        # Pattern to match file name
-        pattern <- paste0(".*\\b", b, "-\\d+-", provider, ".*\\.Rdata")
-        #pattern <- paste0(".*\\b",b,".*",provider,".*\\.Rdata") 
-        
-        # Find files matching the pattern in the directory
-        matching_files <- list.files(directory, pattern = pattern, full.names = TRUE)
-        
-        
-        if (length(matching_files) > 0) {
-          
-          # Load the first matching file
-          load(here(matching_files[1]))
-          
-        } else {
-          print("no file matching specified directory")
-        }
-        
-      } else {
-        # if no matching files, print error
-        print("no folder matching specified directory")
-      }
-      # Get observations pertaining to condtition
-      obs <- blockData$observations[1:clueNum,]
-      obs$category <- obs$observed
-      
-      # convert from experiment grid format to Cartesian format 
-      obs$x <- obs$x - 0.5
-      obs$y <- 10-(obs$y - 0.5)
-    }
+    obs <- loadExperimentObs(b, clueNum, target_blocks, provider)
     
     # Rename columns for plot legend
     #colnames(ptProbs) <- c("x", "y", "posterior")
@@ -563,18 +521,18 @@ plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zero
     zeroA = which.min(abs(alphas))
     
     # make index column 
-    #pts$index = 1:nrow(pts)
+    pts$index = 1:nrow(pts)
     
     # get index of the observations 
-    #merged_df <- merge(obs, pts, by.x = c("x", "y"), by.y = c("x", "y"))
-    #obs$index = merged_df$index
+    merged_df <- merge(obs, pts, by.x = c("x", "y"), by.y = c("x", "y"))
+    obs$index = merged_df$index
     
     # make "selected" column (necessary for update points)
     #ptProbs$selected = FALSE
     #ptProbs$selected[obs$index] = TRUE
     
     # plot hypothesis heat map 
-    tempPts <- updatePoints(posProbPts[,,zeroA],obs[1:clueNum,],
+    tempPts <- updatePoints(posProbPts[,,zeroA],obs[clueNum,],
                             posterior=hyp$posterior,pts=pts)
     
     heatMap <- plotDistribution(allPts=tempPts,xrange=xrange,yrange=yrange,
