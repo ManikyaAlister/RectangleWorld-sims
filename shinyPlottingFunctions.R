@@ -121,7 +121,7 @@ source(here("calculatingFunctions.R"))
    } else if(condition == "RS"){
      fullCond <- "Random, Cover Story"
    } else if (condition == "RN") {
-     fullCond <- "Helpful, No Cover Story"}
+     fullCond <- "Random, No Cover Story"}
    }
    
    colourScale <- c("white","hotpink", "navy")
