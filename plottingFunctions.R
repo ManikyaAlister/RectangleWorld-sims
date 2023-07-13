@@ -141,7 +141,8 @@ plotDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
     
     pRect <- pRect +
       geom_rect(data=trueR, mapping=aes(xmin=x1,xmax=x2,ymin=y1,ymax=y2), 
-                color="yellow", fill=NA,linetype="dashed")
+                color="yellow", fill=NA,linetype="dashed")+
+      theme(axis.title = element_blank())
 
     
   # add in observations if they exist
@@ -446,24 +447,20 @@ sizeHistModel = function(data, condition, plotAlpha, prob_constant = 250){
   #facet_wrap(~cond+Experiment, ncol = 2)
 }
 
-plotHeatMaps = function(d, all_conditions, experiment, target_blocks = c(2,8)){
-  # function to vectorise isInRect function
-  applyIsInRect <- function(df, rectangle) {
-    inRectangle <- apply(df[,c("x","y")], 1, function(p) isInRectangle(p, rectangle))
-    return(inRectangle)
+plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zeroA = 6, H = 10){
+  # get load experiment obs function 
+  source(here("genericFunctions.R"))
+  # get update points function 
+  source(here("calculatingFunctions.R"))
+  
+  nConds <- length(all_conditions[,1])
+  # upload pre-calculated positive point probabilities for an alpha of zero (just for plotting clarity)
+  # Load the pre-calculated data if not loaded already 
+  if(!exists("xrange")){
+    fileSeg <- paste0("x0to", H, "y0to", H)
+    fn <- paste0("datafiles/", fileSeg, ".RData")
+    load(here(fn)) 
   }
-  
-  # Set up grid of all possible points
-  x  = seq(0.5, 9.5)
-  y = seq(0.5, 9.5)
-  pts = expand.grid(x,y)
-  colnames(pts) = c("x","y")
-  
-  # Find out how many conditions there are
-  nConds = length(all_conditions[,1])
-  
-  # Empty list to fill with plots for arrange
-  plotList = list()
   
   # Loop through each condition, creating a separate heat map for each
   for (condId in 1:nConds){
@@ -471,6 +468,15 @@ plotHeatMaps = function(d, all_conditions, experiment, target_blocks = c(2,8)){
     b <- all_conditions[condId,"blocks"]
     condition <- all_conditions[condId,"conditions"]
     clueNum <- all_conditions[condId,"clues"]
+    
+    # Load data
+    if (experiment == "sim") {
+      load(here(paste0("experiment-scenarios/heatmap/data/derived/hyp-probs/hp-",condition,"-b-",b,"-c-",clueNum,".Rdata")))
+    } else {
+      load(here(paste0("experiment-",experiment,"/data/derived/hyp-probs/hp-",condition,"-b-",b,"-c-",clueNum,".Rdata")))
+      
+    }
+    
     
     # get the provider helpfulness in each condition
     if (condition == "HS" | condition == "HN") {
@@ -481,100 +487,15 @@ plotHeatMaps = function(d, all_conditions, experiment, target_blocks = c(2,8)){
       provider <- "misleading"
     } else if (condition == "US" | condition == "UN") {
       provider <- "uninformative"
+      recursion = TRUE
     }
-    
-    # Filter data based on those conditions
-    data <- d %>%
-      filter(cond == condition & clue == clueNum & block == b)
-    
-    # Find out how many participant responses there are
-    nResp <- length(data[,1])
-    
-    # Empty data frame to fill with the points contained with a participant response
-    ptsIn <- NULL
-    
-    # Loop through each participant response, seeing which grid cells/points were contained within each response
-    for (j in 1:nResp) {
-      rect <- c(data[j,"x1"], data[j,"y1"], data[j,"x2"], data[j,"y2"])
-      isIn <- applyIsInRect(pts, rect)
-      ptsIn <- cbind(ptsIn, isIn)
-    }
-    # Calculate how many times a point was contained within a given response
-    sums <- rowSums(ptsIn)
-    
-    # Convert to probability
-    probs <- sums/sum(sums)
-    
-    # Combine into a single data frame
-    ptProbs  <- cbind(pts, probs) 
-    
-    # Save data
-    if (experiment == "sim") {
-    save(ptProbs, file = here(paste0("experiment-scenarios/heatmap/data/derived/point-probs/pp-",condition,"-b-",b,"-c-",clueNum,".Rdata")))
-    } else {
-      save(ptProbs, file = here(paste0("experiment-",experiment,"/data/derived/point-probs/pp-",condition,"-b-",b,"-c-",clueNum,".Rdata")))
-      
-    }
-    
     
     # Load clues pertaining to condition
     
-    # check if the block is a target block
-    if (b %in% target_blocks) {
-      load(here(paste0("experiment-scenarios/target-blocks/data/target-block-",b,"-Cartesian.Rdata")))
-      
-      # Get observations pertaining to condtition
-      obs <- targetBlock$observations[1:clueNum,]
-    } else {
-      # find folder that contains the block data for that condition
-      
-      # get initial directory
-      directory <- "experiment-scenarios/hand-picked-blocks/data"
-      
-      # Pattern to match the folder name
-      pattern <- paste0(".*",b,"-.*",provider)
-      
-      # Find folders matching the pattern in the directory
-      matching_directory <- list.files(directory, pattern = pattern, full.names = TRUE)
-      
-      # Check if any matching files were found
-      if (length(matching_directory) > 0) {
-        
-        # now load actual data files within directory
-        directory <- matching_directory
-        
-        # Pattern to match file name
-        pattern <- paste0(".*\\b", b, "-\\d+-", provider, ".*\\.Rdata")
-        #pattern <- paste0(".*\\b",b,".*",provider,".*\\.Rdata") 
-        
-        # Find files matching the pattern in the directory
-        matching_files <- list.files(directory, pattern = pattern, full.names = TRUE)
-        
-        
-        if (length(matching_files) > 0) {
-        
-        # Load the first matching file
-        load(here(matching_files[1]))
-        
-         } else {
-            print("no file matching specified directory")
-          }
- 
-      } else {
-        # if no matching files, print error
-        print("no folder matching specified directory")
-      }
-      # Get observations pertaining to condtition
-      obs <- blockData$observations[1:clueNum,]
-      obs$category <- obs$observed
-      
-      # convert from experiment grid format to Cartesian format 
-      obs$x <- obs$x - 0.5
-      obs$y <- 10-(obs$y - 0.5)
-    }
+    obs <- loadExperimentObs(b, clueNum, target_blocks, provider)
     
     # Rename columns for plot legend
-    ptProbs <- rename(ptProbs, Probability = probs)
+    #colnames(ptProbs) <- c("x", "y", "posterior")
     
     
     if(condition == "HS"){
@@ -594,44 +515,43 @@ plotHeatMaps = function(d, all_conditions, experiment, target_blocks = c(2,8)){
     } else if (condition == "RN") {
       fullCond <- "Helpful, No Cover Story"}
     
-    #st = fullCond
+    #colourScale <- c("white","hotpink", "navy")
     
-    #colourScale <- c("white","lightpink", "hotpink","lightblue","blue","navyblue")
-    colourScale <- c("white","hotpink", "navy")
-    #colourScale <- c("navy","hotpink")
+    # find the index of alpha = 0
+    zeroA = which.min(abs(alphas))
+    
+    # make index column 
+    pts$index = 1:nrow(pts)
+    
+    # get index of the observations 
+    merged_df <- merge(obs, pts, by.x = c("x", "y"), by.y = c("x", "y"))
+    obs$index = merged_df$index
+    
+    # make "selected" column (necessary for update points)
+    #ptProbs$selected = FALSE
+    #ptProbs$selected[obs$index] = TRUE
+    
+    # plot hypothesis heat map 
+    tempPts <- updatePoints(posProbPts[,,zeroA],obs[clueNum,],
+                            posterior=hyp$posterior,pts=pts)
+    
+    heatMap <- plotDistribution(allPts=tempPts,xrange=xrange,yrange=yrange,
+                                obs=obs[1:clueNum,],whichDist="posterior", title = NULL, subtitle = NULL)
     
     
-    # Plot heat map for that condition
-    heatMap <- ptProbs %>% ggplot() +
-      geom_raster(aes(x = ptProbs[,1], y = ptProbs[,2], fill = Probability))+
-      scale_fill_gradientn(colours = colourScale)+
-      geom_rect(aes(xmin = data[1,"ground_truth_x1"], ymin = data[1,"ground_truth_y1"], xmax = data[1,"ground_truth_x2"], ymax = data[1,"ground_truth_y2"]), alpha = 0, colour = "yellow", linetype = 4, linewidth = 1.4)+
-      geom_point(data = obs, aes(x = x, y = y, colour = category), size = 7)+
-      scale_colour_manual(values = c("positive" = "green", "negative" = "red"))+
-      #{if ( clueNum == 1)labs(subtitle = st)} +
-      guides(color = FALSE)+
-      theme_void()+
-      theme(axis.text.x=element_blank(),
-            axis.ticks.x=element_blank(),
-            axis.text.y=element_blank(),
-            axis.ticks.y=element_blank(),
-            text = element_text(size = 4),
-            plot.margin = margin(0, 0, 0, 0, "cm"),
-            legend.position = "none")+
-      labs(x = "", y = "")
     if (experiment == "sim"){
-      ggsave(filename = here(paste0("experiment-scenarios/heatmap/plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 5, height = 5)
+      ggsave(filename = here(paste0("experiment-scenarios/heatmap/plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 5, height = 5, plot = heatMap)
       
+    } else {
+      ggsave(filename = here(paste0("experiment-",experiment,"/modelling/05_plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 9, height = 6, plot = heatMap)
     }
-    ggsave(filename = here(paste0("experiment-",experiment,"/modelling/05_plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 9, height = 6)
     
     # Save plot to list 
-    plotList[[condId]] <- heatMap
+    
     # track progress in console
-    print(condId)
-  }
-  # Create and save plot 
-  #plot <- ggarrange(plotlist = plotList, common.legend = TRUE, ncol = 4, nrow = 8, widths = c(1,1, 1,1), heights = c(2,2,2,2), legend = c("bottom","left"))
-  #ggsave(plot = plot, filename = here(paste0("experiment-",experiment,"/modelling/05_plots/heatmap-all-b",b,".png")))
-  #plot
-}
+    print(paste0(condId," out of ", nConds))
+  }}
+  
+  
+  
+  

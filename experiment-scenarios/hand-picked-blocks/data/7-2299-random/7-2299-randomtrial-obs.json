@@ -9,25 +9,25 @@
   "width": 10,
   "height": 10,
   "observations": [
-    {
-      "x": 4,
-      "y": 8,
-      "observed": "positive"
-    },
-    {
-      "x": 5,
-      "y": 3,
-      "observed": "positive"
-    },
-    {
-      "x": 4,
-      "y": 1,
-      "observed": "negative"
-    },
-    {
-      "x": 9,
-      "y": 10,
-      "observed": "negative"
-    }
+{
+          "x": 3,
+          "y": 8,
+          "observed": "positive"
+        },
+        {
+          "x": 4,
+          "y": 1,
+          "observed": "negative"
+        },
+        {
+          "x": 4,
+          "y": 10,
+          "observed": "negative"
+        },
+        {
+          "x": 5,
+          "y": 1,
+          "observed": "negative"
+        }
   ]
 }

@@ -22,14 +22,15 @@ getLearnerHypDistribution = function(observations,
                                      prior = "normal",
                                      alpha = 1,
                                      nTrials = 4,
-                                     recursion = FALSE) {
+                                     recursion = FALSE,
+                                     allHyp = FALSE) {
   # Source functions
   source(here("genericFunctions.R"))
   source(here("calculatingFunctions.R"))
   source(here("plottingFunctions.R"))
   
   # Load the pre-calculated data if not loaded already 
-  if(!exists("hyp")){
+  if(!exists("xrange")){
     fileSeg <- paste0("x0to", H, "y0to", H)
     fn <- paste0("datafiles/", fileSeg, ".RData")
     load(here(fn)) 
@@ -119,20 +120,26 @@ getLearnerHypDistribution = function(observations,
     lnHyp <-
       updateHypotheses(allProbPts[, , lA], consPts, newPt, lnHyp)
     
-    # Remove impossible hypotheses
-    lnHypClean <- lnHyp[lnHyp[,"posterior"] > 0,]
-    
-    # Select relevant information
-    lnHypClean <- lnHypClean[,c("index", "x1", "y1", "x2", "y2", "prior", "posterior", "size")]
-    
-    lnHypClean <- cbind(lnHypClean, alpha, clue = i)
-    
-    sizeOrder <- order(lnHypClean[,"size"])
-    
-    lnHypClean <- lnHypClean[sizeOrder,]
-    
+    # In some situations we might want to retain impossible hypotheses, in others not
+    if (allHyp) {
+      lnHypClean <- lnHyp
+    } else {
+      # Remove impossible hypotheses
+      lnHypClean <- lnHyp[lnHyp[,"posterior"] > 0,]
+      
+      # Select relevant information
+      lnHypClean <- lnHypClean[,c("index", "x1", "y1", "x2", "y2", "prior", "posterior", "size")]
+      
+      lnHypClean <- cbind(lnHypClean, alpha, clue = i)
+      
+      sizeOrder <- order(lnHypClean[,"size"])
+      
+      lnHypClean <- lnHypClean[sizeOrder,]
+      
+    }
     # Record the learner distribution over hypotheses for this trial
     learnerHypDist[[i]] <- lnHypClean
+
   }
   
   learnerHypDist
@@ -315,8 +322,10 @@ simulateLearnerGuesses = function(observations,
     # Combine into data frame
     sampleRects <- rbind(sampleRects, sampleCoords)
   }
+  # rename index column 
+  index <- sampleIndexes
   #return
-  sampleRects <- cbind(sampleRects, sampleIndexes)
+  sampleRects <- cbind(sampleRects, index)
 }
 
 
