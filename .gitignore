@@ -4,7 +4,8 @@ datafiles/x0to10y0to10recursiveLow.RData
 datafiles/x0to10y0to10recursiveHigh.RData
 
 
-
+# slurm output
+slurm_output/
 
 #.DS_store
 .DS_store
