@@ -353,37 +353,25 @@ plotRawPosteriorAlphas = function(posteriorAlphas, generatingAlpha){
     geom_vline(xintercept = generatingAlpha, colour = "red") 
 }
 
-plotPosteriors = function(sum_data, all_data, statistic, block, exp, scales = "free", man_check = FALSE){
-  plot <- sum_data %>% 
+plotPosteriors = function(p_data, statistic, man_check = FALSE, recovery_data, title = "", subtitle = ""){
+  plot <- p_data %>% 
     mutate(alpha = as.factor(alpha)) %>% 
     ggplot()+
-    {if(statistic == "mean")geom_col(aes(x = alpha, y = mean))} +
-    {if(statistic == "median")geom_col(aes(x = alpha, y = median, fill = alpha), alpha = 1)}+
-    {if(statistic == "sum")geom_col(aes(x = Alpha, y = sum))}+
-    {if(statistic == "prob")geom_col(aes(x = Alpha, y = Probability))}+
+    geom_col(aes(x = alpha, y = eval(parse(text = statistic)), fill = alpha)) +
+    geom_line(data = recovery_data, aes(x = as.factor(alpha), y = eval(parse(text = statistic))), group = 1) +
     theme_classic()+
-    #geom_jitter(data = all_data, aes(x = alpha, y = posterior, colour = alpha), alpha = 0.5)+
-    scale_color_brewer(palette = "RdYlGn")+
     scale_fill_brewer(palette = "RdYlGn")+
-    labs(x = "", y = "")+
-    #{if(scales == "free")facet_wrap(~cond+clue, ncol = 4, scales = "free")}+
-    #{if(scales == "fixed")facet_wrap(~cond+clue, ncol = 4)}+
+    labs(x = "", y = "", title = title, subtitle = subtitle)+
     theme(#axis.text.x=element_blank(),
           axis.ticks.x=element_blank(),
           #axis.text.y=element_blank(),
           axis.ticks.y=element_blank(),
           text = element_text(size = 18),
-          #plot.margin = margin(0, 0, 0, 0, "cm"),
+          plot.margin = margin(0, 0, 0, 0, "cm"),
           legend.position = "none",
           
           )
   plot
-  # if(man_check){
-  #   ggsave(plot = plot, filename = here(paste0("experiment-",exp,"/modelling/05_plots/b-",block,"-",statistic,"posterior-mc.png")))
-  # }else{
-  #   ggsave(plot = plot, filename = here(paste0("experiment-",exp,"/modelling/05_plots/b-",block,"-",statistic,"posterior.png")))
-  # }
-  # plot
 }
 
 sizeHist = function(data){

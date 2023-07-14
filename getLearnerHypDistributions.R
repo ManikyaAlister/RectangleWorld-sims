@@ -60,7 +60,7 @@ getLearnerHypDistribution = function(observations,
     } else if (alpha == -1) {
       fn <- paste0("datafiles/", fileSeg, "recursiveMain.RData")
       load(here(fn))
-      recursionLevel <- paste0("D", abs(alpha))
+      recursionLevel <- paste0("D", abs(as.numeric(alpha)))
       # learner assumes teacher is deceptive (and teacher knows)
     } else if (alpha < 0 & alpha > -1) {
       fn <- paste0("datafiles/", fileSeg, "recursiveLow.RData")
@@ -69,7 +69,7 @@ getLearnerHypDistribution = function(observations,
     } else if (alpha <= -2) {
       fn <- paste0("datafiles/", fileSeg, "recursiveHigh.RData")
       load(here(fn))
-      recursionLevel <- paste0("D", abs(alpha))
+      recursionLevel <- paste0("D", abs(as.numeric(alpha)))
     }
     # rename recursive all prob points array so it is generic
     recursionFile <- paste0(recursionLevel, "allProbPts")
