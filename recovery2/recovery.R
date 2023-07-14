@@ -1,4 +1,9 @@
-library(here)
+# need to deactivate renv on the super computer
+renv::deactivate()
+lib = .libPaths("~/Library/Frameworks/R.framework/Versions/4.1/Resources/library")
+library(here, lib.loc = lib)
+library(dplyr, lib.loc = lib)
+library(stringr, lib.loc = lib)
 source(here("getLearnerHypDistributions.R"))
 
 # run locally and parallel:

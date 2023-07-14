@@ -1,4 +1,4 @@
-library(tidyverse)
+library(dplyr)
 
 getRectangleIndex = function(rectangle, hyp = NULL, nRectangles, H = 10) {
   if (is.null(hyp)){

@@ -1,5 +1,5 @@
 library(here)
-library(ggplot2)
+library(stringr)
 
 #'  Calculate the probability distribution of different hypotheses/rectangles given a set of clues/observations and a given alpha
 #'

@@ -1,9 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name="RW-recovery"
+#SBATCH --job-name="recovery"
 #SBATCH --array=1-12  # Number of combinations: (alphas) * (clues)
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=2G
 
 # The maximum running time of the job in days-hours:mins:sec
 #SBATCH --time=1-1:0:00
@@ -28,8 +27,8 @@ clues=(1 2 3 4)
 
 # Calculate the array index
 array_index=$((SLURM_ARRAY_TASK_ID - 1))
-alpha_index=$((array_index / 4))
-clue_index=$((array_index % 4))
+alpha_index=$((array_index / 4)) # number of clues after "/"
+clue_index=$((array_index % 4)) # number of clues after "%"
 
 # Assign the values of alpha and clue based on the indices
 alpha=${alphas[$alpha_index]}
@@ -43,4 +42,4 @@ module load r/4.2.0
 my-job-stats -a -n -s
 
 # Execute the R script with the current alpha and clue values
-Rscript your_script.R $alpha $clue
+Rscript recovery2/recovery.R $alpha $clue
