@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name="recovery"
+#SBATCH --job-name="rec-recur"
 #SBATCH --array=1-12  # Number of combinations: (alphas) * (clues)
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1

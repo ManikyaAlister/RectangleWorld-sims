@@ -12,13 +12,12 @@ source(here("getLearnerHypDistributions.R"))
   # run recovery.sbatch
 
 # Retrieve the values of alpha and clue from command-line arguments (configure in run-recovery script)
-# args <- commandArgs(trailingOnly = TRUE)
-# alpha <- as.numeric(args[1])
-# clue <- as.numeric(args[2])
-alpha <- 1
-clue <- 4
+args <- commandArgs(trailingOnly = TRUE)
+alpha <- as.numeric(args[1])
+clue <- as.numeric(args[2])
+
 # configure as per requirements
-nRectangles = 20
+nRectangles = 100
 prior = "flat"
 recursion = FALSE
 
