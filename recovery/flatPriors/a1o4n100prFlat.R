@@ -7,4 +7,4 @@ observations = targetTrial1$observations
 a1n100o4prFlat_rects <- simulateLearnerGuesses(observations, alpha = 1, trial = 4, nRectangles = 100, prior = "flat")
 a1n100o4prFlat_posteriors <- getMultiAlphaPosteriors(learnerRectangles = a1n100o4prFlat_rects, observations, prior = "flat")
 
-save(a1n100o4prFlat_posteriors, file = here("recovery/data/a1n100o4prFlat.RData"))
+save(a1n100o4prFlat_posteriors, file = here("recovery/data/test/a1n100o4prFlat.RData"))

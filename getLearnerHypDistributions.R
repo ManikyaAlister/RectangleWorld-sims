@@ -201,7 +201,7 @@ rectangleAlphaPosteriors = function(learnerRectangle,
         )
     }
     
-    distUnlist <- dist[[1]]
+    distUnlist <- dist[[nTrials]]
     learnerRectangle <- distUnlist[distUnlist[, "index"] == hypIndex, ]
     prob <- cbind(alpha, learnerRectangle[, "posterior"], hypIndex)
     alphaPosteriors <- rbind(alphaPosteriors, prob)

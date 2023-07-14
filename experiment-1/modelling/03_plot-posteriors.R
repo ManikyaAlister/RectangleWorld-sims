@@ -6,7 +6,7 @@ library(RColorBrewer)
 source(here("plottingFunctions.R"))
 load(here("experiment-1/data/derived/all_conditions.R"))
 exp = 1
-c = 3# clue
+c = 2# clue
 
 # function for wrangling plot data 
 getPosteriorPlotData = function(posteriors){
@@ -85,7 +85,7 @@ for (i in 1:length(all_conditions[, 1])) {
     ))
     # load posteriors for recovery
     load(here(
-      paste0("recovery/data/a", alpha, "Alln100_flat-recursive.RData")
+      paste0("recovery2/data/a",alpha,"_n100_c",c,"_pr-flat_recursion.RData")
     ))
     
   } else {
@@ -99,14 +99,12 @@ for (i in 1:length(all_conditions[, 1])) {
     ))
     # load posteriors for recovery
     load(here(paste0(
-      "recovery/data/a", alpha, "Alln100_flat.RData"
+      "recovery2/data/a",alpha,"_n100_c",c,"_pr-flat.RData"
     )))
   }
   
   # wrangle recovery data for plotting
-  trial_posteriors <- posteriors %>%
-    filter(trial == c)
-  recovery_plotting <- getPosteriorPlotData(trial_posteriors)
+  recovery_plotting <- getPosteriorPlotData(posteriors)
   
   # wrangle participant data for plotting
   all_data <- all_alpha_posteriors %>%
@@ -119,6 +117,7 @@ for (i in 1:length(all_conditions[, 1])) {
                    statistic = "median",
                    recovery_data = recovery_plotting,
                    subtitle = condition)
+  
   # save individual plots 
   ggsave(here(paste0("experiment-1/modelling/05_plots/posteriors-",condition,"-c-", c, ".png")), width = 7, height = 5, plot = plot)
   
@@ -136,7 +135,7 @@ combined_plot
 
 ggsave(here(paste0("experiment-1/modelling/05_plots/posteriors-all-conditions-c-", c, ".png")), plot = combined_plot)
 
-test <- a1n100o4prFlat_posteriors %>%
+test <- posteriors%>%
   group_by(alpha) %>%
   summarise(median = median(posterior)) %>%
   mutate(median = median/sum(median))
