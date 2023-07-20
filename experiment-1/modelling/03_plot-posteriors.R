@@ -6,7 +6,7 @@ library(RColorBrewer)
 source(here("plottingFunctions.R"))
 load(here("experiment-1/data/derived/all_conditions.R"))
 exp = 1
-c = 2# clue
+c =4# clue
 
 # function for wrangling plot data 
 getPosteriorPlotData = function(posteriors){
@@ -68,6 +68,10 @@ all_conditions <- all_conditions %>% mutate(
   )
 )
 
+# re order for plotting
+all_conditions <- all_conditions[order(as.character(all_conditions$conditions)), ]
+
+
 plot_list = NULL
 for (i in 1:length(all_conditions[, 1])) {
   condition <- all_conditions[i, "conditions"]
@@ -125,7 +129,7 @@ for (i in 1:length(all_conditions[, 1])) {
   plot_list[[i]] <- plot
 }
 # re-order the list so plots of the same condition are next to each other
-plot_list <- plot_list[c(2:length(plot_list), 1)]
+#plot_list <- plot_list[c(2:length(plot_list), 1)]
 
 labels = c() # to fill in with condition names
 combined_plot = ggpubr::ggarrange(plotlist =  plot_list,
@@ -134,12 +138,3 @@ combined_plot = ggpubr::ggarrange(plotlist =  plot_list,
 combined_plot
 
 ggsave(here(paste0("experiment-1/modelling/05_plots/posteriors-all-conditions-c-", c, ".png")), plot = combined_plot)
-
-test <- posteriors%>%
-  group_by(alpha) %>%
-  summarise(median = median(posterior)) %>%
-  mutate(median = median/sum(median))
-
-test %>%
-  ggplot()+
-  geom_line(aes(x = as.factor(alpha), y = median, group = 1))

@@ -21,6 +21,7 @@ plotHeatMaps(d = d_cartesian, all_conditions = tb8, experiment = 1)
 
 
 nBlocks <- 8
+
 # All blocks 
 for (i in 1:nBlocks) {
   block_conds <- all_conditions %>%
