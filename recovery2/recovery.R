@@ -18,15 +18,12 @@ args <- commandArgs(trailingOnly = TRUE)
 alpha <- as.numeric(args[1])
 clue <- as.numeric(args[2])
 block <- as.numeric(args[3])
-provider <- as.numeric(args[4])
-
-
-
+provider <- args[4]
 
 # configure as per requirements
 nRectangles = 100
 prior = "flat"
-recursion = FALSE
+recursion = TRUE
 
 # print configurations to terminal so I know what is running:  
 print(paste0("alpha: ", alpha))

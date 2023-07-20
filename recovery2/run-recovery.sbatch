@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name="rec-recur"
-#SBATCH --array=1-288  # Number of combinations: (alphas) * (clues) * (providers) * (blocks)
+#SBATCH --job-name="recursive"
+#SBATCH --array=1-96  # Number of combinations: (alphas) * (clues) * (providers) * (blocks)
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 
@@ -22,9 +22,9 @@
 #SBATCH --error=slurm_output/%A_%a.err
 
 # Define the values for alpha, clue, provider, and block
-alphas=(1 0 -1)
+alphas=(-1)
 clues=(1 2 3 4)
-providers=("helpful" "random" "misleading" "uninformative")
+providers=("helpful" "random" "misleading" "uninformative") 
 blocks=(1 3 4 5 6 7)
 
 # Calculate the array indices
