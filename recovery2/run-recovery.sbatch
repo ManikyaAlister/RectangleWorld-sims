@@ -31,7 +31,7 @@ blocks=(1 3 4 5 6 7)
 array_index=$((SLURM_ARRAY_TASK_ID - 1))
 alpha_index=$((array_index / (4 * 4 * 6))) # (number of clues after "/") * (number of providers after "/") * (number of blocks after "/")
 clue_index=$(( (array_index % (4 * 4 * 6)) / (4 * 6) )) # (number of clues after "%") * (number of blocks after "/")
-provider_index=$(( (array_index % (4 * 4 * 6)) / 6 % 4 )) # (number of blocks after "%")
+provider_index=$(( (array_index % (4 * 4 * 6)) / 6 % 4 )) # (number of providers after "%")
 block_index=$((array_index % 6)) # number of blocks after "%"
 
 # Assign the values of alpha, clue, provider, and block based on the indices

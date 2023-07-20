@@ -545,3 +545,39 @@ getHypProbs = function(d, all_conditions, experiment, target_blocks = c(2,8), H 
   }
 }
 
+#' Find the area of overlap between two rectangles
+#'
+#' @param rect1 coordinates of first rectangle, e.g., c(<x1>, <y1>, <x2>, <y2>)
+#' @param rect2 coordinates of second rectangle 
+#'
+#' @return area of overlap between the two rectangles
+#'
+#' @examples rectOverlap(rect1 = c(2,2,6,6), rect2 = c(4,4,8,8))
+rectOverlap = function(rect1, rect2) { 
+  
+  rect1 = as.numeric(rect1)
+  rect2 = as.numeric(rect2)
+  
+  # figure out which x and y values are the maximum and minimum values of each rectangle 
+  x1Max = max(c(rect1[1], rect1[3]))
+  x1Min = min(c(rect1[1], rect1[3]))
+  y1Max = max(c(rect1[2], rect1[4]))
+  y1Min = min(c(rect1[2], rect1[4]))
+  
+  x2Max = max(c(rect2[1], rect2[3]))
+  x2Min = min(c(rect2[1], rect2[3]))
+  y2Max = max(c(rect2[2], rect2[4]))
+  y2Min = min(c(rect2[2], rect2[4]))
+  
+  # equation for calculating the area of the overlap 
+  dx = min(x1Max, x2Max) - max(x1Min, x2Min)
+  dy = min(y1Max, y2Max) - max(y1Min, y2Min)
+  
+  if (dx >= 0 & dy >= 0) {
+    size = dx * dy
+    prop = size/max(findSize(rect1), findSize(rect2)) # prop = proportion of overlap
+  } else {
+    prop = 0
+  }
+  return(prop)
+}  
