@@ -1,5 +1,6 @@
 rm(list = ls())
-library(here)
+lib = .libPaths("~/Library/Frameworks/R.framework/Versions/4.1/Resources/library")
+library(here, lib.loc = lib)
 source(here("getLearnerHypDistributions.R"))
 source(here("genericFunctions.R"))
 
@@ -19,8 +20,8 @@ getAlphaBlockDistributions = function(obs, block, alphas = c(-5,-2,-1,-0.5,-0.1,
                                here(paste0("experiment-scenarios/hypothesis-distributions/b-",block,"-dist-alpha_",alpha,"-learner.Rdata"))
       ))
     }
+      print(paste0(i, " out of ", length(alphas)))
   }
-  print(paste0(i, " out of ", length(alphas)))
 }
 
 
@@ -36,6 +37,9 @@ block <- as.numeric(args[1])
 
 # target blocks are consistent across providers, so provider is false in those blocks
 ifelse(block %in% tbs, provider <- FALSE, provider <- args[2])
+
+# print the block and provider so I know what's running
+print(paste0("block: ", block, " provider: ", provider))
 
 observations <-
   loadExperimentObs(b = block,

@@ -56,9 +56,15 @@ blocks=(1 3 4 5 6 7)
 provider_idx=$(((SLURM_ARRAY_TASK_ID-1) % 4)) # make sure you correctly indicate the number of providers after '%'
 block_idx=$(((SLURM_ARRAY_TASK_ID-1) / 4)) # make sure you correctly indicate the number of providers after '/'
 
+# Assign the values of provider and block based on the indices
+provider=${providers[$provider_idx]}
+block=${blocks[$block_idx]}
+
+
 # Run the R script with the input and output files and the block number as a command line argument
-Rscript 
+Rscript experiment-scenarios/hypothesis-distributions/get-learner-block-distributions.R $block $provider
 
 ##DO NOT ADD/EDIT BEYOND THIS LINE##
 ##Job monitor command to list the resource usage
 my-job-stats -a -n -s
+
