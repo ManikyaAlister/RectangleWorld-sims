@@ -339,7 +339,7 @@ simulateLearnerGuesses = function(observations,
 #' @export
 #'
 #' @examples
-fitAlphas = function(data, block, alphas = c(-5,-2,-1,-0.5,-0.1, 0, 0.1, 0.5, 1, 2, 5), recursion = FALSE) {
+fitAlphas = function(data, block, alphas = c(-5,-2,-1,-0.5,-0.1, 0, 0.1, 0.5, 1, 2, 5), recursion = FALSE, provider = FALSE) {
   all_alpha_posteriors = NULL
   # loop through all alphas
   for (j in 1:length(alphas)) {
@@ -347,30 +347,22 @@ fitAlphas = function(data, block, alphas = c(-5,-2,-1,-0.5,-0.1, 0, 0.1, 0.5, 1,
     all_posteriors = NULL
     # loop through each clue
     for (i in 1:length(data[, 1])) {
+      #print(i)
       block = data[i, "block"]
       clue = data[i, "clue"]
       cond = data[i, "cond"]
+      pid = data[i,"pid"]
       # load pre-calculated probability distributions for the given experiment block and alpha. Make sure 
       # that the block has been pre-calculated or the code will break. 
             if (recursion == TRUE){
-        load(here(
-          paste0(
-            "experiment-scenarios/hypothesis-distributions/b-",
-            block,
-            "-dist-alpha_",
-            alpha,
-            "-recursive-learner.Rdata"
-          )
-        ))  
+              load(file = ifelse(is.character(provider), 
+                                       here(paste0("experiment-scenarios/hypothesis-distributions/b-",block,"-dist-alpha_",alpha,"-recursive-learner-",provider,".Rdata")),
+                                       here(paste0("experiment-scenarios/hypothesis-distributions/b-",block,"-dist-alpha_",alpha,"-recursive-learner.Rdata"))
+              ))
       } else {
-        load(here(
-          paste0(
-            "experiment-scenarios/hypothesis-distributions/b-",
-            block,
-            "-dist-alpha_",
-            alpha,
-            ".Rdata"
-          )
+        load(file = ifelse(is.character(provider), 
+                                 here(paste0("experiment-scenarios/hypothesis-distributions/b-",block,"-dist-alpha_",alpha,"-learner-",provider,".Rdata")),
+                                 here(paste0("experiment-scenarios/hypothesis-distributions/b-",block,"-dist-alpha_",alpha,".Rdata"))
         ))
       }
       
@@ -382,9 +374,12 @@ fitAlphas = function(data, block, alphas = c(-5,-2,-1,-0.5,-0.1, 0, 0.1, 0.5, 1,
       posterior = select(posterior,-prior)
       # include whether respondent passed manipulation check
       man_check = data[i,"man_check"]
-      posterior = cbind(posterior, cond, man_check)
+
+      posterior = cbind(pid, posterior, cond, man_check)
       all_posteriors = rbind(all_posteriors, posterior)
+     
     }
+    print(paste0(j," out of ", length(alphas)))
     all_alpha_posteriors = rbind(all_alpha_posteriors, all_posteriors)
   }
   all_alpha_posteriors

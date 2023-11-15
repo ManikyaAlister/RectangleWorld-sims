@@ -5,8 +5,10 @@ library(ggpubr)
 library(RColorBrewer)
 source(here("plottingFunctions.R"))
 load(here("experiment-1/data/derived/all_conditions.R"))
+
+
 exp = 1
-c =4# clue
+#c = 4 # clue
 
 # function for wrangling plot data 
 getPosteriorPlotData = function(posteriors){
@@ -37,17 +39,12 @@ alphas = c(
 )
 
 # Define whether each condition is recursive
-recursion = c(
+recursion_conds = c(
   helpful = FALSE,
   random = FALSE,
   misleading = FALSE,
   uninformative = TRUE
 )
-
-# Target block 8 ----------------------------------------------------------
-all_conditions <- all_conditions %>%
-  filter(blocks == 8 & clues == c)
-
 
 # Define recovery alpha and recursion for each condition
 all_conditions <- all_conditions %>% mutate(
@@ -59,52 +56,103 @@ all_conditions <- all_conditions %>% mutate(
       conditions == "US" ~ alphas["uninformative"]
   ),
   recursion = case_when(
-    conditions == "HN" | conditions == "HS" ~ recursion["helpful"],
-    conditions == "RN" | conditions == "RS" ~ recursion["random"],
+    conditions == "HN" | conditions == "HS" ~ recursion_conds["helpful"],
+    conditions == "RN" | conditions == "RS" ~ recursion_conds["random"],
     conditions == "MN" |
-      conditions == "MS" ~ recursion["misleading"],
+      conditions == "MS" ~ recursion_conds["misleading"],
     conditions == "UN" |
-      conditions == "US" ~ recursion["uninformative"]
+      conditions == "US" ~ recursion_conds["uninformative"]
+  ),
+  provider = case_when(
+      conditions == "HS" | conditions == "HN" ~ "helpful",
+      conditions == "MS" | conditions == "MN" ~ "misleading",
+      conditions == "UN" | conditions == "US" ~ "uninformative",
+      conditions == "RS" | conditions == "RN" ~ "random"
+    )
   )
-)
+
 
 # re order for plotting
 all_conditions <- all_conditions[order(as.character(all_conditions$conditions)), ]
 
 
+
+blocks <- c(1,2,3,4,5,6,7, 8)
+target_blocks <- c(2,8)
+clues <- 1:4
+providers <- c("helpful", "random", "misleading", "uninformative")
+
+for (b in blocks) {
+    for (c in clues) {
+      
+      print(paste0("block ", b))
+      print(paste0("clue ", c))
+# All conditions have the same provider in target blocks
+    if (b %in% target_blocks) {
+  provider <- FALSE
+}
+
+# filter relevant conditions
+all_conditions_tmp <- all_conditions %>%
+  filter(blocks == b & clues == c)
+
 plot_list = NULL
-for (i in 1:length(all_conditions[, 1])) {
-  condition <- all_conditions[i, "conditions"]
-  alpha <- all_conditions[i, "recovery_alpha"]
-  recursion <- all_conditions[i, "recursion"]
+for (i in 1:length(all_conditions_tmp[, 1])) {
+  condition <- all_conditions_tmp[i, "conditions"]
+  alpha <- all_conditions_tmp[i, "recovery_alpha"]
+  recursion <- all_conditions_tmp[i, "recursion"]
+  provider <- all_conditions_tmp[i, "provider"]
   
-  if (recursion) {
-    # load posteriors for participant data
-    load(here(
-      paste0(
-        "experiment-",
-        exp,
-        "/modelling/04_output/tb8-all-alpha-posteriors-recursive.Rdata"
-      )
-    ))
-    # load posteriors for recovery
-    load(here(
-      paste0("recovery2/data/a",alpha,"_n100_c",c,"_pr-flat_recursion.RData")
-    ))
-    
-  } else {
-    # load posteriors for participant data
-    load(here(
-      paste0(
-        "experiment-",
-        exp,
-        "/modelling/04_output/tb8-all-alpha-posteriors.Rdata"
-      )
-    ))
-    # load posteriors for recovery
-    load(here(paste0(
-      "recovery2/data/a",alpha,"_n100_c",c,"_pr-flat.RData"
-    )))
+  
+
+  if (b %in% target_blocks){
+    # load posteriors 
+    if (recursion) {
+      # load posteriors for participant data
+      load(here(
+        paste0(
+          "experiment-",
+          exp,
+          "/modelling/04_output/tb",b,"-all-alpha-posteriors-recursive.Rdata"
+        )
+      ))
+      # load posteriors for recovery
+      load(here(
+        paste0("recovery2/data/a",alpha,"_n100_c",c,"_pr-flat_recursion.RData")
+      ))
+      
+    } else {
+      # load posteriors for participant data
+      load(here(
+        paste0(
+          "experiment-",
+          exp,
+          "/modelling/04_output/tb",b,"-all-alpha-posteriors.Rdata"
+        )
+      ))
+      # load posteriors for recovery
+      load(here(paste0(
+        "recovery2/data/a",alpha,"_n100_c",c,"_pr-flat.RData"
+      )))
+    }
+  }  else {
+    if (recursion) {
+      # load posteriors for participant data
+      load(here(paste0("experiment-1/modelling/04_output/b",b,"-all-alpha-posteriors-",provider,"-recursive.Rdata")))
+      # load posteriors for recovery
+      load(here(
+        paste0(
+          "recovery2/data/a",alpha,"_n100_c",c,"_pr-flat_b_",b,"_",provider,"_recursion.RData"
+        )))
+      
+    } else {
+      # load posteriors for participant data
+      load(here(paste0("experiment-1/modelling/04_output/b",b,"-all-alpha-posteriors-",provider,".Rdata")))
+      # load posteriors for recovery
+      load(here(paste0(
+        "recovery2/data/a",alpha,"_n100_c",c,"_pr-flat_b_",b,"_",provider,"_.RData"
+      )))
+  }
   }
   
   # wrangle recovery data for plotting
@@ -114,6 +162,7 @@ for (i in 1:length(all_conditions[, 1])) {
   all_data <- all_alpha_posteriors %>%
     filter(cond == condition, clue == c) %>%
     mutate(alpha = as.factor(alpha))
+  
   sum <- getPosteriorPlotData(all_data)
   
   plot <-
@@ -122,8 +171,12 @@ for (i in 1:length(all_conditions[, 1])) {
                    recovery_data = recovery_plotting,
                    subtitle = condition)
   
+  if(b %in% target_blocks){
+    ggsave(here(paste0("experiment-1/modelling/05_plots/posteriors/posteriors-",condition,"-c-", c, "-b-",b,".png")), width = 7, height = 5, plot = plot)
+  } else {
+    ggsave(here(paste0("experiment-1/modelling/05_plots/posteriors/posteriors-",condition,"-c-", c, "-b-",b,"-",provider,".png")), width = 7, height = 5, plot = plot)
+  }
   # save individual plots 
-  ggsave(here(paste0("experiment-1/modelling/05_plots/posteriors-",condition,"-c-", c, ".png")), width = 7, height = 5, plot = plot)
   
   # save to list so they can be plotted together 
   plot_list[[i]] <- plot
@@ -131,10 +184,19 @@ for (i in 1:length(all_conditions[, 1])) {
 # re-order the list so plots of the same condition are next to each other
 #plot_list <- plot_list[c(2:length(plot_list), 1)]
 
-labels = c() # to fill in with condition names
+#labels = c() # to fill in with condition names
 combined_plot = ggpubr::ggarrange(plotlist =  plot_list,
                   ncol = 2,
                   nrow = 4)
 combined_plot
 
-ggsave(here(paste0("experiment-1/modelling/05_plots/posteriors-all-conditions-c-", c, ".png")), plot = combined_plot)
+if(b %in% target_blocks){
+  ggsave(here(paste0("experiment-1/modelling/05_plots/posteriors/posteriors-all-conditions-c-",c,"-b-",b,".png")), width = 8, height = 10, plot = combined_plot)
+} else {
+  ggsave(here(paste0("experiment-1/modelling/05_plots/posteriors/posteriors-all-conditions-c-", c, "-b-",b,".png")), width = 8, height = 10, plot = combined_plot)
+}
+
+  }
+  }
+
+

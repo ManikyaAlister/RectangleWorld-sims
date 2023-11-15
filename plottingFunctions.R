@@ -70,11 +70,11 @@ plotColourfulDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
         scale_color_manual(values=c("#FF0000FF","#00A600"))          
     } else if (nNeg > 0) {
       pRect <- pRect +
-        geom_point(data=obs, mapping=aes(x=x, y=y), color="#FF0000FF", shape=4, size=6,
+        geom_point(data=obs, mapping=aes(x=x, y=y), color="white", shape=4, size=6,
                    show.legend=FALSE)        
     } else {
       pRect <- pRect +
-        geom_point(data=obs, mapping=aes(x=x, y=y), color="#00A600", shape=19, size=6,
+        geom_point(data=obs, mapping=aes(x=x, y=y), color="white", shape=19, size=6,
                    show.legend=FALSE)        
     }
   }
@@ -199,6 +199,7 @@ plotHypotheses = function(r,obs=NA,rects=NA, xrange = 0:10,yrange=0:10,
   ylow <- min(yrange)
   yhigh <- max(yrange)
   d <- data.frame(x1=r[1],y1=r[2],x2=r[3],y2=r[4])
+  colnames(d) <- c("x1", "y1", "x2", "y2") # rename columns because if r is a data frame it wont rename. 
   
   # basic plot
   pRect <- ggplot() +
@@ -257,6 +258,63 @@ plotHypotheses = function(r,obs=NA,rects=NA, xrange = 0:10,yrange=0:10,
   
   return(pRect)
 }
+# same as above but clues numbered
+plotHypothesesTeach = function(r,obs=NA, xrange = 0:10,yrange=0:10,
+                               title="Best hypotheses", 
+                               subtitle="Solid line is true, dashed are best"){
+  jitsize <- 0.05
+  xlow <- min(xrange)
+  xhigh <- max(xrange)
+  ylow <- min(yrange)
+  yhigh <- max(yrange)
+  d <- data.frame(x1=r[1],y1=r[2],x2=r[3],y2=r[4])
+  colnames(d) <- c("x1", "y1", "x2", "y2") # rename columns because if r is a data frame it wont rename. 
+  
+  # basic plot
+  pRect <- ggplot() +
+    xlim(xlow-jitsize,xhigh+jitsize) +
+    ylim(ylow-jitsize,yhigh+jitsize) +
+    theme(panel.grid.major = element_line(size = 0.25, linetype = 'solid',
+                                          colour = "grey"), 
+          panel.grid.minor = element_line(size = 0.05, linetype = 'solid',
+                                          colour = "grey"),
+          panel.background = element_rect(fill = "white", colour = "black",
+                                          size = 2, linetype = "solid")) +
+    labs(title=title, subtitle=subtitle)
+  
+  
+  # add in true rectangle
+  pRect <- pRect + 
+    geom_rect(data=d, mapping=aes(xmin=x1, xmax=x2, ymin=y1, ymax=y2), color="black", fill="blue",
+              alpha=0.1)
+  
+  # add in observations if they exist
+  if (!is.null(nrow(obs))) {
+    nPos <- sum(obs$category=="positive")
+    nNeg <- sum(obs$category=="negative")
+    if (nPos > 0 & nNeg > 0) {
+      pRect <- pRect +
+        geom_point(data=obs, mapping=aes(x=x, y=y, color=category, shape=category), size=6,
+                   show.legend=FALSE) +
+        scale_shape_manual(values=c(4,19)) +
+        scale_color_manual(values=c("#FF0000FF","#00A600"))          
+    } else if (nNeg > 0) {
+      pRect <- pRect +
+        geom_point(data=obs, mapping=aes(x=x, y=y), color="#FF0000FF", shape=4, size=6,
+                   show.legend=FALSE)        
+    } else {
+      pRect <- pRect +
+        geom_point(data=obs, mapping=aes(x=x, y=y), color="#00A600", shape=19, size=6,
+                   show.legend=FALSE)        
+    }
+    obs$clue_num = 1:length(obs$x)
+    pRect <- pRect + 
+      geom_text(data = obs, aes(x = x, y = y, label = clue_num))
+  } 
+  
+  return(pRect)
+}
+
 
 
 # **********************
@@ -435,7 +493,125 @@ sizeHistModel = function(data, condition, plotAlpha, prob_constant = 250){
   #facet_wrap(~cond+Experiment, ncol = 2)
 }
 
-plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zeroA = 6, H = 10){
+plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zeroA = 6, H = 10, save = TRUE, file_label = ""){
+  # get load experiment obs function 
+  source(here("genericFunctions.R"))
+  # get update points function 
+  source(here("calculatingFunctions.R"))
+  
+  nConds <- length(all_conditions[,1])
+  # upload pre-calculated positive point probabilities for an alpha of zero (just for plotting clarity)
+  # Load the pre-calculated data if not loaded already 
+  if(!exists("xrange")){
+    fileSeg <- paste0("x0to", H, "y0to", H)
+    fn <- paste0("datafiles/", fileSeg, ".RData")
+    load(here(fn)) 
+  }
+  
+  plot_list <- NULL
+  # Loop through each condition, creating a separate heat map for each
+  for (condId in 1:nConds){
+    # Get condition data (block, conditions, clue number)
+    b <- all_conditions[condId,"blocks"]
+    condition <- all_conditions[condId,"conditions"]
+    clueNum <- all_conditions[condId,"clues"]
+    
+    # Load data
+    if (experiment == "sim") {
+      load(here(paste0("experiment-scenarios/heatmap/data/derived/hyp-probs/hp-",condition,"-b-",b,"-c-",clueNum,file_label,".Rdata")))
+    } else {
+      load(here(paste0("experiment-",experiment,"/data/derived/hyp-probs/hp-",condition,"-b-",b,"-c-",clueNum,file_label,".Rdata")))
+      
+    }
+    
+    
+    # get the provider helpfulness in each condition
+    if (condition == "HS" | condition == "HN") {
+      provider <- "helpful"
+    } else if (condition == "RS" | condition == "RN") {
+      provider <- "random"
+    } else if (condition == "MS" | condition == "MN") {
+      provider <- "misleading"
+    } else if (condition == "US" | condition == "UN") {
+      provider <- "uninformative"
+      recursion = TRUE
+    }
+    
+    # Load clues pertaining to condition
+    
+    obs <- loadExperimentObs(b, clueNum, target_blocks, provider)
+    
+    # Rename columns for plot legend
+    #colnames(ptProbs) <- c("x", "y", "posterior")
+    
+    
+    if(condition == "HS"){
+      fullCond <- "Helpful, Cover Story"
+    } else if (condition == "HN") {
+      fullCond <- "Helpful, No Cover Story"
+    } else if(condition == "MS"){
+      fullCond <- "Misleading, Cover Story"
+    } else if (condition == "MN") {
+      fullCond <- "Misleading, No Cover Story"
+    } else if(condition == "US"){
+      fullCond <- "Uninformative, Cover Story"
+    } else if (condition == "UN") {
+      fullCond <- "Uninformative, No Cover Story"
+    } else if(condition == "RS"){
+      fullCond <- "Random, Cover Story"
+    } else if (condition == "RN") {
+      fullCond <- "Helpful, No Cover Story"}
+    
+    #colourScale <- c("white","hotpink", "navy")
+    
+    # find the index of alpha = 0
+    zeroA = which.min(abs(alphas))
+    
+    # make index column 
+    pts$index = 1:nrow(pts)
+    
+    # get index of the observations 
+    merged_df <- merge(obs, pts, by.x = c("x", "y"), by.y = c("x", "y"))
+    obs$index = merged_df$index
+    
+    # make "selected" column (necessary for update points)
+    #ptProbs$selected = FALSE
+    #ptProbs$selected[obs$index] = TRUE
+    
+    t <- NULL
+    # if not saving, plot title needs to be annotated
+    if (!save){
+      t <- paste0("block ", b, " ", condition)
+    }
+    # plot hypothesis heat map 
+    tempPts <- updatePoints(posProbPts[,,zeroA],obs[clueNum,],
+                            posterior=hyp$posterior,pts=pts)
+    
+    heatMap <- plotDistribution(allPts=tempPts,xrange=xrange,yrange=yrange,
+                                obs=obs[1:clueNum,],whichDist="posterior", title = NULL, subtitle = t)
+    
+    if (save) {
+      if (experiment == "sim"){
+        ggsave(filename = here(paste0("experiment-scenarios/heatmap/plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 5, height = 5, plot = heatMap)
+        
+      } else {
+        ggsave(filename = here(paste0("experiment-",experiment,"/modelling/05_plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 9, height = 6, plot = heatMap)
+      }
+      
+    } else {
+      # Save plot to list 
+      plot_list[[condId]] <- heatMap
+    }
+
+
+    # track progress in console
+    print(paste0(condId," out of ", nConds))
+  }
+  ggarrange(plotlist = plot_list)
+  
+  }
+  
+plotHeatMapsLite = function(all_conditions, experiment, target_blocks = c(2,8), zeroA = 6, H = 10){
   # get load experiment obs function 
   source(here("genericFunctions.R"))
   # get update points function 
@@ -539,7 +715,6 @@ plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zero
     # track progress in console
     print(paste0(condId," out of ", nConds))
   }}
-  
-  
+
   
   

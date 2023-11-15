@@ -27,6 +27,11 @@ getRectangleIndex = function(rectangle, hyp = NULL, nRectangles, H = 10) {
   rectanglesIndex
 }
 
+getPointName = function(point, pts){
+  name <- rownames(pts[pts[,"x"]==point[,"x"] & pts[,"y"]==point[,"y"],])
+  name
+}
+
 # ************************
 #     createRectangle
 # ************************

@@ -146,7 +146,7 @@ getSamplingDistribution = function(probPts, consPts, pts, targetHyp, priors=NULL
   postTH <- postTH + runif(n=nPts,min=-1*mval,max=mval)
   postTH <- postTH/sum(postTH,na.rm=TRUE)
   p <- 1*consPts[,targetHyp]
-  p[p==0] <- -1 ## Because of this, need to make sure anything using these distributions is the abseloute value. 
+  p[p==0] <- -1 ## Because of this, need to make sure anything using these distributions is the absolute value. 
   postTH <- postTH*p
   return(postTH)
   
@@ -506,7 +506,7 @@ getPtProbs = function(d, all_conditions, experiment, target_blocks = c(2,8), H =
   }
 }
 
-getHypProbs = function(d, all_conditions, experiment, target_blocks = c(2,8), H = 10){
+getHypProbs = function(d, all_conditions, experiment, target_blocks = c(2,8), H = 10, file_label = ""){
   nConds <- length(all_conditions[,1])
   # Loop through each condition, creating a separate heat map for each
   for (condId in 1:nConds){
@@ -536,9 +536,9 @@ getHypProbs = function(d, all_conditions, experiment, target_blocks = c(2,8), H 
     
     # Save data
     if (experiment == "sim") {
-      save(hyp, file = here(paste0("experiment-scenarios/heatmap/data/derived/hyp-probs/hp-",condition,"-b-",b,"-c-",clueNum,".Rdata")))
+      save(hyp, file = here(paste0("experiment-scenarios/heatmap/data/derived/hyp-probs/hp-",condition,"-b-",b,"-c-",clueNum,file_label,".Rdata")))
     } else {
-      save(hyp, file = here(paste0("experiment-",experiment,"/data/derived/hyp-probs/hp-",condition,"-b-",b,"-c-",clueNum,".Rdata")))
+      save(hyp, file = here(paste0("experiment-",experiment,"/data/derived/hyp-probs/hp-",condition,"-b-",b,"-c-",clueNum,file_label,".Rdata")))
       
     }
     
