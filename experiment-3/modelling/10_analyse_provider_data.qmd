@@ -19,53 +19,10 @@ source(here("calculatingFunctions.R"))
 ```
 
 ```{r}
-# set up file directory
-exp <- 3
-directory <- paste0("experiment-",exp,"/modelling/04_output/provider-scores/")
-file_list <- list.files(here(directory))
-file_list_ranked <- file_list[str_detect(file_list, "ranked")]
-file_list_prob <- file_list[file_list != file_list_ranked]
+load(here("experiment-3/modelling/04_output/provider_scores_all.Rdata"))
+load(here("experiment-3/modelling/04_output/provider_scores_ranked_all.Rdata"))
 
-
-load(here("experiment-3/data/clean/data_teaching_cartesian.Rdata"))
-learner_conds <- d_cartesian_t %>%
-  group_by(pid, cond) %>%
-  summarise()
-
-#load(here("experiment-3/data/derived/provider_scores_pilot.rdata"))
-loadAndCombine = function(file_list, directory, learner_conds){
-  combined_df <- NULL
-  
-  # load all data files and combine into single data frame
-  for (i in 1:length(file_list)){
-    file_name <- file_list[i]
-    load(here(paste0(directory,file_name)))
-    p <- unique(d_iteration$uid)
-    learn_cond <- as.character(learner_conds[learner_conds[,"pid"] == p,"cond"])
-    
-    if (learn_cond == "HS"){
-      learn_cond <- "helpful"
-    } else if (learn_cond == "RS") {
-      learn_cond <- "random"
-    } else if (learn_cond == "MS"){
-      learn_cond <- "misleading"
-    } else if (learn_cond == "US"){
-      learn_cond <- "uninformative"
-    }
-    
-    d_iteration$learn_cond <- learn_cond
-    combined_df <- rbind(combined_df, d_iteration)
-  }
-  
-  unique_pids <- unique(combined_df$uid)
-  pid_mapping <- setNames(1:length(unique_pids), unique_pids)
-  combined_df$p_num <- match(combined_df$uid, names(pid_mapping))
-  combined_df$p_num <- factor(combined_df$p_num)
-  combined_df
-}
-
-provider_scores_all <- loadAndCombine(file_list_prob, directory, learner_conds)
-provider_scores_ranked_all <- loadAndCombine(file_list_ranked, directory, learner_conds)
+uids <- unique(provider_scores_all$uid)
 
 provider_scores <- provider_scores_all %>%
   filter(model == provider_cond)
@@ -89,14 +46,14 @@ if (ranked) {
   plot <- provider_scores %>% 
     ggplot(aes(x = p_num, y = 100-as.numeric(prob)))+
     geom_col(data = sum_provider_scores)+
-    geom_point(aes(colour = size))+
+    #geom_point(aes(colour = size))+
     labs(y = "Reverse rank (100 = best)", title = "Rank of participant responses according to model")+
     facet_wrap(~provider_cond)
 } else {
   plot <- provider_scores %>% 
     ggplot(aes(x = p_num, y = as.numeric(prob)))+
     geom_col(data = sum_provider_scores)+
-    geom_point(aes(colour = size))+
+   # geom_point(aes(colour = size))+
         labs(y = "Probability", title = "Probability of points chosen by participants according to the model for that condition")+
     facet_wrap(~provider_cond)
 }
@@ -123,15 +80,15 @@ Is there a relationship between how well a participant can provide clues in a gi
 ```{r}
 #| warning = FALSE
 
-getProviderLearnerCorr = function(provider_scores, alpha, blocks = 8, recursive = FALSE, main = ""){
+getProviderLearnerCorr = function(provider_scores, alpha, blocks = 8, recursive = FALSE, main = "", method = "spearman"){
   
   if (alpha > 0 ){
     cond <- "helpful"
   } else if (alpha == 0){
     cond <- "random"
-  } else if (alpha < 0 & recursive == TRUE) {
+  } else if (alpha < 0 & recursive == FALSE) {
     cond <- "misleading"
-  } else {
+  } else if (alpha < 0 & recursive == TRUE) {
     cond <- "uninformative"
   }
   
@@ -145,16 +102,20 @@ getProviderLearnerCorr = function(provider_scores, alpha, blocks = 8, recursive 
   participants <- unique(learner_posteriors$pid)
   
   p_provider <- provider_scores %>%
+        mutate(prob = scale(prob))%>%
     filter(uid %in% participants & provider_cond == cond) %>%
     # get 1 score for each participant
     group_by(uid)%>%
     summarise(mean = mean(prob))
   
   p_learner <- learner_posteriors %>%
+    mutate(posterior = scale(posterior))%>%
     filter(alpha == alpha) %>%
     group_by(pid)%>%
     summarise(mean = mean(posterior))
-  print(cor(p_provider$mean, p_learner$mean))  
+  corr <-  round(cor(p_provider$mean, p_learner$mean, method = method),2)
+  print(paste0("Correlation (",method,") : ",corr))
+  #plot(summary(corr))
   plot(p_provider$mean, p_learner$mean, main = main)  
 }
 
@@ -167,7 +128,7 @@ blocks <- 8
 
 ```{r}
 
-getProviderLearnerCorr(provider_scores, -1, blocks = blocks, recursive = FALSE, main = "Helpful")
+getProviderLearnerCorr(provider_scores, 1, blocks = blocks, recursive = FALSE, main = "Helpful")
 
 getProviderLearnerCorr(provider_scores, -1, blocks = blocks, recursive = FALSE, main = "Misleading")
 
@@ -178,7 +139,7 @@ getProviderLearnerCorr(provider_scores, -1, blocks = blocks, recursive = TRUE, m
 ### Ranks
 
 ```{r}
-getProviderLearnerCorr(provider_scores_ranked, -1, blocks = blocks, recursive = FALSE, main = "Helpful")
+getProviderLearnerCorr(provider_scores_ranked, 1, blocks = blocks, recursive = FALSE, main = "Helpful")
 
 getProviderLearnerCorr(provider_scores_ranked, -1, blocks = blocks, recursive = FALSE, main = "Misleading")
 
@@ -223,7 +184,7 @@ score_by_model_rank %>%
 
 Now let's look at quantitatively at which participants behaved most like each model in the respective conditions.
 
-### Libearl filtering: Remove participants who act helpful all the time.
+### Liberal filtering: Remove participants who act helpful all the time.
 
 Liberal (more relaxed) filtering: filter based on 1. If the best model in the helpful condition was the helpful model and 2. If the best model in the misleading condition was *not* the helpful condition. I think it's a good idea to remove the uninformative condition here, because the uninformative model highly resembles the helpful model, so it might not exclude participants who are just acting like a helpful provider.
 
@@ -249,11 +210,13 @@ scores_by_model_wide$best_model <- best_models
 scores_by_model_wide
 }
 
+
 models <- unique(provider_scores_all$model)
 
 best_models <- getBestProviderModel(score_by_model, models) 
 
 # Liberal filtering: filter based on 1. If the best model in the helpful condition was the helpful model and 2. If the best model in the misleading condition was *not* the helpful condition. 
+
 
 good_subj_liberal <- best_models %>% 
   # because uninformative and helpful often mimick each other, removing uninformative. 
@@ -267,17 +230,26 @@ good_subj_liberal <- best_models %>%
   summarise(sum = sum(match)) %>%
   filter(sum == 2)
 
+
 vec_good_subj_liberal <- unique(good_subj_liberal$p_num)
+good_uid_liberal <- uids[vec_good_subj_liberal]
+length(good_uid_liberal)
+save(good_uid_liberal, file = here("experiment-3/modelling/11_filtered-analyses/good_uid_liberal.Rdata"))
 
-print(c("Participants who met the liberal provider phase exclusion criteria ", vec_good_subj_liberal)) 
+cat(c("Number of participants who met the liberal provider phase exclusion criteria: ", length(vec_good_subj_liberal))) 
+cat(c("Participants who met the liberal provider phase exclusion criteria ", vec_good_subj_liberal)) 
 
 
+```
+
+```         
 ```
 
 ### Plot learner behavior
 
 ```{r}
 #| warning: false
+#| include: false
 #load leaner data 
 load(here("experiment-3/data/derived/data_cartesian.Rdata"))
 
@@ -314,16 +286,23 @@ Filter to only include participants whose best model matched the provider condit
 
 
 good_subj_conservative <- best_models %>% 
-  mutate(match = case_when(provider_cond == best_model ~ TRUE,
+  filter(provider_cond != "uninformative") %>%
+  mutate(match = case_when(provider_cond == "helpful" & best_model == "helpful" ~ TRUE,
+                           provider_cond == "misleading" & best_model == "misleading" ~ TRUE,
+                          #provider_cond == "uninformative" & best_model != "helpful" ~ TRUE,
                            TRUE ~ FALSE
                            )) %>%
   group_by(p_num) %>%
   summarise(sum = sum(match)) %>%
-  filter(sum == 3)
+  filter(sum == 2)
 
 vec_good_subj_conservative <- unique(good_subj_conservative$p_num)
 
-print(c("Participants who met the conservative provider phase exclusion criteria ", vec_good_subj_conservative)) 
+good_uid_conservative <- uids[vec_good_subj_conservative]
+length(good_uid_conservative)
+save(good_uid_conservative, file = here("experiment-3/modelling/11_filtered-analyses/good_uid_conservative.Rdata"))
+
+cat(c("Participants who met the conservative provider phase exclusion criteria: ", vec_good_subj_conservative)) 
 
 ```
 
@@ -349,22 +328,28 @@ good_subj_liberal <- best_models %>%
   filter(sum == 2)
 
 vec_good_subj_liberal <- unique(good_subj_liberal$p_num)
+#save(vec_good_subj_liberal)
 
-print(c("Participants who met the liberal provider phase exclusion criteria ", vec_good_subj_liberal)) 
+cat(c("Participants who met the liberal provider phase exclusion criteria: ", vec_good_subj_liberal)) 
 
 ```
 
 ```{r}
 
 good_subj_conservative <- best_models %>% 
-  mutate(match = case_when(provider_cond == best_model ~ TRUE,
+  filter(provider_cond != "uninformative") %>%
+  mutate(match = case_when(provider_cond == "helpful" & best_model == "helpful" ~ TRUE,
+                           provider_cond == "misleading" & best_model == "misleading" ~ TRUE,
+                          #provider_cond == "uninformative" & best_model != "helpful" ~ TRUE,
                            TRUE ~ FALSE
                            )) %>%
   group_by(p_num) %>%
   summarise(sum = sum(match)) %>%
-  filter(sum == 3)
+  filter(sum == 2)
 
 vec_good_subj_conservative <- unique(good_subj_conservative$p_num)
-
-print(c("Participants who met the conservative provider phase exclusion criteria ", vec_good_subj_conservative)) 
+cat(c("Number of participants: ", length(vec_good_subj_conservative)))
+cat(c("Participants who met the conservative provider phase exclusion criteria: ", vec_good_subj_conservative)) 
 ```
+
+\

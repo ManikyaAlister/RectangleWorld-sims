@@ -9,7 +9,7 @@ nTrials = 32
 
 # data frame with just one observation for each participant
 d_demographics <- d_cartesian %>% 
-  filter(trial_index == 1) %>%
+  filter(trial_index == 2) %>%
   mutate(age = as.numeric(age))
 
 # Follow up question

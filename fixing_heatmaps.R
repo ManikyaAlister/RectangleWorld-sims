@@ -108,7 +108,7 @@ getPtProbs = function(d, all_conditions, experiment, target_blocks = c(2,8), H =
 }
 }
 
-plotHeatMaps2 = function(all_conditions, experiment, target_blocks = c(2,8), zeroA = 6, H = 10){
+plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zeroA = 6, H = 10){
 
   nConds <- length(all_conditions[,1])
   # upload pre-calculated positive point probabilities for an alpha of zero (just for plotting clarity)
@@ -150,6 +150,7 @@ plotHeatMaps2 = function(all_conditions, experiment, target_blocks = c(2,8), zer
       
       # Get observations pertaining to condition
       obs <- targetBlock$observations[1:clueNum,]
+      trueRect <- targetBlock$groundTruth
     } else {
       # find folder that contains the block data for that condition
       
@@ -230,30 +231,20 @@ plotHeatMaps2 = function(all_conditions, experiment, target_blocks = c(2,8), zer
     # find the index of alpha = 0
     zeroA = which.min(abs(alphas))
     
-    # make index column 
-    #pts$index = 1:nrow(pts)
-    
-    # get index of the observations 
-    #merged_df <- merge(obs, pts, by.x = c("x", "y"), by.y = c("x", "y"))
-    #obs$index = merged_df$index
-    
-    # make "selected" column (necessary for update points)
-    #ptProbs$selected = FALSE
-    #ptProbs$selected[obs$index] = TRUE
     
     # plot hypothesis heat map 
     tempPts <- updatePoints(posProbPts[,,zeroA],obs[1:clueNum,],
                             posterior=hyp$posterior,pts=pts)
 
     heatMap <- plotDistribution(allPts=tempPts,xrange=xrange,yrange=yrange,
-                                obs=obs[1:clueNum,],whichDist="posterior", title = NULL, subtitle = NULL)
+                                obs=obs[1:clueNum,],whichDist="posterior", title = NULL, subtitle = NULL, trueRectangle = trueRect)
     
     
     if (experiment == "sim"){
       ggsave(filename = here(paste0("experiment-scenarios/heatmap/plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 5, height = 5, plot = heatMap)
 
     } else {
-      ggsave(filename = here(paste0("experiment-",experiment,"/modelling/05_plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 9, height = 6, plot = heatMap)
+      ggsave(filename = here(paste0("experiment-",experiment,"/modelling/05_plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 5, height = 5, plot = heatMap)
     }
 
     # Save plot to list 
@@ -261,11 +252,3 @@ plotHeatMaps2 = function(all_conditions, experiment, target_blocks = c(2,8), zer
     # track progress in console
     print(paste0(condId," out of ", nConds))
   }}
-# 
-# # test
-# load(here("experiment-1/data/derived/all_conditions.Rdata"))
-# load(here("experiment-scenarios/heatmap/data/"))
-# 
-# 
-# #debugonce(plotHeatMaps2)
-# #plotHeatMaps2(d= d_cartesian, all_conditions = all_conditions, experiment = "sim")

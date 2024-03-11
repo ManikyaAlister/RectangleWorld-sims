@@ -4,7 +4,7 @@ library(tidyverse)
 library(ggpubr)
 library(RColorBrewer)
 source(here("plottingFunctions.R"))
-load(here("experiment-1/data/derived/all_conditions.R"))
+load(here("experiment-3/data/derived/all_conditions.Rdata"))
 
 
 exp = 3
@@ -77,7 +77,7 @@ all_conditions <- all_conditions[order(as.character(all_conditions$conditions)),
 
 
 
-blocks <- c(5,6,7,8)
+blocks <- c(8)
 target_blocks <- c(2,8)
 clues <- 1:4
 providers <- c("helpful", "random", "misleading", "uninformative")
@@ -88,9 +88,9 @@ for (b in blocks) {
     print(paste0("block ", b))
     print(paste0("clue ", c))
     # All conditions have the same provider in target blocks
-    if (b %in% target_blocks) {
-      provider <- FALSE
-    }
+    # if (b %in% target_blocks) {
+    #   provider <- FALSE
+    # }
     
     # filter relevant conditions
     all_conditions_tmp <- all_conditions %>%
@@ -106,16 +106,17 @@ for (b in blocks) {
       
       
       if (b %in% target_blocks){
-        # load posteriors 
+        # load posteriors
         if (recursion) {
           # load posteriors for participant data
-          load(here(
-            paste0(
-              "experiment-",
-              exp,
-              "/modelling/04_output/tb",b,"-all-alpha-posteriors-recursive.Rdata"
-            )
-          ))
+          # load(here(
+          #   paste0(
+          #     "experiment-",
+          #     exp,
+          #     "/modelling/04_output/tb",b,"-all-alpha-posteriors-recursive.Rdata"
+          #   )
+          # ))
+          load(here(paste0("experiment-3/modelling/04_output/b",b,"-all-alpha-posteriors-",provider,"-recursive.Rdata")))
           # load posteriors for recovery
           load(here(
             paste0("recovery2/data/a",alpha,"_n100_c",c,"_pr-flat_recursion.RData")
@@ -123,13 +124,14 @@ for (b in blocks) {
           
         } else {
           # load posteriors for participant data
-          load(here(
-            paste0(
-              "experiment-",
-              exp,
-              "/modelling/04_output/tb",b,"-all-alpha-posteriors.Rdata"
-            )
-          ))
+          # load(here(
+          #   paste0(
+          #     "experiment-",
+          #     exp,
+          #     "/modelling/04_output/tb",b,"-all-alpha-posteriors.Rdata"
+          #   )
+          # ))
+          load(here(paste0("experiment-3/modelling/04_output/b",b,"-all-alpha-posteriors-",provider,".Rdata")))
           # load posteriors for recovery
           load(here(paste0(
             "recovery2/data/a",alpha,"_n100_c",c,"_pr-flat.RData"

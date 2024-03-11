@@ -105,5 +105,12 @@ for (i in 1:length(all_conditions[,1])){
   save(d_cond, file = here(paste0("experiment-3/data/derived/",cond,"-clue-",clue,"-tb-",tb,".Rdata")))
 }
 
+d_subj <- d_cartesian %>%
+  group_by(pid) %>%
+  summarise(cond = unique(cond))
+
+n = d_subj %>%
+  group_by(cond) %>%
+  summarise(n())
 
 

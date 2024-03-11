@@ -24,6 +24,12 @@ load(here("experiment-3/data/derived/data_cartesian.Rdata"))
 alphas <- c(-1, 0, 1) # alphas we are interested in modelling
 c <- 3 # clue we are interested in
 b <- 8 # block we are interested in
+targetBlocks <- c(2,8)
+
+
+all_conditions_filtered <- all_conditions %>%
+  filter(clues == c & blocks == b)
+nConds <- length(all_conditions_filtered[, 1])
 
 # Predicted distributions for each alpha
 all_dists = NULL
@@ -100,11 +106,6 @@ replace_count <- function(d_size, d_cond) {
 }
 
 d_all_sizes <- NULL
-
-
-all_conditions_filtered <- all_conditions %>%
-  filter(clues == c & targetBlocks == b)
-nConds <- length(all_conditions_filtered[, 1])
 
 
 

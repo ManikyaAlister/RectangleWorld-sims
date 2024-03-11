@@ -49,13 +49,15 @@ plotColourfulDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
     geom_rect(data=allPts, 
               mapping=aes(xmin=x-0.5, xmax=x+0.5, ymin=y-0.5, ymax=y+0.5, 
                           fill=posterior),show.legend=FALSE) +
+    
     #geom_text(data=allPts, mapping=aes(x=x, y=y, label=abs(p)),
     #          show.legend=FALSE) +
     scale_fill_gradient2(low="red",mid="black",high="green")
   
   pRect <- pRect +
     geom_rect(data=trueR, mapping=aes(xmin=x1,xmax=x2,ymin=y1,ymax=y2), color="yellow",
-              fill=NA,linetype="dashed")
+              fill=NA,linetype="dashed")+
+    
   
   
   # add in observations if they exist
@@ -67,7 +69,7 @@ plotColourfulDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
         geom_point(data=obs, mapping=aes(x=x, y=y, color=category, shape=category), size=6,
                    show.legend=FALSE) +
         scale_shape_manual(values=c(4,19)) +
-        scale_color_manual(values=c("#FF0000FF","#00A600"))          
+        scale_color_manual(values=c("#FF0000FF","#00A600"))
     } else if (nNeg > 0) {
       pRect <- pRect +
         geom_point(data=obs, mapping=aes(x=x, y=y), color="white", shape=4, size=6,
@@ -123,7 +125,12 @@ plotDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
           panel.grid.minor = element_line(size = 0.05, linetype = 'solid',
                                           colour = "black"),
           panel.background = element_rect(fill = "black", colour = "black",
-                                          size = 2, linetype = "solid")) +
+                                          size = 2, linetype = "solid"),
+          axis.text = element_blank(),  # Remove axis text
+          axis.ticks = element_blank() # remove ticks
+    
+    ) +
+
     labs(title=title, subtitle=subtitle)
   
     if (whichDist=="prior") {
@@ -141,7 +148,7 @@ plotDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
     
     pRect <- pRect +
       geom_rect(data=trueR, mapping=aes(xmin=x1,xmax=x2,ymin=y1,ymax=y2), 
-                color="yellow", fill=NA,linetype="dashed")+
+                color="yellow", fill=NA,linetype="dashed", linewidth = 2)+
       theme(axis.title = element_blank())
 
     
@@ -152,18 +159,18 @@ plotDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
     
     if (nPos > 0 & nNeg > 0) {
       pRect <- pRect +
-        geom_point(data=obs, mapping=aes(x=x, y=y, color=category, shape=category), size=6,
+        geom_point(data=obs, mapping=aes(x=x, y=y, color=category, shape=category), size=12,
                    show.legend=FALSE) +
-        scale_shape_manual(values=c(4,19)) +
+         scale_shape_manual(values=c(15,15)) + # to make them crosses and dots
         scale_color_manual(values=c("#FF0000FF","#00A600"))     
       
     } else if (nNeg > 0) {
       pRect <- pRect +
-        geom_point(data=obs, mapping=aes(x=x, y=y), color="#FF0000FF", shape=4, size=6,
+        geom_point(data=obs, mapping=aes(x=x, y=y), color="#FF0000FF", shape=15, size=12,
                    show.legend=FALSE)        
     } else {
       pRect <- pRect +
-        geom_point(data=obs, mapping=aes(x=x, y=y), color="#00A600", shape=19, size=6,
+        geom_point(data=obs, mapping=aes(x=x, y=y), color="#00A600", shape=15, size=12,
                    show.legend=FALSE)        
     }
   }
@@ -456,7 +463,7 @@ sizeHist = function(data){
 #' @export
 #'
 #' @examples
-sizeHistModel = function(data, condition, plotAlpha, prob_constant = 250){
+sizeHistModel = function(data, condition, plotAlpha, prob_constant = 250, ylim = 95){
   
   data <- data %>%
     mutate(cover_cond = case_when(
@@ -473,13 +480,13 @@ sizeHistModel = function(data, condition, plotAlpha, prob_constant = 250){
     geom_col(aes(y = count, fill = cond)) +
     geom_line(aes(y = prob*prob_constant, colour = factor(cover_cond), group = factor(cover_cond)), linewidth = 0.8, colour = "grey28")+ # get on same scale
     #geom_line(aes(y = prob*prob_constant, colour = factor(cover_cond), group = factor(cover_cond)), linewidth = 0.8)+ # get on same scale
-    scale_fill_manual(values = c("HS" = "seagreen", "HN" = "seagreen", "RS" = "lightblue", "RN" = "lightblue", "MS" = "red", "MN" = "red", "UN" = "orange", "US" = "orange"))+
+    scale_fill_manual(values = c("HS" = "darkgreen", "HN" = "darkgreen", "RS" = "lightblue", "RN" = "lightblue", "MS" = "darkred", "MN" = "darkred", "UN" = "orange", "US" = "orange"))+
     #geom_line(data = all_dists, aes(x = size, y = posterior, colour = Alpha))+
     #scale_colour_manual(values = c("helpful" = "darkseagreen", "random" = "blue", "misleading" = "red3", "uninformative" = "yellow"))+
     labs(y = "Count")+
     #scale_y_continuous(sec.axis = sec_axis(~.*0.0005, name="Posterior")) +
     theme_classic()+
-    ylim(c(0,86))+
+    ylim(c(0,ylim))+
     theme(axis.text.x=element_blank(),
           axis.title.x = element_blank(),
           axis.ticks.x=element_blank(),
@@ -493,7 +500,7 @@ sizeHistModel = function(data, condition, plotAlpha, prob_constant = 250){
   #facet_wrap(~cond+Experiment, ncol = 2)
 }
 
-plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zeroA = 6, H = 10, save = TRUE, file_label = ""){
+plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zeroA = 6, H = 10, save = TRUE, file_label = "", filtered = FALSE){
   # get load experiment obs function 
   source(here("genericFunctions.R"))
   # get update points function 
@@ -525,6 +532,8 @@ plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zero
     }
     
     
+    
+    
     # get the provider helpfulness in each condition
     if (condition == "HS" | condition == "HN") {
       provider <- "helpful"
@@ -540,6 +549,7 @@ plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zero
     # Load clues pertaining to condition
     
     obs <- loadExperimentObs(b, clueNum, target_blocks, provider)
+    trueR <- loadExperimentTrueRect(b, clueNum, target_blocks, provider)
     
     # Rename columns for plot legend
     #colnames(ptProbs) <- c("x", "y", "posterior")
@@ -588,14 +598,19 @@ plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zero
                             posterior=hyp$posterior,pts=pts)
     
     heatMap <- plotDistribution(allPts=tempPts,xrange=xrange,yrange=yrange,
-                                obs=obs[1:clueNum,],whichDist="posterior", title = NULL, subtitle = t)
+                                obs=obs[1:clueNum,],whichDist="posterior", title = NULL, subtitle = t, trueRectangle = trueR)
     
     if (save) {
       if (experiment == "sim"){
         ggsave(filename = here(paste0("experiment-scenarios/heatmap/plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 5, height = 5, plot = heatMap)
         
       } else {
-        ggsave(filename = here(paste0("experiment-",experiment,"/modelling/05_plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 9, height = 6, plot = heatMap)
+        if (filtered) {
+          ggsave(filename = here(paste0("experiment-",experiment,"/modelling/11.1_filtered-analyses-conservative/plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 5, height = 5, plot = heatMap)
+        } else {
+          ggsave(filename = here(paste0("experiment-",experiment,"/modelling/05_plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 5, height = 5, plot = heatMap)
+          
+        }
       }
       
     } else {
@@ -702,12 +717,17 @@ plotHeatMapsLite = function(all_conditions, experiment, target_blocks = c(2,8), 
     heatMap <- plotDistribution(allPts=tempPts,xrange=xrange,yrange=yrange,
                                 obs=obs[1:clueNum,],whichDist="posterior", title = NULL, subtitle = NULL)
     
-    
+    print(filtered)
     if (experiment == "sim"){
       ggsave(filename = here(paste0("experiment-scenarios/heatmap/plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 5, height = 5, plot = heatMap)
       
     } else {
-      ggsave(filename = here(paste0("experiment-",experiment,"/modelling/05_plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 9, height = 6, plot = heatMap)
+      if (filtered) {
+        ggsave(filename = here(paste0("experiment-",experiment,"/modelling/11_filtered-analyses/plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 9, height = 6, plot = heatMap)
+      } else {
+        ggsave(filename = here(paste0("experiment-",experiment,"/modelling/05_plots/heatmap-",condition,"-b-",b,"-c-",clueNum,".png")), width = 9, height = 6, plot = heatMap)
+        
+      }
     }
     
     # Save plot to list 

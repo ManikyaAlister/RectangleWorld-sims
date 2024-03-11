@@ -6,7 +6,7 @@ source(here("plottingFunctions.R"))
 load(here("experiment-1/data/derived/all_conditions.R"))
 
 
-experiments = c(1,2)
+experiments = c(1,2,3)
 blocks = 8
 clues = 2:4 # discard the first clue as it's not very informative
 target_blocks <- c(2,8)
@@ -61,7 +61,7 @@ b <- blocks
 
 # filter relevant conditions
 all_conditions_tmp <- all_conditions %>%
-  filter(blocks == b & clues %in% c)
+  filter(blocks == b & clues %in% c, conditions %in% c("HS", "RS", "MS", "US"))
 
 posterior_data <- NULL
 
@@ -108,8 +108,10 @@ for (i in 1:length(all_conditions_tmp[, 1])) {
     }
   }
   
+  
   d_iteration <- all_alpha_posteriors %>%
-    filter(cond == condition, alpha == model_alpha)
+    filter(cond == condition, alpha == model_alpha) %>%
+    mutate(block = b)
   
   d_iteration$experiment <- as.character(exp)
   
@@ -131,13 +133,14 @@ posterior_data_by_subj %>%
   summarise(stat= median(posterior), se = sd(posterior)/sqrt(n())) %>%
   ggplot(aes(x = experiment, y = stat, fill = experiment)) +
   geom_col() +
-  geom_jitter(data = posterior_data, aes(y = posterior), alpha = 0.05)+
+  #geom_jitter(data = posterior_data, aes(y = posterior), alpha = 0.05)+
   geom_errorbar(aes(ymin = stat - se, ymax = stat + se), width = 0.2) +
-  facet_wrap(~cond, nrow = 1)#, scales = "free")
+  labs(y = "Posterior", subtitle = "Median posterior of participant responses according to the learner model of the condition the participant was in")+
+  facet_wrap(~cond, nrow = 1, scales = "free")
 
-conds <- unique(all_conditions$conditions)
+conds <- unique(all_conditions_tmp$conditions)
 
-experiment_comparisons <- rbind(c(1,2))
+experiment_comparisons <- rbind(c(1,2), c(2,3))
 
 experimentComparisonStats = function(data, conds, experiment_comparisons, shapiro = FALSE, normal_plot = TRUE, rm_random = TRUE){
   

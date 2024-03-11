@@ -318,3 +318,60 @@ loadExperimentObs = function(b, clueNum, target_blocks = c(2, 8), provider) {
   }
   obs
 }
+
+loadExperimentTrueRect = function(b, clueNum, target_blocks = c(2, 8), provider) {
+  if (b %in% target_blocks) {
+    load(here(
+      paste0(
+        "experiment-scenarios/target-blocks/data/target-block-",
+        b,
+        "-Cartesian.Rdata"
+      )
+    ))
+    
+    # Get treu rectangle 
+    trueRect <- targetBlock$groundTruth
+  } else {
+    # find folder that contains the block data for that condition
+    
+    # get initial directory
+    directory <- "experiment-scenarios/hand-picked-blocks/data"
+    
+    # Pattern to match the folder name
+    pattern <- paste0(".*", b, "-.*", provider)
+    
+    # Find folders matching the pattern in the directory
+    matching_directory <-
+      list.files(directory, pattern = pattern, full.name0s = TRUE)
+    
+    # Check if any matching files were found
+    if (length(matching_directory) > 0) {
+      # now load actual data files within directory
+      directory <- matching_directory
+      
+      # Pattern to match file name
+      pattern <- paste0(".*\\b", b, "-\\d+-", provider, ".*\\.Rdata")
+      #pattern <- paste0(".*\\b",b,".*",provider,".*\\.Rdata")
+      
+      # Find files matching the pattern in the directory
+      matching_files <-
+        list.files(directory, pattern = pattern, full.names = TRUE)
+      
+      
+      if (length(matching_files) > 0) {
+        # Load the first matching file
+        load(here(matching_files[1]))
+        
+      } else {
+        print("no file matching specified directory")
+      }
+      
+    } else {
+      # if no matching files, print error
+      print("no folder matching specified directory")
+    }
+    # Get observations pertaining to condtition
+    trueRect <- blockData$groundTruth
+  }
+  trueRect
+}

@@ -8,8 +8,8 @@ pilot_data <- data_teaching
 pilot_subjs <- unique(pilot_data$pid)
 
 
-load(here("experiment-3/data/clean/clean_data_teaching_turk_pilot.rdata"))
-load(here("experiment-3/data/clean/clean_data_turk_pilot.rdata"))
+load(here("experiment-3/data/clean/clean_data_teaching.rdata"))
+load(here("experiment-3/data/clean/clean_data.rdata"))
 source(here("plottingFunctions.R"))
 source(here("calculatingFunctions.R"))
 # check average run time

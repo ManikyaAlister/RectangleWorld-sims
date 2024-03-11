@@ -11,6 +11,10 @@ all_accuracy <- NULL
 for (i in experiments){
   load(here(paste0("experiment-",i,"/data/derived/accuracy.Rdata")))
   d$experiment <- i
+  if(is.null(d$mturk_id)){
+    d$mturk_id <- "NA"
+    warning(paste0("mturk_id not recorded for experiment ", i))
+  }
   all_accuracy <- rbind(all_accuracy, d)
 }
 
@@ -23,20 +27,24 @@ sum_accuracy <- all_accuracy %>%
   group_by(pid, experiment, cond) %>%
   summarise(accuracy = mean(accuracy)) 
 
-sum_accuracy %>% 
-  group_by(cond, experiment) %>%
-  summarise(acc = mean(accuracy), se = sd(accuracy)/sqrt(n()))%>%
-  ggplot(aes(x = experiment, y = acc, fill = experiment)) +
-  geom_col() +
-  geom_errorbar(aes(ymin = acc - se, ymax = acc + se), width = 0.2) +
-  facet_wrap(~cond, nrow = 1)
-
 conds <- c(
   "HS",
   "RS",
   "MS",
   "US"
 )
+
+sum_accuracy %>% 
+  filter(cond %in% conds) %>%
+  group_by(cond, experiment) %>%
+  summarise(acc = mean(accuracy), se = sd(accuracy)/sqrt(n()))%>%
+  ggplot(aes(x = experiment, y = acc, fill = experiment)) +
+  geom_col() +
+  geom_errorbar(aes(ymin = acc - se, ymax = acc + se), width = 0.2) +
+  labs(y = "Accuracy", subtitle = "Participant accuracy as a function of learner condition and experiment")+ 
+  facet_wrap(~cond, nrow = 1, scales = "free")
+
+
 
 experiment_comparisons <- rbind(c(1,2), c(2,3))
 
