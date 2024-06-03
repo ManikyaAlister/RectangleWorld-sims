@@ -500,6 +500,35 @@ sizeHistModel = function(data, condition, plotAlpha, prob_constant = 250, ylim =
   #facet_wrap(~cond+Experiment, ncol = 2)
 }
 
+sizeDensModel = function(data, condition, plotAlpha, prob_constant = 250, ylim = 95){
+  
+  data <- data %>%
+    mutate(cover_cond = case_when(
+      cond == "HS" | cond == "HN" ~ "helpful",
+      cond == "MS" | cond == "MN" ~ "misleading", 
+      cond == "UN" | cond == "US" ~ "uninformative",
+      cond == "RS" | cond == "RN" ~ "random"
+    ))
+  
+  
+  data %>%
+    filter(cond == condition & cover_cond == plotAlpha) %>%
+    ggplot(aes(x = factor(size))) +
+    geom_density(aes(x = size, fill = cond, group = cond)) +
+    #geom_line(aes(y = prob*prob_constant, colour = factor(cover_cond), group = factor(cover_cond)), linewidth = 0.8, colour = "grey28")+ # get on same scale
+    scale_fill_manual(values = c("HS" = "darkgreen", "HN" = "darkgreen", "RS" = "lightblue", "RN" = "lightblue", "MS" = "darkred", "MN" = "darkred", "UN" = "orange", "US" = "orange"))+
+    labs(y = "Count")+
+    theme_classic()+
+   # ylim(c(0,ylim))+
+    theme(axis.text.x=element_blank(),
+          axis.title.x = element_blank(),
+          axis.ticks.x=element_blank(),
+          text = element_text(size = 12),
+          strip.text = element_text(margin = margin(0,0,0,0, "cm"), size = 5),
+          legend.position = "none")
+}
+
+
 plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zeroA = 6, H = 10, save = TRUE, file_label = "", filtered = FALSE){
   # get load experiment obs function 
   source(here("genericFunctions.R"))

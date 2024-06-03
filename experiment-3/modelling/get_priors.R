@@ -1,6 +1,7 @@
 rm(list = ls())
 library(here)
 library(patchwork)
+library(tidyr)
 
 load(here("experiment-3/data/derived/data_priors_cartesian.Rdata"))
 source(here("plottingFunctions.R"))
@@ -12,11 +13,6 @@ filter_priors = function(data, block) {
     select(x1, y1, x2, y2, size_resp, index)
   prior
 }
-
-prior_b8 <- filter_priors(d_priors_cartesian, 8) %>%
-  mutate(size = size_resp,
-         Prior = "Clue 0, Block 8")
-prior_all <- filter_priors(d_priors_cartesian, 1:8)
 
 # get the full spectrum of possible hypotheses
 load(here("datafiles/x0to10y0to10.RData"))
@@ -67,7 +63,34 @@ plotPriorHistScaled = function(scaled_data, scaled = TRUE){
     labs(x = "Rectangle Size", y = "Scaled Frequency", title = "Histogram of Scaled Rectangles")
 }
 
+hyp <- hyp %>% 
+  mutate(index = getRectangleIndex(hyp[,1:4], nRectangles =  nrow(hyp)))
+
+
+prior_b8 <- filter_priors(d_priors_cartesian, 8) %>%
+  mutate(size = size_resp,
+         Prior = "Clue 0, Block 8")
+
+prior_b8_weights <- prior_b8 %>%
+  group_by(index) %>%
+  summarise(count = n())
+
+# integrate empirical prior into full data frame of all possible rectangles
+empirical_prior <- data.frame(index = 1:nrow(hyp)) %>%
+  full_join(prior_b8_weights, by = "index") %>%
+  # replace NAs (rectangles that were not chosen by participants in round 0) with a small number
+  mutate(count = replace_na(as.numeric(count), 0.001),
+         probability = count/sum(count))
+
+prior_all <- filter_priors(d_priors_cartesian, 1:8) 
+
+
+# put index column into list of all possible hypotheses 
+
+
+
 b8_scaled <- scaled_rectangle_sizes(prior_b8, hyp)
+
 plotPriorHistScaled(b8_scaled)
 
 b8_scaled %>% ggplot(aes(x = size_resp, weight = scaled_freq)) +
@@ -94,7 +117,7 @@ sizeNormalDist = function(size_resp, label){
   d
 }
 
-count_sizes <- hyp %>%
+count_sizes <- hyp %>% 
   group_by(size) %>%
   summarise(count = n())
 
@@ -107,7 +130,8 @@ d_combined_size <- bind_rows(
   hyp %>% mutate(Prior = "Flat Prior"),
  prior_b8 %>% mutate(Prior = "Observed Prior"),
   # repeat prior_b8 so that we can compare a scaled version with an unscaled version
-  prior_b8 %>% mutate(Prior = "Observed Prior (Scaled)") 
+  prior_b8 %>% mutate(Prior = "Observed Prior (Scaled)") ,
+ prior_all  %>% mutate(Prior = "Observed Prior for all blocks") 
 )
 
 # Add the 'count' column to the 'prior_b8' dataframe by joining with 'hyp'
@@ -124,7 +148,7 @@ density_plot <- d_combined_size %>%
   ggplot(aes(x = size, fill = Prior, weight = ifelse(Prior == "Observed Prior (Scaled)", count, 1))) +
   geom_density(alpha = 0.5, adjust = 1) +
   labs(x = "Rectangle Size", y = "Density") +
-  scale_fill_manual(values = c("Observed Prior" = "red", "Flat Prior" = "blue", "Observed Prior (Scaled)" = "green")) +
+  scale_fill_manual(values = c("Observed Prior" = "red", "Flat Prior" = "blue", "Observed Prior (Scaled)" = "green", "Observed Prior for all blocks" = "orange")) +
   theme_bw() +
   theme(legend.position = "bottom")
 

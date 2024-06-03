@@ -169,7 +169,7 @@ for (b in blocks) {
         plotPosteriors(p_data = sum,
                        statistic = "median",
                        recovery_data = recovery_plotting,
-                       subtitle = condition)
+                       subtitle = "")
       
       if(b %in% target_blocks){
         ggsave(here(paste0("experiment-2/modelling/05_plots/posteriors/posteriors-",condition,"-c-", c, "-b-",b,".png")), width = 7, height = 5, plot = plot)
