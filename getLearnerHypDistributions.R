@@ -90,6 +90,25 @@ getLearnerHypDistribution = function(observations,
   # set initial prior over hypotheses
   if (prior == "normal") {
     lnHyp$prior <- normalPrior(hyp$size)
+  } else if (prior == "emperical"){
+    load(here("experiment-3/data/derived/emperical-prior.Rdata"))
+    
+  # get empirical prior corresponding to the relevant learner condition 
+  if (alpha == 1){
+    cond_priors <- all_emperical_priors[["HS"]]
+  } else if (alpha == 0) {
+    cond_priors <- all_emperical_priors[["RS"]]
+  } else if (alpha == -1 & recursion == FALSE){
+    cond_priors <- all_emperical_priors[["MS"]]
+  } else if (alpha == -1 & recursion == TRUE){
+    cond_priors <- all_emperical_priors[["US"]]
+  }
+    
+    merge_prior <- lnHyp %>%
+      left_join(cond_priors, by = "size") 
+      mutate(scaled_density = density/sum(density))
+    
+  lnHyp$prior <- merge_prior$scaled_density
   }
 
   # prior is just the posterior from the last trial

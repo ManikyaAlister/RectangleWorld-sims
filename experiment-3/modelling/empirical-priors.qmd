@@ -1,0 +1,135 @@
+---
+title: "Empirical Priors"
+format: html
+editor: visual
+---
+
+```{r}
+rm(list = ls())
+library(here)
+library(patchwork)
+library(tidyr)
+
+load(here("experiment-3/data/derived/data_priors_cartesian.Rdata"))
+load(here("datafiles/x0to10y0to10.RData"))
+source(here("plottingFunctions.R"))
+source(here("calculatingFunctions.R"))
+```
+
+```{r}
+# create helper functions
+
+filter_priors = function(data, block, condition = c("HS", "RS", "MS", "US")) {
+  b <- block
+  prior <- data %>%
+    filter(block %in% b & cond %in% condition) %>%
+    select(x1, y1, x2, y2, size_resp, index, cond)
+  prior
+}
+
+prior_hist = function(data, hyp) {
+  
+  # rename column for consistency with data
+  hyp$size_resp <- hyp$size
+  
+  hyp_freq <- hyp %>%
+    group_by(size_resp) %>%
+    summarise(drawn_count = n()) %>%
+    mutate(size_resp = as.numeric(size_resp))
+  
+  hyp %>%
+    ggplot(aes(x = size_resp)) +
+    geom_bar(data = data)
+    #geom_bar(colour = "blue")
+    #geom_line(data = hyp_freq, aes(x = size_resp, y = drawn_count))
+}
+
+scaled_rectangle_sizes <- function(data, hyp) {
+  # Rename column for consistency with data
+  hyp$size_resp <- as.character(hyp$size)
+  
+  # Calculate the frequency of each drawn rectangle size
+  drawn_rect_freq <- data %>%
+    group_by(size_resp) %>%
+    summarise(drawn_count = n())
+  
+  hyp_freq <- hyp %>%
+    group_by(size_resp) %>%
+    summarise(drawn_count = n()) %>%
+    mutate(size_resp = as.numeric(size_resp))
+  
+  # Merge drawn rectangle frequencies with hyp data to get possible rectangle counts
+  #combined_data <- merge(drawn_rect_freq, hyp_freq, by.x = "size_resp", by.y = "size_resp", all.x = TRUE)
+  combined_data <- full_join(drawn_rect_freq, hyp_freq, by = "size_resp") %>%
+    mutate(drawn_count.x = replace_na(drawn_count.x, 0))
+  
+  # Calculate the scaled frequencies
+  combined_data$scaled_freq <- combined_data$drawn_count.x / combined_data$drawn_count.y
+  combined_data
+}
+
+plotPriorHistScaled = function(scaled_data, scaled = TRUE){
+  # Plot histogram
+  ggplot(scaled_data, aes(x = size_resp, y = scaled_freq)) +
+    geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+    labs(x = "Rectangle Size", y = "Scaled Frequency", title = "Histogram of Scaled Rectangles")
+}
+
+```
+
+```{r}
+prior_all <- filter_priors(d_priors_cartesian, 1:8) 
+conds <- c("HS", "RS", "MS", "US")
+condition_names <- c("Helpful", "Random", "Misleading Naive", "Misleading Aware")
+plot_list <- list()
+all_emperical_priors <- list()
+
+for (i in 1:length(conds)){
+  cond_i <- conds[i]
+  cond_name_i <- condition_names[i]
+  prior_i <- filter_priors(d_priors_cartesian,8, condition = cond_i)
+  prior_scaled_i <- scaled_rectangle_sizes(prior_i, hyp) %>%
+    rename("size" = "size_resp") 
+  
+# Calculate density
+dens <- density(prior_scaled_i$size, weights = prior_scaled_i$scaled_freq)
+
+# Extract x (sizes) and y (densities) values
+sizes <- dens$x
+densities <- dens$y
+
+# Round the sizes to the nearest whole number
+rounded_sizes <- round(sizes)
+
+# Filter rounded sizes to be between 1 and 100
+filtered_indices <- rounded_sizes >= 1 & rounded_sizes <= 100
+filtered_sizes <- rounded_sizes[filtered_indices]
+filtered_densities <- densities[filtered_indices]
+
+# Combine sizes and densities into a data frame
+density_data <- data.frame(size = filtered_sizes, density = filtered_densities)
+
+# Ensure one density value per unique rectangle size
+density_data <- density_data %>%
+  group_by(size) %>%
+  summarise(density = mean(density))
+
+# save prior into list of all empirical priors
+all_emperical_priors[[conds[i]]] <- density_data
+
+# simplel plot to make sure it looks okay
+plot(density_data$size, density_data$density)
+
+# plot prior for given condition
+  dens_plot_i <- prior_scaled_i %>% ggplot(aes(x = size, weight = scaled_freq)) +
+    geom_density(fill = "blue", alpha = 0.5) +
+    labs(x = "Size Response", y = "Density", title = cond_name_i) +
+    theme_minimal()
+  plot_list[[i]] <- dens_plot_i
+}
+
+save(all_emperical_priors, file = here("experiment-3/data/derived/emperical-prior.Rdata"))
+
+names(all_scaled_priors) <- conds
+ggpubr::ggarrange(plotlist = plot_list)
+```

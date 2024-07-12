@@ -44,6 +44,21 @@ sum_accuracy %>%
   labs(y = "Accuracy", subtitle = "Participant accuracy as a function of learner condition and experiment")+ 
   facet_wrap(~cond, nrow = 1, scales = "free")
 
+# Experiment 2 vs. 3
+conds_no_u <- c("HS","RS","MS")
+
+sum_accuracy %>% 
+  filter(cond %in% conds_no_u & experiment %in% c(2,3)) %>%
+  mutate(experiment = case_when(experiment == 2 ~ "Learner Only",
+                                experiment == 3 ~ "Provider First"))%>%
+  group_by(cond, experiment) %>%
+  summarise(acc = mean(accuracy), se = sd(accuracy)/sqrt(n()))%>%
+  ggplot(aes(x = experiment, y = acc, fill = experiment)) +
+  geom_col(alpha = .8) +
+  geom_errorbar(aes(ymin = acc - se, ymax = acc + se), width = 0.2) +
+  scale_fill_viridis_d()+
+  labs(y = "Accuracy", subtitle = "Participant accuracy as a function of learner condition and experiment")+ 
+  facet_wrap(~cond, nrow = 1, scales = "free")
 
 
 experiment_comparisons <- rbind(c(1,2), c(2,3))

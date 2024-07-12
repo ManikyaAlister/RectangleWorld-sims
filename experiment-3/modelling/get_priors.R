@@ -6,11 +6,12 @@ library(tidyr)
 load(here("experiment-3/data/derived/data_priors_cartesian.Rdata"))
 source(here("plottingFunctions.R"))
 source(here("calculatingFunctions.R"))
-filter_priors = function(data, block) {
+
+filter_priors = function(data, block, condition = c("HS", "RS", "MS", "US")) {
   b <- block
   prior <- data %>%
-    filter(block %in% b) %>%
-    select(x1, y1, x2, y2, size_resp, index)
+    filter(block %in% b & cond %in% condition) %>%
+    select(x1, y1, x2, y2, size_resp, index, cond)
   prior
 }
 
@@ -82,6 +83,9 @@ empirical_prior <- data.frame(index = 1:nrow(hyp)) %>%
   mutate(count = replace_na(as.numeric(count), 0.001),
          probability = count/sum(count))
 
+# save empirical prior
+save(empirical_prior, file =here("experiment-3/data/derived/empirical-prior.Rdata"))
+
 prior_all <- filter_priors(d_priors_cartesian, 1:8) 
 
 
@@ -96,6 +100,7 @@ plotPriorHistScaled(b8_scaled)
 b8_scaled %>% ggplot(aes(x = size_resp, weight = scaled_freq)) +
   geom_density(fill = "blue", alpha = 0.5) +
   labs(x = "Size Response", y = "Density") +
+  #facet_wrap(~cond)+
   theme_minimal()
 
 
