@@ -478,7 +478,7 @@ sizeHistModel = function(data, condition, plotAlpha, prob_constant = 250, ylim =
     filter(cond == condition & cover_cond == plotAlpha) %>%
     ggplot(aes(x = factor(size))) +
     geom_col(aes(y = count, fill = cond)) +
-    geom_line(aes(y = prob*prob_constant, colour = factor(cover_cond), group = factor(cover_cond)), linewidth = 0.8, colour = "grey28")+ # get on same scale
+    geom_line(aes(y = prob*prob_constant, colour = factor(prior_type), group = factor(prior_type), linetype = prior_type), linewidth = 0.8, colour = "grey28")+ # get on same scale
     #geom_line(aes(y = prob*prob_constant, colour = factor(cover_cond), group = factor(cover_cond)), linewidth = 0.8)+ # get on same scale
     scale_fill_manual(values = c("HS" = "darkgreen", "HN" = "darkgreen", "RS" = "lightblue", "RN" = "lightblue", "MS" = "darkred", "MN" = "darkred", "UN" = "orange", "US" = "orange"))+
     #geom_line(data = all_dists, aes(x = size, y = posterior, colour = Alpha))+

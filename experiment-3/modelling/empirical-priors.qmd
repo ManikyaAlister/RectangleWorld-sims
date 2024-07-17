@@ -27,6 +27,15 @@ filter_priors = function(data, block, condition = c("HS", "RS", "MS", "US")) {
   prior
 }
 
+filter_empirical = function(data, block, clue, condition = c("HS", "RS", "MS", "US")) {
+  b <- block
+  c <- clue
+  prior <- data %>%
+    filter(block %in% b & cond %in% condition, c %in% clue) %>%
+    select(x1, y1, x2, y2, size_resp, index, cond)
+  prior
+}
+
 prior_hist = function(data, hyp) {
   
   # rename column for consistency with data
@@ -78,6 +87,8 @@ plotPriorHistScaled = function(scaled_data, scaled = TRUE){
 ```
 
 ```{r}
+block = 8
+
 prior_all <- filter_priors(d_priors_cartesian, 1:8) 
 conds <- c("HS", "RS", "MS", "US")
 condition_names <- c("Helpful", "Random", "Misleading Naive", "Misleading Aware")
@@ -87,7 +98,7 @@ all_emperical_priors <- list()
 for (i in 1:length(conds)){
   cond_i <- conds[i]
   cond_name_i <- condition_names[i]
-  prior_i <- filter_priors(d_priors_cartesian,8, condition = cond_i)
+  prior_i <- filter_priors(d_priors_cartesian,1, condition = cond_i)
   prior_scaled_i <- scaled_rectangle_sizes(prior_i, hyp) %>%
     rename("size" = "size_resp") 
   
@@ -131,5 +142,30 @@ plot(density_data$size, density_data$density)
 save(all_emperical_priors, file = here("experiment-3/data/derived/emperical-prior.Rdata"))
 
 names(all_scaled_priors) <- conds
+ggpubr::ggarrange(plotlist = plot_list)
+```
+
+# Testing normalization on empirical data
+
+```{r}
+# load standard cartesian data
+load(here("experiment-3/data/derived/data_cartesian.Rdata"))
+for (i in 1:length(conds)){
+  cond_i <- conds[i]
+  cond_name_i <- condition_names[i]
+  prior_i <- filter_empirical(d_cartesian,block, clue = 4,condition = cond_i)
+  prior_scaled_i <- scaled_rectangle_sizes(prior_i, hyp) %>%
+    rename("size" = "size_resp") 
+
+
+# plot prior for given condition
+  dens_plot_i <- prior_scaled_i %>% ggplot(aes(x = size, weight = scaled_freq)) +
+    geom_density(fill = "blue", alpha = 0.5) +
+    labs(x = "Size Response", y = "Density", title = cond_name_i) +
+    ylim(0,.035)+
+    theme_minimal()
+  plot_list[[i]] <- dens_plot_i
+}
+
 ggpubr::ggarrange(plotlist = plot_list)
 ```

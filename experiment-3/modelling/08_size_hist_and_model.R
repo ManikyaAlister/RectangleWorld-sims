@@ -25,17 +25,19 @@ alphas <- c(-1, 0, 1) # alphas we are interested in modelling
 c <- 3 # clue we are interested in
 b <- 8 # block we are interested in
 targetBlocks <- c(2,8)
-
+priors <- c("flat", "empirical")
 
 all_conditions_filtered <- all_conditions %>%
   filter(clues == c & blocks == b)
 nConds <- length(all_conditions_filtered[, 1])
 
-# Predicted distributions for each alpha
 all_dists = NULL
+for (p in priors) {
+  print(p)
+# Predicted distributions for each alpha
 for (i in 1:length(alphas)) {
   dist <-
-    getLearnerHypDistribution(observations, alpha = alphas[i], prior = "flat")
+    getLearnerHypDistribution(observations, alpha = alphas[i], prior = p)
   # convert to df (probably a better way than this)
   distDf <- NULL
   # loop through clues if more than one clue to be plotted
@@ -49,6 +51,7 @@ for (i in 1:length(alphas)) {
     } else {
       distDf$cond <- "misleading"
     }
+    distDf$prior_type <- p
   }
   all_dists <- rbind(all_dists, distDf)
 }
@@ -57,9 +60,8 @@ for (i in 1:length(alphas)) {
 dist <-
   getLearnerHypDistribution(observations,
                             alpha = alphas[1],
-                            prior = "flat",
+                            prior = p,
                             recursion = TRUE)
-
 # convert to DF
 distDf <- NULL
 for (j in c) {
@@ -67,9 +69,12 @@ for (j in c) {
   distDf <- rbind(distDf, distBlock)
 }
 distDf$cond <- "uninformative"
+distDf$prior_type <- p
 
 # combine all conditions
 all_dists <- rbind(all_dists, distDf)
+}
+
 
 # get probability distributions
 all_dists <- all_dists %>%
@@ -90,7 +95,7 @@ all_dists <- all_dists %>%
 # get probability of a certain sized rectangle under a certain alpha
 
 d_sizes <- all_dists %>%
-  group_by(cond, size) %>%
+  group_by(cond, size, prior_type) %>%
   summarise(prob = sum(posterior))%>% # using "sum" rather than the median or mean means that we can also consider how many rectangles there are in a given size category. 
   mutate(count = 0 )
 
@@ -155,26 +160,33 @@ all_conditions_filtered <- all_conditions_filtered %>%
 
 # Plot
 # loop through all conditions and make a plot for each
-
-for (i in 1:length(all_conditions_filtered[, 1])) {
-  condition <- all_conditions_filtered[i, "conditions"]
-  plotCond <- all_conditions_filtered[i, "plotCond"]
-  
-  if (condition == "US" | condition == "UN") {
-    sizeHistModel(d_all_sizes, condition, plotCond, prob_constant = 100)
-  } else {
-    sizeHistModel(d_all_sizes, condition, plotCond, prob_constant = 400)
+for (p in priors){
+  for (i in 1:length(all_conditions_filtered[, 1])) {
+    condition <- all_conditions_filtered[i, "conditions"]
+    plotCond <- all_conditions_filtered[i, "plotCond"]
+    
+    d_plotting <- d_all_sizes
+    
+    if (p =="flat"){
+      d_plotting <- d_plotting %>% filter(prior_type == "flat")
+    }
+    
+    if (condition == "US" | condition == "UN") {
+      sizeHistModel(d_plotting, condition, plotCond, prob_constant = 100)
+    } else {
+      sizeHistModel(d_plotting, condition, plotCond, prob_constant = 400)
+    }
+    ggsave(filename = here(
+      paste0(
+        "experiment-3/modelling/05_plots/size_hist_b8_c",
+        c,
+        "_",
+        condition,
+        "-",p,".png"
+      )
+    ),
+    width = 7,
+    height = 2.3)
   }
-  ggsave(filename = here(
-    paste0(
-      "experiment-3/modelling/05_plots/size_hist_b8_c",
-      c,
-      "_",
-      condition,
-      ".png"
-    )
-  ),
-  width = 7,
-  height = 2.3)
 }
 
