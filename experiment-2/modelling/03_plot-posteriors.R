@@ -77,7 +77,7 @@ all_conditions <- all_conditions[order(as.character(all_conditions$conditions)),
 
 
 
-blocks <- c(5,6,7,8)
+blocks <- c(8)
 target_blocks <- c(2,8)
 clues <- 1:4
 providers <- c("helpful", "random", "misleading", "uninformative")
@@ -138,7 +138,7 @@ for (b in blocks) {
       }  else {
         if (recursion) {
           # load posteriors for participant data
-          load(here(paste0("experiment-2/modelling/04_output/b",b,"-all-alpha-posteriors-",provider,"-recursive.Rdata")))
+          load(here(paste0("experiment-",exp,"/modelling/04_output/b",b,"-all-alpha-posteriors-",provider,"-recursive.Rdata")))
           # load posteriors for recovery
           load(here(
             paste0(
@@ -147,7 +147,7 @@ for (b in blocks) {
           
         } else {
           # load posteriors for participant data
-          load(here(paste0("experiment-2/modelling/04_output/b",b,"-all-alpha-posteriors-",provider,".Rdata")))
+          load(here(paste0("experiment-",exp,"/modelling/04_output/b",b,"-all-alpha-posteriors-",provider,".Rdata")))
           # load posteriors for recovery
           load(here(paste0(
             "recovery2/data/a",alpha,"_n100_c",c,"_pr-flat_b_",b,"_",provider,"_.RData"
@@ -172,9 +172,9 @@ for (b in blocks) {
                        subtitle = "")
       
       if(b %in% target_blocks){
-        ggsave(here(paste0("experiment-2/modelling/05_plots/posteriors/posteriors-",condition,"-c-", c, "-b-",b,".png")), width = 7, height = 5, plot = plot)
+        ggsave(here(paste0("experiment-",exp,"/modelling/05_plots/posteriors/posteriors-",condition,"-c-", c, "-b-",b,".png")), width = 7, height = 5, plot = plot)
       } else {
-        ggsave(here(paste0("experiment-2/modelling/05_plots/posteriors/posteriors-",condition,"-c-", c, "-b-",b,"-",provider,".png")), width = 7, height = 5, plot = plot)
+        ggsave(here(paste0("experiment-",exp,"/modelling/05_plots/posteriors/posteriors-",condition,"-c-", c, "-b-",b,"-",provider,".png")), width = 7, height = 5, plot = plot)
       }
       # save individual plots 
       
@@ -191,9 +191,9 @@ for (b in blocks) {
     combined_plot
     
     if(b %in% target_blocks){
-      ggsave(here(paste0("experiment-2/modelling/05_plots/posteriors/posteriors-all-conditions-c-",c,"-b-",b,".png")), width = 8, height = 10, plot = combined_plot)
+      ggsave(here(paste0("experiment-",exp,"/modelling/05_plots/posteriors/posteriors-all-conditions-c-",c,"-b-",b,".png")), width = 8, height = 10, plot = combined_plot)
     } else {
-      ggsave(here(paste0("experiment-2/modelling/05_plots/posteriors/posteriors-all-conditions-c-", c, "-b-",b,".png")), width = 8, height = 10, plot = combined_plot)
+      ggsave(here(paste0("experiment-",exp,"/modelling/05_plots/posteriors/posteriors-all-conditions-c-", c, "-b-",b,".png")), width = 8, height = 10, plot = combined_plot)
     }
     
   }

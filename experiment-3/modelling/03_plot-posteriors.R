@@ -4,7 +4,7 @@ library(tidyverse)
 library(ggpubr)
 library(RColorBrewer)
 source(here("plottingFunctions.R"))
-load(here("experiment-3/data/derived/all_conditions.Rdata"))
+load(here("experiment-1/data/derived/all_conditions.R"))
 
 
 exp = 3
@@ -71,6 +71,9 @@ all_conditions <- all_conditions %>% mutate(
   )
 )
 
+# remove no cover story condition suince that was not in E3
+all_conditions <- all_conditions %>% 
+    filter(conditions %in% c("HS","RS","US","MS"))
 
 # re order for plotting
 all_conditions <- all_conditions[order(as.character(all_conditions$conditions)), ]
@@ -88,9 +91,9 @@ for (b in blocks) {
     print(paste0("block ", b))
     print(paste0("clue ", c))
     # All conditions have the same provider in target blocks
-    # if (b %in% target_blocks) {
-    #   provider <- FALSE
-    # }
+    if (b %in% target_blocks) {
+      provider <- FALSE
+    }
     
     # filter relevant conditions
     all_conditions_tmp <- all_conditions %>%
@@ -106,17 +109,16 @@ for (b in blocks) {
       
       
       if (b %in% target_blocks){
-        # load posteriors
+        # load posteriors 
         if (recursion) {
           # load posteriors for participant data
-          # load(here(
-          #   paste0(
-          #     "experiment-",
-          #     exp,
-          #     "/modelling/04_output/tb",b,"-all-alpha-posteriors-recursive.Rdata"
-          #   )
-          # ))
-          load(here(paste0("experiment-3/modelling/04_output/b",b,"-all-alpha-posteriors-",provider,"-recursive.Rdata")))
+          load(here(
+            paste0(
+              "experiment-",
+              exp,
+              "/modelling/04_output/tb",b,"-all-alpha-posteriors-recursive.Rdata"
+            )
+          ))
           # load posteriors for recovery
           load(here(
             paste0("recovery2/data/a",alpha,"_n100_c",c,"_pr-flat_recursion.RData")
@@ -124,14 +126,13 @@ for (b in blocks) {
           
         } else {
           # load posteriors for participant data
-          # load(here(
-          #   paste0(
-          #     "experiment-",
-          #     exp,
-          #     "/modelling/04_output/tb",b,"-all-alpha-posteriors.Rdata"
-          #   )
-          # ))
-          load(here(paste0("experiment-3/modelling/04_output/b",b,"-all-alpha-posteriors-",provider,".Rdata")))
+          load(here(
+            paste0(
+              "experiment-",
+              exp,
+              "/modelling/04_output/tb",b,"-all-alpha-posteriors.Rdata"
+            )
+          ))
           # load posteriors for recovery
           load(here(paste0(
             "recovery2/data/a",alpha,"_n100_c",c,"_pr-flat.RData"
@@ -140,7 +141,7 @@ for (b in blocks) {
       }  else {
         if (recursion) {
           # load posteriors for participant data
-          load(here(paste0("experiment-3/modelling/04_output/b",b,"-all-alpha-posteriors-",provider,"-recursive.Rdata")))
+          load(here(paste0("experiment-",exp,"/modelling/04_output/b",b,"-all-alpha-posteriors-",provider,"-recursive.Rdata")))
           # load posteriors for recovery
           load(here(
             paste0(
@@ -149,7 +150,7 @@ for (b in blocks) {
           
         } else {
           # load posteriors for participant data
-          load(here(paste0("experiment-3/modelling/04_output/b",b,"-all-alpha-posteriors-",provider,".Rdata")))
+          load(here(paste0("experiment-",exp,"/modelling/04_output/b",b,"-all-alpha-posteriors-",provider,".Rdata")))
           # load posteriors for recovery
           load(here(paste0(
             "recovery2/data/a",alpha,"_n100_c",c,"_pr-flat_b_",b,"_",provider,"_.RData"
@@ -171,12 +172,12 @@ for (b in blocks) {
         plotPosteriors(p_data = sum,
                        statistic = "median",
                        recovery_data = recovery_plotting,
-                       subtitle = condition)
+                       subtitle = "")
       
       if(b %in% target_blocks){
-        ggsave(here(paste0("experiment-3/modelling/05_plots/posteriors/posteriors-",condition,"-c-", c, "-b-",b,".png")), width = 7, height = 5, plot = plot)
+        ggsave(here(paste0("experiment-",exp,"/modelling/05_plots/posteriors/posteriors-",condition,"-c-", c, "-b-",b,".png")), width = 7, height = 5, plot = plot)
       } else {
-        ggsave(here(paste0("experiment-3/modelling/05_plots/posteriors/posteriors-",condition,"-c-", c, "-b-",b,"-",provider,".png")), width = 7, height = 5, plot = plot)
+        ggsave(here(paste0("experiment-",exp,"/modelling/05_plots/posteriors/posteriors-",condition,"-c-", c, "-b-",b,"-",provider,".png")), width = 7, height = 5, plot = plot)
       }
       # save individual plots 
       
@@ -193,9 +194,9 @@ for (b in blocks) {
     combined_plot
     
     if(b %in% target_blocks){
-      ggsave(here(paste0("experiment-3/modelling/05_plots/posteriors/posteriors-all-conditions-c-",c,"-b-",b,".png")), width = 8, height = 10, plot = combined_plot)
+      ggsave(here(paste0("experiment-",exp,"/modelling/05_plots/posteriors/posteriors-all-conditions-c-",c,"-b-",b,".png")), width = 8, height = 10, plot = combined_plot)
     } else {
-      ggsave(here(paste0("experiment-3/modelling/05_plots/posteriors/posteriors-all-conditions-c-", c, "-b-",b,".png")), width = 8, height = 10, plot = combined_plot)
+      ggsave(here(paste0("experiment-",exp,"/modelling/05_plots/posteriors/posteriors-all-conditions-c-", c, "-b-",b,".png")), width = 8, height = 10, plot = combined_plot)
     }
     
   }

@@ -91,8 +91,9 @@ getLearnerHypDistribution = function(observations,
   if (prior == "normal") {
     lnHyp$prior <- normalPrior(hyp$size)
   } else if (prior == "empirical"){
-    load(here("experiment-3/data/derived/empirical-prior.Rdata"))
-    
+    load(here("experiment-3/data/derived/empirical-prior-block-8.Rdata"))
+    warning("The empirical prior is based on the prior at block 8")
+  
   # get empirical prior corresponding to the relevant learner condition 
   if (alpha == 1){
     cond_priors <- all_empirical_priors[["HS"]]

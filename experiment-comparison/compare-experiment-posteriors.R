@@ -61,7 +61,7 @@ b <- blocks
 
 # filter relevant conditions
 all_conditions_tmp <- all_conditions %>%
-  filter(blocks == b & clues %in% c, conditions %in% c("HS", "RS", "MS", "US"))
+  filter(blocks == b & clues %in% c, conditions %in% c("HS", "MS", "US"))
 
 posterior_data <- NULL
 

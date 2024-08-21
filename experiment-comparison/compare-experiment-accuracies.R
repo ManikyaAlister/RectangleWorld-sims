@@ -2,6 +2,7 @@ rm(list = ls())
 library(here)
 library(tidyverse)
 library(effsize)
+library(ggsignif)
 
 experiments <- 1:3
 target_blocks <- c(2,8)
@@ -34,7 +35,7 @@ conds <- c(
   "US"
 )
 
-sum_accuracy %>% 
+comparison_plot <- sum_accuracy %>% 
   filter(cond %in% conds) %>%
   group_by(cond, experiment) %>%
   summarise(acc = mean(accuracy), se = sd(accuracy)/sqrt(n()))%>%
@@ -112,3 +113,44 @@ experimentComparisonStats = function(data, conds, experiment_comparisons, shapir
 }
 
 accuracy_stats <- experimentComparisonStats(sum_accuracy, conds, experiment_comparisons, normal_plot = TRUE, shapiro = TRUE)
+
+
+# define full condition names 
+cond_names <- c(
+  "HS" = "Helpful",
+  "RS" = "Random",
+  "MS" = "Misleading Naive",
+  "US" = "Misleading Aware"
+)
+
+# create function that inserts full name in place of short name 
+labelFullNames = function(variable, value){
+  condd_names[value]
+}
+
+ sum_accuracy_filtered <- sum_accuracy %>% 
+  filter(cond %in% conds)
+ 
+ comparisons <- list(c("1","2"),c("2","3"))
+ 
+ stat_test <- sum_accuracy_filtered %>%
+   group_by(cond) %>%
+   wilcox_test(accuracy ~ experiment, comparisons = comparisons, p.adjust.method = "bonferroni", detailed = F) %>%
+   add_xy_position()
+ 
+ 
+ sum_accuracy_filtered %>%
+   ggplot(aes()) +
+   geom_jitter(alpha = 1, aes(x = experiment, y = accuracy, colour = experiment), fill = "black")+
+   geom_boxplot(aes(x = experiment, y = accuracy, fill = experiment),colour = "black", alpha = .5, outliers =  FALSE) +
+   labs(y = "Accuracy", subtitle = "Participant accuracy in non-target blocks", x = "Experiment") +
+   facet_wrap( ~ cond, nrow = 1, labeller = as_labeller(cond_names)) +
+   theme_bw() +
+   theme(legend.position = "none") +
+   scale_fill_brewer() +
+   scale_colour_brewer()+
+   ggpubr::stat_pvalue_manual(stat_test, label = "p.adj.signif")
+   
+   
+  ggsave(filename = here("experiment-comparison/accuracy.png"), width = 7, height = 5)
+  
