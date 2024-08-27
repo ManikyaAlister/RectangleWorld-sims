@@ -106,6 +106,8 @@ replace_count <- function(d_size, d_cond) {
     size_match <- d_cond$size_resp == d_size$size[i]
     if (any(size_match)) {
       d_size$Percent[i] <- d_cond$Percent[which(size_match)]
+      d_size$count[i] <- d_cond$count[which(size_match)]
+      
     }
   }
   return(d_size)
@@ -199,4 +201,3 @@ for (p in priors){
   }
   save(plot_list, file = here(paste0("experiment-",exp,"/data/derived/plot-files-",p,".Rdata")))
 }
-

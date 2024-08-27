@@ -22,7 +22,7 @@ for (i in experiments){
 # do not include target blocks, since those points are not actually chosen by the model. 
 all_accuracy <- as.data.frame(all_accuracy) %>%
   mutate(experiment = as.character(experiment)) %>%
-  filter(!block %in% target_blocks)
+  filter(!block %in% target_blocks & block != 1) # also don't include the first filler block since participants were still figuring out the task
 
 sum_accuracy <- all_accuracy %>%
   group_by(pid, experiment, cond) %>%
@@ -58,7 +58,7 @@ sum_accuracy %>%
   geom_col(alpha = .8) +
   geom_errorbar(aes(ymin = acc - se, ymax = acc + se), width = 0.2) +
   scale_fill_viridis_d()+
-  labs(y = "Accuracy", subtitle = "Participant accuracy as a function of learner condition and experiment")+ 
+  labs(y = "Accuracy", subtitle = "Participant accuracy as a function of learner condition and experiment (Cover Story Only)")+ 
   facet_wrap(~cond, nrow = 1, scales = "free")
 
 
@@ -141,7 +141,7 @@ labelFullNames = function(variable, value){
  
  sum_accuracy_filtered %>%
    ggplot(aes()) +
-   geom_jitter(alpha = 1, aes(x = experiment, y = accuracy, colour = experiment), fill = "black")+
+   geom_jitter(alpha = .6, aes(x = experiment, y = accuracy, fill = experiment), colour = "black", shape = 21)+
    geom_boxplot(aes(x = experiment, y = accuracy, fill = experiment),colour = "black", alpha = .5, outliers =  FALSE) +
    labs(y = "Accuracy", subtitle = "Participant accuracy in non-target blocks", x = "Experiment") +
    facet_wrap( ~ cond, nrow = 1, labeller = as_labeller(cond_names)) +

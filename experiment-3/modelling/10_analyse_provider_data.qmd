@@ -156,13 +156,30 @@ If we only include participants who performed in line with model predictions in 
 score_by_model <- provider_scores_all %>%
   #filter(provider_cond == learn_cond) %>%
   group_by(p_num, provider_cond, model) %>%
-  summarise(score = median(prob))
+  summarise(score = median(prob)) 
 
 score_by_model %>%
-  ggplot(aes(x = p_num, y = score, fill = model))+
-  geom_bar(position="dodge", stat="identity")+
-  labs(title = "Provider score according to each model as a function of condition")+
-  facet_wrap(~provider_cond)
+      mutate(model = case_when(
+    model == "helpful" ~ "Helpful",
+    model == "misleading" ~ str_wrap("Misleading Naive", width = 10),
+    model == "uninformative" ~ str_wrap("Misleading Aware", width = 10),
+    model == "random" ~ "Random"
+  ),
+  provider_cond = case_when(
+    provider_cond == "helpful" ~ "Helpful",
+    provider_cond == "misleading" ~ "Misleading Naive",
+    provider_cond == "uninformative" ~ "Misleading Aware"
+  )) %>%
+  ggplot(aes(x = model, y = score, fill = model))+
+  geom_jitter(aes(colour = model), alpha = .2)+
+  geom_boxplot(outliers = FALSE)+
+  #geom_bar(position="dodge", stat="identity")+
+  scale_fill_brewer(type = "qual")+
+  scale_colour_brewer(type = "qual")+
+  labs(title = "Sequential probability", subtitle = "Provider score according to each model as a function of condition")+
+  facet_wrap(~provider_cond)+
+    theme(legend.position =  "none", axis.text.x = element_text(angle = 45, hjust = 1))
+
 ```
 
 Random always does well in the ranked comparison because everything is rank 1, so let's remove that here.
@@ -170,14 +187,16 @@ Random always does well in the ranked comparison because everything is rank 1, s
 ```{r}
 #| warning: false
 score_by_model_rank <- provider_scores_ranked_all %>%
-  filter(model != "random") %>%
+  filter(model != "random") %>%  
   group_by(p_num, provider_cond, model) %>%
   summarise(score = median(100-prob))
 
 
 score_by_model_rank %>%
-  ggplot(aes(x = p_num, y = score, fill = model))+
-  geom_bar(position="dodge", stat="identity")+
+  ggplot(aes(x = model, y = score, fill = model))+
+  geom_jitter(aes(colour = model), alpha = .2)+
+  geom_boxplot(outliers = FALSE)+
+  #geom_bar(position="dodge", stat="identity")+
   labs(title = "Provider score according to each model as a function of condition")+
   facet_wrap(~provider_cond)
 ```
@@ -329,7 +348,7 @@ good_subj_liberal <- best_models %>%
 
 vec_good_subj_liberal <- unique(good_subj_liberal$p_num)
 #save(vec_good_subj_liberal)
-
+length(vec_good_subj_liberal)
 cat(c("Participants who met the liberal provider phase exclusion criteria: ", vec_good_subj_liberal)) 
 
 ```
