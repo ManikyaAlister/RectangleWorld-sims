@@ -45,9 +45,9 @@ loadAndCombine = function(file_list, directory, learner_conds){
   combined_df
 }
 
-provider_scores_all <- loadAndCombine(file_list_prob, directory, learner_conds)
+#provider_scores_all <- loadAndCombine(file_list_prob, directory, learner_conds)
 provider_scores_ranked_all <- loadAndCombine(file_list_ranked, directory, learner_conds)
 
-save(provider_scores_all, file = here("experiment-3/modelling/04_output/provider_scores_all.Rdata"))
+#save(provider_scores_all, file = here("experiment-3/modelling/04_output/provider_scores_all.Rdata"))
 save(provider_scores_ranked_all, file = here("experiment-3/modelling/04_output/provider_scores_ranked_all.Rdata"))
 

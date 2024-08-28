@@ -198,10 +198,6 @@ d_cartesian_with_posteriors %>%
 #   facet_wrap(~teacher_model+rectangle_size, scales = "free_x")+
 #   theme(axis.text.x = element_blank())
 
-# heat map of empirical points 
-library(ggplot2)
-library(dplyr)
-
 # Calculate the probability of each point as per empirical data
 d_cartesian_t %>%
   #filter(clue == 1) %>%

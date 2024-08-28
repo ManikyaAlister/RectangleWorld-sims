@@ -35,8 +35,8 @@ foreach (i = 1:n_subj, .packages=c('here', 'tidyverse','ggpubr')) %dopar% {
   data <- d_cartesian_t %>% 
     filter(pid == subject)
   
-  score <- getProviderScoreParallel(data, c("uninformative"), subject_no, rank = FALSE)
-  score_ranked <- getProviderScoreParallel(data, c("uninformative"), subject_no, rank = TRUE)
+  #score <- getProviderScoreParallel(data, c("uninformative"), subject_no, rank = FALSE)
+  score_ranked <- getProviderScoreParallel(data, c("random"), subject_no, rank = TRUE)
   
   
 }
@@ -58,6 +58,7 @@ stopCluster(cl)
 # is to look at the rank of points instead of their raw probability.
 
 #provider_scores_ranked <- getProviderScore(d_cartesian_t, rank = TRUE, print_plot = FALSE, save_plot = FALSE)
+#save(provider_scores, file = here("experiment-3/data/derived/provider-scores/all_provider_scores.rdata"))
 
 
 

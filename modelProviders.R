@@ -130,7 +130,7 @@ getPointDistributions = function(
     t <- paste0("Teacher sampling distribution: alpha=", tchAlpha)
     
     # rank the posteriors from highest to lowest
-    posterior_rank <- dense_rank(desc(tchPts$posterior))
+    posterior_rank <- rank(desc(tchPts$posterior), ties.method = "average")
     
     # save the point distribution so we can get the probability/rannk of the point
     # that was selected according to the model
@@ -148,14 +148,15 @@ getPointDistributions = function(
     # is based off of this chosen point.
     newPt <- observations[i, ]
     
-    plot <- plotColourfulDistribution(obs = observations[1:i,],
+   if (print_plot | save_plot){
+     plot <- plotColourfulDistribution(obs = observations[1:i,],
                                       trueRectangle = trueH,
                                       allPts = tchPts,
                                       title = "",
                                       subtitle = i)
     
     all_plots[[i]] <- plot
-    
+   }
     # get the name and index of the point
     newPt$name <- getPointName(newPt, pts)
     newPt$index <- as.numeric(str_sub(newPt$name, start = 2))
@@ -184,15 +185,19 @@ getPointDistributions = function(
     
     
   }
-  plot <- ggarrange(plotlist = all_plots)
-  
-  if (save_plot) {
-    ggsave(plot = plot, filename = here(paste0("experiment-3/data/piloting/figures/point-probs/P-",subj_name,"-",teacher_model,"-",size,"-point-probs.png")), width = 12, height = 12)
-  }
-  
-  if(print_plot) {
-    print(plot)
-  }
+  if (print_plot | save_plot){
+    
+    plot <- ggarrange(plotlist = all_plots)
+    
+    if (save_plot) {
+      ggsave(plot = plot, filename = here(paste0("experiment-3/data/piloting/figures/point-probs/P-",subj_name,"-",teacher_model,"-",size,"-point-probs.png")), width = 12, height = 12)
+    }
+    
+    if(print_plot) {
+      print(plot)
+    }
+    
+  }  
   
   allTchPts
 }
@@ -297,4 +302,184 @@ getProviderScoreParallel = function(data, provider_model, subj_no, rank = FALSE,
     print(paste0("model ", model, " out of ", length(provider_model)))
   }
   posterior_data
+}
+
+modelOptimalProviderSequential = function(true_rectangles, prior = "flat") {
+  H <- 10
+  provider_conditions <-
+    c("helpful", "misleading", "uninformative", "random")
+  
+  # Source functions
+  source(here("genericFunctions.R"))
+  source(here("calculatingFunctions.R"))
+  source(here("plottingFunctions.R"))
+  
+  # Load the pre-calculated data
+  fileSeg <- paste0("x0to", H, "y0to", H)
+  fn <- paste0("datafiles/", fileSeg, ".RData")
+  load(here(fn))
+  
+  #  Set scenario parameters  ---------------------------------------------
+  # All points tracked by the teacher
+  tchPts <- pts
+  # All hypotheses tracked by the teacher
+  tchHyp <- hyp
+  # All hypotheses tracked by the learner
+  lnHyp <- hyp
+  # Number of trials in a block/points provided by the teacher
+  nTrials <- 4
+  
+  # Draw the index of a rectangle from all possible rectangles
+  #colnames(observations) <- c("x", "y", "category")
+  
+  experiment_parameters <-
+    expand.grid(provider_conditions = provider_conditions,
+                rectangle_sizes = names(true_rectangles))
+  
+  
+  # set up an empty df to store the teacher distributions from each trial.
+  allTchPts <- NULL
+  for (j in 1:nrow(experiment_parameters)) {
+    print(experiment_parameters[j,])
+     # extract iteration parameters
+    teacher_model <- experiment_parameters[j, "provider_conditions"]
+    rectangle_size <- experiment_parameters[j, "rectangle_sizes"]
+    
+    # Get true hypothesis (rectangle)
+    trueH <- true_rectangles[[rectangle_size]]
+    names(trueH) <- c("x1", "y1", "x2", "y2")
+    
+    # index of rectangle
+    trueHNum <- getRectangleIndex(trueH, nRectangles = 1)
+    
+    # Provider helpfulness condition
+    if (teacher_model == "helpful") {
+      tchAlpha = 1
+      lnAlpha = 1
+      tchLnAlpha = 1
+    } else if (teacher_model == "misleading") {
+      tchAlpha = -1
+      lnAlpha = 1
+      tchLnAlpha = 1
+    } else if (teacher_model == "random") {
+      tchAlpha = 0
+      lnAlpha = 0
+      tchLnAlpha = 0
+    } else if (teacher_model == "uninformative") {
+      tchAlpha = -1
+      lnAlpha = -1
+      tchLnAlpha = -1
+    }
+    
+    # Empty vector to fill with all of the chosen observations in a block
+    obs <- NULL
+    
+    # Empty list to fill with the observations at each trial within the block.
+    #trialObs <- list()
+    
+    # set alphas based on parameters above
+    tA <- which(alphas == tchAlpha)
+    tchAlphaText <- returnAlpha(tchAlpha)
+    tlA <- which(alphas == tchLnAlpha)
+    tchLnAlphaText <- returnAlpha(tchLnAlpha)
+    lA <- which(alphas == lnAlpha)
+    lnAlphaText <- returnAlpha(lnAlpha)
+    
+    # set initial prior: prior is just the posterior from the last prior
+    if (prior == "normal") {
+      lnHyp$prior <- normalPrior(hyp$size) ## CHECK THIS
+    }
+    
+    # no observations so posteriors are just priors
+    tchHyp$posterior <- tchHyp$prior
+    lnHyp$posterior <- lnHyp$prior
+    
+
+    
+    # no observations yet
+    #obs <- NA
+    # reset tchPts selected
+    tchPts$selected <- FALSE
+    # loop through each trial
+    for (i in 1:nTrials) {
+      print(i)
+      # first step: the teacher generates a sampling distribution over points
+      tchPts$posterior <-
+        getSamplingDistribution(
+          allProbPts[, , tlA],
+          consPts,
+          tchPts,
+          trueHNum,
+          priors = tchHyp$posterior,
+          alpha = tchAlpha,
+          obs = obs
+        )
+      t <- paste0("Teacher sampling distribution: alpha=", tchAlpha)
+      
+      
+      tchPts <- tchPts %>%
+        mutate(
+          # identify whether point is positive or negative
+          type = ifelse(posterior > 0, "positive", "negative"),
+          # take the absolute value of the posterior since we don't need it for calculating point type anymore
+          posterior = abs(posterior),
+          # labeling columns
+          provider_cond = teacher_model,
+          ground_truth_x1 = trueH["x1"],
+          ground_truth_x2 = trueH["x2"],
+          ground_truth_y2 = trueH["y2"],
+          ground_truth_y1 = trueH["y1"],
+          size = rectangle_size,
+          clue = i
+        )
+      
+      
+      
+      # add points to larger data frame
+      allTchPts <- rbind(allTchPts, tchPts)
+      
+      # rank the posteriors from highest to lowest
+      posterior_rank <-
+        rank(desc(abs(tchPts$posterior)), ties.method = "random")
+      
+      # extract the highest posterior point
+      newPt <-
+        tchPts[which(posterior_rank == 1), c("x", "y", "type")] 
+      newPt <- newPt %>%
+        mutate(
+          name = getPointName(newPt, pts),
+          index = as.numeric(str_sub(name, start = 2)),
+          category = type
+        )
+      
+      
+      ## Update data frame of all possible to indicate that this point has been
+      # chosen.
+      tchPts[as.character(newPt["name"]), "selected"] = TRUE
+      
+      
+      # teacher updates their estimate of the learner's distribution
+      # over hypotheses, given the point that was generated
+      tchHyp <-
+        updateHypotheses(allProbPts[, , tlA], consPts, newPt, tchHyp)
+      
+      # step four: teacher updates their estimate of the learner's distribution
+      # over points, given the hypothesis distribution
+      tchPts <- updatePoints(posProbPts[, , tlA],
+                             newPt,
+                             posterior = abs(tchHyp$posterior),
+                             pts = tchPts)
+      
+      ## Keep track of which points have been sampled
+      obs <- rbind(obs, newPt)
+      
+    }
+  }
+  
+  # rename to be consistent with empirical formatting
+  allTchPts <- allTchPts %>%
+    rename("response_x1" = x,
+           "response_y1" = y)
+  allTchPts
+  
 }
