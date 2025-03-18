@@ -57,6 +57,11 @@ d_cartesian <- d_cartesian %>%
     TRUE ~ FALSE
   ))
 
+follow_up_report <- d_cartesian %>%
+  filter(block == 1 & clue == 1) %>%
+  group_by(cond, follow_up) %>%
+  summarise(n())
+
 d_priors_cartesian <- d_cartesian %>%
   filter(clue == 0)
 

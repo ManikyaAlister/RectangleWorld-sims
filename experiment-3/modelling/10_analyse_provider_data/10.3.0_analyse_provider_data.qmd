@@ -1,0 +1,517 @@
+---
+title: "Provider Analyses"
+format:
+  html:
+    code-fold: true
+    code-summary: "Show the code"
+    message: false
+    warning: false
+editor: visual
+---
+
+## 
+
+```{r include=FALSE}
+library(here)
+library(tidyverse)
+library(ggpubr)
+source(here("plottingFunctions.R"))
+source(here("calculatingFunctions.R"))
+source(here("modelProviders.R"))
+```
+
+```{r}
+load(here("experiment-3/modelling/04_output/provider_scores_all.Rdata"))
+load(here("experiment-3/modelling/04_output/provider_scores_ranked_all.Rdata"))
+load(here("experiment-3/data/clean/data_teaching_cartesian.Rdata"))
+
+uids <- unique(provider_scores_all$uid)
+
+provider_scores <- provider_scores_all %>%
+  filter(model == provider_cond)
+
+provider_scores_ranked <- provider_scores_ranked_all %>%
+  filter(model == provider_cond)
+
+# define order that conditions should appear in plots 
+condition_order <- c("Helpful", "Misleading Naive", "Misleading Aware", "Random")
+
+# Create a named vector for custom labels in order, with line breaks
+cond_labels <- c(
+  "helpful" = "Helpful",
+  "misleading" = "Misleading\nNaive",
+  "uninformative" = "Misleading\nAware",
+  "random" = "Random"
+)
+
+size_labels <- c(
+  "medium" = "Medium",
+  "small" = "Small",
+  "large" = "Large"
+)
+```
+
+# Participant performance in each provider condition
+
+In this section we analysed what kind of information provider participants in each condition were most consistent . This involved defining four provider models that correspond to the providers that participants were learning from in the Learner Phase: Helpful ($\alpha$ = 1), Misleading Naive ($\alpha$ = -1), Misleading Aware ($\alpha$ = -1), and Random ($\alpha$ = 0), then for each provider condition, assessing the probability that each provider model would have generated the empirical data in each condition.
+
+An important consideration when modelling behavior in the provider phase is that the probability of choosing the next clue depends on what clue was chosen before it. Therefore, we used a "sequential" method of calculating the probability that a given model would have chosen a participant's point, whereby the probability of the next point was calculated based on what they chose previously.
+
+```{r}
+# calculate probabilities using the "Clue 0" method
+source(here("calculatingFunctions.R"))
+
+# Set up experiment parameters
+H <- 10
+
+# Load the pre-calculated data
+fileSeg <- paste0("x0to", H, "y0to", H)
+fn <- paste0("datafiles/", fileSeg, ".RData")
+load(here(fn))
+
+# Establish true rectangles and their indexes
+rectangles <- list(
+  "medium" = c(4, 1, 9, 4),
+  "small" = c(1, 6, 4, 8),
+  "large" = c(0, 1, 9, 9)
+)
+
+# define teacher models
+models <- c("helpful", "misleading", "uninformative", "random")
+
+```
+
+```{r}
+#| include: false
+#ggpubr::ggarrange(plotlist = plot_list, common.legend = TRUE)
+```
+
+## Heat Map of Responses
+
+```{r}
+# heat map function
+plotProviderHeatMaps = function(data, size_labels, cond_labels, title = NULL, subtitle = NULL, xlab = NULL, ylab = NULL){
+  data %>%
+  ggplot(aes(x = response_x1, y = response_y1, fill = probability)) +
+  geom_tile() +
+    facet_grid(provider_cond ~ size, labeller = labeller(provider_cond = cond_labels, size = size_labels)) +  # Create separate heatmaps for each provider_cond and size
+  scale_fill_gradient( high = "lightblue") +  # Color scale for the heatmap
+  geom_rect(
+            aes(xmin = ground_truth_x1, xmax = ground_truth_x2,
+                ymin = ground_truth_y1, ymax = ground_truth_y2),
+            color = "yellow", 
+            fill = NA,
+            linetype = "dashed",
+            size = .5)+  # Add dashed border for checkered effect
+  labs(title = title,
+       subtitle = subtitle,
+       x = xlab,
+       y = ylab,
+       fill = "Probability") +  # Update label to "Probability"
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    panel.background = element_rect(
+      fill = "black",
+      colour = "black"),
+    panel.grid.major = element_line(size = 0.25, linetype = 'solid',
+                                          colour = "black"), 
+          panel.grid.minor = element_line(size = 0.05, linetype = 'solid',
+                                          colour = "black"),
+            line = element_blank(),
+          strip.background = element_rect(fill= "white")
+) +
+  coord_fixed()  # Ensure squares are of equal size
+
+}
+
+```
+
+```{r}
+pts$index <- 1:100
+# Calculate the probability of each point as per empirical data
+empirical_heatmap_data <- d_cartesian_t %>%
+        mutate(provider_cond = factor(provider_cond, levels = models),
+               size = factor(size, levels = names(size_labels))) %>%
+  #filter(clue == 1) %>%
+  group_by(response_x1, response_y1, provider_cond, size, ground_truth_x1, ground_truth_x2, ground_truth_y1, ground_truth_y2) %>%
+  summarise(count = n()) %>%
+  ungroup() %>%
+  group_by(provider_cond, size) %>%
+  mutate(probability = count / sum(count)) %>%  # Convert counts to probabilities within each group
+  ungroup() 
+
+# load sequential point posteriors
+load(here("experiment-3/modelling/04_output/provider_scores_sequential.Rdata"))
+
+seq_posteriors_heatmap_data <- sequential_point_posterior %>%
+        filter(provider_cond != "random")%>%
+        mutate(provider_cond = factor(provider_cond, levels = models)) %>%
+  #filter(clue == 1) %>%
+  group_by(response_x1, response_y1, provider_cond, size, ground_truth_x1, ground_truth_x2, ground_truth_y1, ground_truth_y2) %>%
+  summarise(max_prob = max(posterior)) %>%
+  group_by(provider_cond, size) %>%
+  mutate(probability = max_prob / sum(max_prob)) %>%  # Convert counts to probabilities within each group
+  ungroup() 
+
+# Generate the heat map of empirical responses
+empirical_heatmap <-  plotProviderHeatMaps(empirical_heatmap_data, size_labels, cond_labels, title = "A. Empirical Data")
+# Genertate heatmap of modelled responses 
+model_heatmap <- plotProviderHeatMaps(seq_posteriors_heatmap_data, size_labels, cond_labels, title = "B. Model Predictions")
+
+ggarrange(empirical_heatmap, model_heatmap, common.legend = TRUE, legend = "none")
+ggsave(filename = here("experiment-3/modelling/05_plots/provider_heatmaps.png"), width = 7.5,height = 5)
+
+```
+
+```{r}
+#| warning: false
+colour_scale <- c("seagreen", "red", "orange","lightblue")
+
+score_by_model <- provider_scores_all %>%
+  #filter(provider_cond == learn_cond) %>%
+  group_by(p_num, provider_cond, model) %>%
+  summarise(score = median(prob), n = n()) 
+
+# function that creates box plots from model predictions on empirical data
+
+boxPlotProvider = function(score_by_model, title, subtitle){
+  score_by_model %>%
+  mutate(model = factor(model, levels = models),
+         provider_cond = factor(provider_cond, levels = models))%>%
+  ggplot(aes(x = model, y = score, fill = model))+
+  geom_jitter(aes(colour = model), alpha = .2)+
+  geom_boxplot(outliers = FALSE)+
+  #geom_bar(position="dodge", stat="identity")+
+  scale_fill_manual(values = colour_scale)+
+  scale_colour_manual(values = colour_scale)+
+  scale_x_discrete(labels = cond_labels) + 
+  labs(title = title, subtitle = subtitle, x = "Provider Model", y = "Probability")+
+  facet_wrap(~provider_cond, labeller = labeller(provider_cond = cond_labels))+
+    theme_bw()+
+    theme(legend.position =  "none", 
+          axis.text.x = element_text(angle = 45, hjust = 1),
+                    line = element_blank(),
+          strip.background = element_rect(fill= "white", colour = "black"))
+}
+```
+
+The plot below shows the probability that each model would have generated the empirical data in each provider condition.
+
+```{r}
+boxPlotProvider(score_by_model = score_by_model,title = NULL, subtitle = NULL)
+ggsave(filename = here("experiment-3/modelling/05_plots/provider-models.png"), width = 7.5, height = 5)
+```
+
+```{r}
+#| warning: false
+#| include: false
+
+# Because there is higher posterior density allocated to certain points in different conditions, it also makes sense to look at this in an ordinal way. In other words, what rank was the point they chose relative to all of the possible points? In the interest of keeping the plots consistent, I have reverse ordered the plot below so that "100" is the best possible point they could have chosen according to the model, and 1 is the worst.
+# 
+# Note that the "random" condition is not included here because it assigns each score as the same rank. <---- should re run this where ties = the middle rank or something like this ***
+
+score_by_model_rank <- provider_scores_ranked_all %>%
+  #filter(model != "random") %>%
+  group_by(p_num, provider_cond, model) %>%
+  summarise(score = median(100 - prob))
+
+boxPlotProvider(score_by_model_rank, title = "Sequential probability (ranked/ordinal)", subtitle = "Provider score according to each model as a function of condition")
+
+#The ranked data shows a similar qualitative pattern as the raw probabilities, but is less sensitive because it does not consider the fact that the difference in probability between points (e.g., the 3rd best point and the 4th best point) is much larger for some models rather than others. For example in the helpful model, it is quite clear that the best points are those in the corners, so those points have a very high probability, but the other points have a very low probability. This is also why the helpful model does better in the non-helpful conditions in the ranked comparison, because lower ranked scores are not sufficiently penalized in line with the model predictions.
+```
+
+## Correlation between provider and learner phases
+
+Is there a relationship between how well a participant can provide clues in a given condition with how they can learn the rectangle?
+
+```{r}
+#| warning = FALSE
+
+getProviderLearnerCorr = function(provider_scores, alpha, blocks = 8, recursive = FALSE, main = "", method = "spearman"){
+  
+  if (alpha > 0 ){
+    cond <- "helpful"
+  } else if (alpha == 0){
+    cond <- "random"
+  } else if (alpha < 0 & recursive == FALSE) {
+    cond <- "misleading"
+  } else if (alpha < 0 & recursive == TRUE) {
+    cond <- "uninformative"
+  }
+  
+  learner_posteriors <- NULL
+  
+  for (b in blocks) {
+    load(here(paste0("experiment-3/modelling/04_output/b",b,"-all-alpha-posteriors-",cond,".Rdata")))
+    learner_posteriors <- rbind(learner_posteriors, all_alpha_posteriors)
+  }
+  # get participants who were in each condition
+  participants <- unique(learner_posteriors$pid)
+  
+  p_provider <- provider_scores %>%
+      #mutate(prob = scale(prob))%>% 
+    filter(uid %in% participants & provider_cond == cond) %>%
+    # get 1 score for each participant
+    group_by(uid)%>%
+    summarise(mean = mean(prob)) 
+  
+  p_learner <- learner_posteriors %>%
+    #mutate(posterior = scale(posterior))%>%
+    filter(alpha == alpha) %>%
+    group_by(pid)%>%
+    summarise(mean = mean(posterior)) 
+ # p_df <- rbind.data.frame(p_provider, p_learner)
+
+  corr <-  round(cor(p_provider$mean, p_learner$mean, method = method),2)
+  #print(paste0("Correlation (",method,") : ",corr))
+  #plot(summary(corr))
+  
+    ggplot()+
+    geom_point(aes(x = p_learner$mean,  y = p_provider$mean))+
+    labs(x = "Posterior of Learner Phase",  y = "Posterior of Provider Phase", title = main,  subtitle = paste0("Spearman's rho: ",corr))+
+      theme_bw()
+  
+  #plot(p_provider$mean, p_learner$mean, main = main, xlab = "Posterior of Provider Phase", ylab = "Posterior of Learner Phase")  
+}
+
+
+
+```
+
+```{r}
+
+# load learning phase data
+blocks <- 8
+
+cor_plot_list <- list(
+getProviderLearnerCorr(provider_scores, 1, blocks = blocks, recursive = FALSE, main = "Helpful"),
+
+getProviderLearnerCorr(provider_scores, -1, blocks = blocks, recursive = FALSE, main = "Misleading Naive"),
+
+getProviderLearnerCorr(provider_scores, -1, blocks = blocks, recursive = TRUE, main = "Misleading Aware")
+)
+
+ggarrange(plotlist = cor_plot_list, nrow = 1)
+
+```
+
+Given the low correlation between provider and learner scores, it seems unlikely that removing the participants who did poorly in the provider phase will make a difference.
+
+```{r}
+#| include: false
+# ranks don't make sense because I'm pretty sure spearman's already converts it to ordinal.
+getProviderLearnerCorr(provider_scores_ranked, 1, blocks = blocks, recursive = FALSE, main = "Helpful")
+
+getProviderLearnerCorr(provider_scores_ranked, -1, blocks = blocks, recursive = FALSE, main = "Misleading")
+
+getProviderLearnerCorr(provider_scores_ranked, -1, blocks = blocks, recursive = TRUE, main = "Uninformative")
+
+```
+
+## Filtering participants based on performance in learning phase
+
+If we only include participants who performed in line with model predictions in the provider phase, how does that influence the group-level learning phase results?
+
+### Liberal filtering: Remove participants who act helpful all the time.
+
+Liberal (more relaxed) filtering: filter based on 1. If the best model in the helpful condition was the helpful model and 2. If the best model in the misleading condition was *not* the helpful condition. I think it's a good idea to remove the uninformative condition here, because the uninformative model highly resembles the helpful model, so it might not exclude participants who are just acting like a helpful provider. We can see from the empiricfal heat map that some participants are still clearly coosing points in line with a helpful model in the Misleading Naive condition, so this filtering should remove those participants. This filtering was pre-registered.
+
+```{r}
+# Figure out which model performed best for each participant and techer condition
+getBestProviderModel = function(scores_by_model, models){
+  # Convert to wide format
+scores_by_model_wide <- scores_by_model %>%
+  pivot_wider(
+    id_cols = c(p_num, provider_cond),
+    names_from = model,
+    values_from = score
+  )
+
+# make temporary df with unnecessary columns
+tmp <- scores_by_model_wide[,models]
+
+best_models <- apply(tmp, 1, function(row) {
+  models[which.max(row)]
+})
+
+scores_by_model_wide$best_model <- best_models
+scores_by_model_wide
+}
+
+
+models <- unique(provider_scores_all$model)
+
+best_models <- getBestProviderModel(score_by_model, models) 
+
+# Liberal filtering: filter based on 1. If the best model in the helpful condition was the helpful model and 2. If the best model in the misleading condition was *not* the helpful condition. 
+
+
+good_subj_liberal <- best_models %>% 
+  # because uninformative and helpful often mimick each other, removing uninformative. 
+  filter(provider_cond != "uninformative") %>%
+  mutate(match = case_when(provider_cond == "helpful" & best_model == "helpful" ~ TRUE,
+                           provider_cond == "misleading" & best_model != "helpful" ~ TRUE,
+                          #provider_cond == "uninformative" & best_model != "helpful" ~ TRUE,
+                           TRUE ~ FALSE
+                           )) %>%
+  group_by(p_num) %>%
+  summarise(sum = sum(match)) %>%
+  filter(sum == 2)
+
+
+vec_good_subj_liberal <- unique(good_subj_liberal$p_num)
+good_uid_liberal <- uids[vec_good_subj_liberal]
+length(good_uid_liberal)
+save(good_uid_liberal, file = here("experiment-3/modelling/11_filtered-analyses/good_uid_liberal.Rdata"))
+
+cat(c("Number of participants who met the liberal provider phase exclusion criteria: ", length(vec_good_subj_liberal))) 
+#cat(c("Participants who met the liberal provider phase exclusion criteria ", vec_good_subj_liberal)) 
+
+
+```
+
+Heat map with the liberal filtered data
+
+```{r}
+empirical_heatmap_data_filtered <- d_cartesian_t %>%
+  filter(pid %in% good_uid_liberal) %>%
+        mutate(provider_cond = factor(provider_cond, levels = models),
+               size = factor(size, levels = names(size_labels))) %>%
+  #filter(clue == 1) %>%
+  group_by(response_x1, response_y1, provider_cond, size, ground_truth_x1, ground_truth_x2, ground_truth_y1, ground_truth_y2) %>%
+  summarise(count = n()) %>%
+  ungroup() %>%
+  group_by(provider_cond, size) %>%
+  mutate(probability = count / sum(count)) %>%  # Convert counts to probabilities within each group
+  ungroup() 
+
+plotProviderHeatMaps(empirical_heatmap_data_filtered, cond_labels, size_labels)
+  
+```
+
+### Plot learner behavior
+
+```{r}
+#| warning: false
+#| include: false
+#load leaner data 
+load(here("experiment-3/data/derived/data_cartesian.Rdata"))
+
+# load target block data
+load(here("experiment-scenarios/target-blocks/data/target-block-8-Cartesian.Rdata"))
+
+# load experiment condition data
+load(here("experiment-3/data/derived/all_conditions.Rdata"))
+
+# filter conditions of interest-- let's just look at the second target block for now. 
+exp_params <- all_conditions %>%
+  filter(blocks == 8, clues %in% 1:4) 
+
+# get participant IDs
+PID <- unique(d_cartesian$pid)
+
+# get participant IDs who passed liberal exclusion criteria
+good_ps <- PID[vec_good_subj_liberal]
+
+data_g <- d_cartesian %>%
+  filter(pid %in% good_ps)
+
+getHypProbs(d = data_g, all_conditions = exp_params, experiment = 3, file_label = "-filtered-lib")
+
+plotHeatMaps(all_conditions = exp_params, experiment = 3, save = FALSE, file_label = "-filtered-lib")
+
+```
+
+### Conservative filtering: Model must match condition
+
+Filter to only include participants whose best model matched the provider condition they were in (excluding Misleading Aware).
+
+```{r}
+
+
+good_subj_conservative <- best_models %>% 
+  filter(provider_cond != "uninformative") %>%
+  mutate(match = case_when(provider_cond == "helpful" & best_model == "helpful" ~ TRUE,
+                           provider_cond == "misleading" & best_model == "misleading" ~ TRUE,
+                          #provider_cond == "uninformative" & best_model != "helpful" ~ TRUE,
+                           TRUE ~ FALSE
+                           )) %>%
+  group_by(p_num) %>%
+  summarise(sum = sum(match)) %>%
+  filter(sum == 2)
+
+vec_good_subj_conservative <- unique(good_subj_conservative$p_num)
+
+good_uid_conservative <- uids[vec_good_subj_conservative]
+length(good_uid_conservative)
+save(good_uid_conservative, file = here("experiment-3/modelling/11_filtered-analyses/good_uid_conservative.Rdata"))
+
+#cat(c("Participants who met the conservative provider phase exclusion criteria: ", vec_good_subj_conservative)) 
+
+```
+
+```{r}
+empirical_heatmap_data_filtered_cons <- d_cartesian_t %>%
+  filter(pid %in% good_uid_conservative) %>%
+        mutate(provider_cond = factor(provider_cond, levels = models),
+               size = factor(size, levels = names(size_labels))) %>%
+  #filter(clue == 1) %>%
+  group_by(response_x1, response_y1, provider_cond, size, ground_truth_x1, ground_truth_x2, ground_truth_y1, ground_truth_y2) %>%
+  summarise(count = n()) %>%
+  ungroup() %>%
+  group_by(provider_cond, size) %>%
+  mutate(probability = count / sum(count)) %>%  # Convert counts to probabilities within each group
+  ungroup() 
+
+plotProviderHeatMaps(empirical_heatmap_data_filtered_cons, cond_labels, size_labels)
+```
+
+### 
+
+```{r}
+#| include: false
+models <- unique(score_by_model_rank$model)
+
+
+best_models <- getBestProviderModel(score_by_model_rank, models) 
+
+# Liberal filtering: filter based on 1. If the best model in the helpful condition was the helpful model and 2. If the best model in the misleading condition was *not* the helpful condition. 
+
+good_subj_liberal <- best_models %>% 
+  # because uninformative and helpful often mimick each other, removing uninformative. 
+  filter(provider_cond != "uninformative") %>%
+  mutate(match = case_when(provider_cond == "helpful" & best_model == "helpful" ~ TRUE,
+                           provider_cond == "misleading" & best_model != "helpful" ~ TRUE,
+                           TRUE ~ FALSE
+                           )) %>%
+  group_by(p_num) %>%
+  summarise(sum = sum(match)) %>%
+  filter(sum == 2)
+
+vec_good_subj_liberal <- unique(good_subj_liberal$p_num)
+#save(vec_good_subj_liberal)
+length(vec_good_subj_liberal)
+cat(c("Participants who met the liberal provider phase exclusion criteria: ", vec_good_subj_liberal)) 
+
+```
+
+```{r}
+
+good_subj_conservative <- best_models %>% 
+  filter(provider_cond != "uninformative") %>%
+  mutate(match = case_when(provider_cond == "helpful" & best_model == "helpful" ~ TRUE,
+                           provider_cond == "misleading" & best_model == "misleading" ~ TRUE,
+                          #provider_cond == "uninformative" & best_model != "helpful" ~ TRUE,
+                           TRUE ~ FALSE
+                           )) %>%
+  group_by(p_num) %>%
+  summarise(sum = sum(match)) %>%
+  filter(sum == 2)
+
+vec_good_subj_conservative <- unique(good_subj_conservative$p_num)
+cat(c("Number of participants: ", length(vec_good_subj_conservative)))
+cat(c("Participants who met the conservative provider phase exclusion criteria: ", vec_good_subj_conservative)) 
+```
+
+\

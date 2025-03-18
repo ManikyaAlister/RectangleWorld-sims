@@ -2,6 +2,9 @@ rm(list = ls())
 library(here)
 library(tidyverse)
 library(effsize)
+library(ggsignif)
+library(rstatix)
+
 
 experiments <- 1:3
 target_blocks <- c(2,8)
@@ -21,7 +24,7 @@ for (i in experiments){
 # do not include target blocks, since those points are not actually chosen by the model. 
 all_accuracy <- as.data.frame(all_accuracy) %>%
   mutate(experiment = as.character(experiment)) %>%
-  filter(!block %in% target_blocks)
+  filter(!block %in% target_blocks & block != 1) # also don't include the first filler block since participants were still figuring out the task
 
 sum_accuracy <- all_accuracy %>%
   group_by(pid, experiment, cond) %>%
@@ -34,7 +37,7 @@ conds <- c(
   "US"
 )
 
-sum_accuracy %>% 
+comparison_plot <- sum_accuracy %>% 
   filter(cond %in% conds) %>%
   group_by(cond, experiment) %>%
   summarise(acc = mean(accuracy), se = sd(accuracy)/sqrt(n()))%>%
@@ -44,6 +47,21 @@ sum_accuracy %>%
   labs(y = "Accuracy", subtitle = "Participant accuracy as a function of learner condition and experiment")+ 
   facet_wrap(~cond, nrow = 1, scales = "free")
 
+# Experiment 2 vs. 3
+conds_no_u <- c("HS","RS","MS")
+
+sum_accuracy %>% 
+  filter(cond %in% conds_no_u & experiment %in% c(2,3)) %>%
+  mutate(experiment = case_when(experiment == 2 ~ "Learner Only",
+                                experiment == 3 ~ "Provider First"))%>%
+  group_by(cond, experiment) %>%
+  summarise(acc = mean(accuracy), se = sd(accuracy)/sqrt(n()))%>%
+  ggplot(aes(x = experiment, y = acc, fill = experiment)) +
+  geom_col(alpha = .8) +
+  geom_errorbar(aes(ymin = acc - se, ymax = acc + se), width = 0.2) +
+  scale_fill_viridis_d()+
+  labs(y = "Accuracy", subtitle = "Participant accuracy as a function of learner condition and experiment (Cover Story Only)")+ 
+  facet_wrap(~cond, nrow = 1, scales = "free")
 
 
 experiment_comparisons <- rbind(c(1,2), c(2,3))
@@ -97,3 +115,47 @@ experimentComparisonStats = function(data, conds, experiment_comparisons, shapir
 }
 
 accuracy_stats <- experimentComparisonStats(sum_accuracy, conds, experiment_comparisons, normal_plot = TRUE, shapiro = TRUE)
+
+
+# define full condition names 
+cond_names <- c(
+  "HS" = "Helpful",
+  "MS" = "Misleading Naive",
+  "US" = "Misleading Aware",
+  "RS" = "Random"
+)
+
+# create function that inserts full name in place of short name 
+labelFullNames = function(variable, value){
+  condd_names[value]
+}
+
+ sum_accuracy_filtered <- sum_accuracy %>% 
+  filter(cond %in% conds)
+ 
+ comparisons <- list(c("1","2"),c("2","3"))
+ 
+ stat_test <- sum_accuracy_filtered %>%
+   group_by(cond) %>%
+   wilcox_test(accuracy ~ experiment, comparisons = comparisons, p.adjust.method = "bonferroni", detailed = F) %>%
+   add_xy_position()
+ 
+ 
+ sum_accuracy_filtered %>%
+   mutate(cond = factor(cond, levels = names(cond_names))) %>%
+   ggplot(aes()) +
+   geom_jitter(alpha = .6, aes(x = experiment, y = accuracy, fill = experiment), colour = "black", shape = 21)+
+   geom_boxplot(aes(x = experiment, y = accuracy, fill = experiment),colour = "black", alpha = .5, outliers =  FALSE) +
+   labs(y = "Accuracy", subtitle = "Participant accuracy in non-target blocks", x = "Experiment") +
+   facet_wrap( ~ cond, nrow = 1, labeller = as_labeller(cond_names)) +
+   theme_bw() +
+   theme(legend.position = "none",
+         line = element_blank(),
+         strip.background = element_rect(fill= "white")) +
+   scale_fill_brewer() +
+   scale_colour_brewer()+
+   ggpubr::stat_pvalue_manual(stat_test, label = "p.adj.signif")
+   
+   
+  ggsave(filename = here("experiment-comparison/accuracy.png"), width = 7, height = 5)
+  

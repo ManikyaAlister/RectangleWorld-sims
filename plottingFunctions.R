@@ -427,12 +427,13 @@ plotPosteriors = function(p_data, statistic, man_check = FALSE, recovery_data, t
     theme_classic()+
     scale_fill_brewer(palette = "RdYlGn")+
     labs(x = "", y = "", title = title, subtitle = subtitle)+
-    theme(#axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          #axis.text.y=element_blank(),
+    theme(
+          #axis.ticks.x=element_blank(),
           axis.ticks.y=element_blank(),
           text = element_text(size = 18),
+          axis.text = element_text(size = 22),
           plot.margin = margin(0, 0, 0, 0, "cm"),
+          axis.text.x = element_text(angle = 45, vjust = .5),
           legend.position = "none",
           
           )
@@ -463,7 +464,7 @@ sizeHist = function(data){
 #' @export
 #'
 #' @examples
-sizeHistModel = function(data, condition, plotAlpha, prob_constant = 250, ylim = 95){
+sizeHistModel = function(data, condition, plotAlpha, ylim = 95, dif_priors = FALSE){
   
   data <- data %>%
     mutate(cover_cond = case_when(
@@ -474,30 +475,37 @@ sizeHistModel = function(data, condition, plotAlpha, prob_constant = 250, ylim =
     ))
   
   
-  data %>%
+  plot  <- data %>%
     filter(cond == condition & cover_cond == plotAlpha) %>%
     ggplot(aes(x = factor(size))) +
-    geom_col(aes(y = count, fill = cond)) +
-    geom_line(aes(y = prob*prob_constant, colour = factor(cover_cond), group = factor(cover_cond)), linewidth = 0.8, colour = "grey28")+ # get on same scale
-    #geom_line(aes(y = prob*prob_constant, colour = factor(cover_cond), group = factor(cover_cond)), linewidth = 0.8)+ # get on same scale
+    geom_col(aes(y = Percent, fill = cond)) +
     scale_fill_manual(values = c("HS" = "darkgreen", "HN" = "darkgreen", "RS" = "lightblue", "RN" = "lightblue", "MS" = "darkred", "MN" = "darkred", "UN" = "orange", "US" = "orange"))+
-    #geom_line(data = all_dists, aes(x = size, y = posterior, colour = Alpha))+
-    #scale_colour_manual(values = c("helpful" = "darkseagreen", "random" = "blue", "misleading" = "red3", "uninformative" = "yellow"))+
-    labs(y = "Count")+
-    #scale_y_continuous(sec.axis = sec_axis(~.*0.0005, name="Posterior")) +
     theme_classic()+
     ylim(c(0,ylim))+
     theme(axis.text.x=element_blank(),
           axis.title.x = element_blank(),
           axis.ticks.x=element_blank(),
-          #axis.text.y=element_blank(),
-          #axis.ticks.y=element_blank(),
-          text = element_text(size = 12),
-          #strip.background = element_blank(),
-          #plot.margin = margin(-1, 0, -1, 0, "cm"),
-          strip.text = element_text(margin = margin(0,0,0,0, "cm"), size = 5),
-          legend.position = "none")
-  #facet_wrap(~cond+Experiment, ncol = 2)
+          text = element_text(size = 25),
+          axis.text = element_text(size = 22),
+          strip.text = element_text(margin = margin(0,0,0,0, "cm"), size = 5)
+          #legend.position = "none"
+          )
+
+  if (dif_priors){
+    data$prior_type <- factor(data$prior_type, levels = c("empirical", "flat"))
+    plot <- plot + geom_line(aes(y = prob, colour = factor(prior_type), group = factor(prior_type), linetype = prior_type), linewidth = 0.8, colour = "grey28")  +
+      scale_linetype_manual(values = c("empirical" = "dotted", "flat" = "solid"))+
+      guides(linetype = guide_legend(title = "Prior Type"), fill = "none")  # Show only linetype legend
+      
+    
+  } else {
+    plot <- plot +geom_line(aes(y = prob, group = factor(cover_cond)), linewidth = 0.8, colour = "grey28") # get on same scale
+
+  }
+  
+  plot
+  
+  
 }
 
 sizeDensModel = function(data, condition, plotAlpha, prob_constant = 250, ylim = 95){

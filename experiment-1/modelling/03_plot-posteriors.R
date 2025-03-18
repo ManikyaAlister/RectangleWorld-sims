@@ -77,7 +77,7 @@ all_conditions <- all_conditions[order(as.character(all_conditions$conditions)),
 
 
 
-blocks <- c(1,2,3,4,5,6,7, 8)
+blocks <- c(8)
 target_blocks <- c(2,8)
 clues <- 1:4
 providers <- c("helpful", "random", "misleading", "uninformative")
