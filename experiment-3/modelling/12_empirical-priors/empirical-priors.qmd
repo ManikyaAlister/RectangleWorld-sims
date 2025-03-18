@@ -22,7 +22,7 @@ source(here("calculatingFunctions.R"))
 ```{r}
 # create helper functions
 
-filter_priors = function(data, block, condition = c("HS", "RS", "MS", "US")) {
+filter_priors = function(data, block, condition = c("HS", "MS", "US", "RS")) {
   b <- block
   prior <- data %>%
     filter(block %in% b & cond %in% condition) %>%
@@ -30,7 +30,7 @@ filter_priors = function(data, block, condition = c("HS", "RS", "MS", "US")) {
   prior
 }
 
-filter_empirical = function(data, block, clue, condition = c("HS", "RS", "MS", "US")) {
+filter_empirical = function(data, block, clue, condition = c("HS", "MS", "US", "RS",)) {
   b <- block
   c <- clue
   prior <- data %>%
@@ -97,8 +97,8 @@ Since some rectangle sizes were more common than others (e.g., there are 100 rec
 block = 8
 getEmpiricalPriors = function(block){
 prior_all <- filter_priors(d_priors_cartesian, 1:8) 
-conds <- c("HS", "RS", "MS", "US")
-condition_names <- c("Helpful", "Random", "Misleading Naive", "Misleading Aware")
+conds <- c("HS", "MS", "US", "RS")
+condition_names <- c("Helpful", "Misleading Naive", "Misleading Aware", "Random")
 plot_list <- list()
 all_empirical_priors <- list()
 
@@ -138,18 +138,26 @@ all_empirical_priors[[conds[i]]] <- density_data
 # simplel plot to make sure it looks okay
 #plot(density_data$size, density_data$density)
 
+prior_scaled_i$cond <- cond_i
+
 # plot prior for given condition
-  dens_plot_i <- prior_scaled_i %>% ggplot(aes(x = size, weight = scaled_freq)) +
-    geom_density(fill = "blue", alpha = 0.5) +
-    labs(x = "Size Response", y = "Density", title = cond_name_i) +
-    theme_minimal()
+  dens_plot_i <- prior_scaled_i %>% 
+    ggplot(aes(x = size, weight = scaled_freq)) +
+    geom_density(aes(fill = cond), alpha = 0.5) +
+        scale_fill_manual(values = c("HS" = "darkgreen", "HN" = "darkgreen", "RS" = "lightblue", "RN" = "lightblue", "MS" = "darkred", "MN" = "darkred", "UN" = "orange", "US" = "orange"))+
+    labs(x = "Rectangle Size", y = "Density", title = cond_name_i) +
+    #xlim(1,100)+
+    #scale_x_continuous(values = seq(1,100,20))+
+    theme_minimal()+
+    theme(legend.position = "none", axis.title = element_text(size = 10))
   plot_list[[i]] <- dens_plot_i
 }
 
 save(all_empirical_priors, file = here(paste0("experiment-3/data/derived/empirical-prior-block-",block,".Rdata")))
 
 #names(all_empirical_priors) <- conds
-ggpubr::ggarrange(plotlist = plot_list)
+plot <- ggpubr::ggarrange(plotlist = plot_list, nrow = 1)
+annotate_figure(plot, top = text_grob(paste0("Block ", block), face = "bold"))
 }
 ```
 
@@ -159,7 +167,9 @@ The plots below show the density of rectangles of different sizes (from smallest
 
 ```{r}
 # block 8
-getEmpiricalPriors(8)
+ep_plot_b8 <- getEmpiricalPriors(8)
+ep_plot_b8 
+
 ```
 
 It appears that across all three conditions, people were more likely to draw rectangles of certain sizes. Or in other words, at the group level, peoples' prior distributions were not flat. Interestingly, in the helpful condition, peoples' priors favored smaller rectangles, whereas in the other conditions, there was more of a preference for larger rectangles relative to what you would expect by chance. This is surprising since despite receiving different clues, the actual true rectangles that participants were guessing were the same across all scenarios, so they should not necessarily be biased to expect different sized rectangles in different conditions.
@@ -169,7 +179,10 @@ It appears that across all three conditions, people were more likely to draw rec
 One explanation for the different priors in different conditions is that since in the helpful condition participants, on average, drew smaller rectangles around positive points, they just developed a reflex for drawing smaller rectangles. If this were the case, this prior should develop across blocks as they guessed more rectangles. Therefore, we can test this prediction by looking at the priors before the first block, as below.
 
 ```{r}
-getEmpiricalPriors(1)
+ep_plot_b1 <- getEmpiricalPriors(1)
+ep_plot_b1
+combined_plot <- ggarrange(ep_plot_b1, ep_plot_b8, nrow = 2)
+ggsave(filename = here("experiment-3/modelling/12_empirical-priors/plots/empirical-prior-densities.png"), width = 10, height = 5)
 ```
 
 The priors before block 1 reflect the same qualitative pattern across conditions as those in block 8, suggesting that these differences across conditions are unlikely to be due to a learned reflex. Another possibility is that some participants believed that in addition to choosing clues, the informant could choose the true rectangle as well. For example, in the helpful condition, it might make sense for a helpful informant to choose smaller rectangles, as they would be easier to guess. This is unexpected because we did not provide any instructions that should have indicate that the informant chooses the rectangles. Regardless, if it was the case that they had this assumption, it does not affect the conclusions of the modelling. As shown below, model predictions using these empirical priors are very similar to those with flat priors.
@@ -182,7 +195,19 @@ We have shown that the group level prior distributions do not appear to resemble
 
 ```{r}
 load(here("experiment-3/data/derived/plot-files-empirical.Rdata"))
-ggpubr::ggarrange(plotlist = plot_list, labels = c("Misleading Naive", "Misleading Aware", "Random", "Helpful"), label.x = .1)
+
+# give names to the plot list based on the order that it's in alrady
+names(plot_list) <- c("MS", "US","RS","HS")
+
+conds <- c("HS", "MS", "US", "RS")
+
+
+
+plot_list[order(match(names(plot_list), conds))]
+
+ggpubr::ggarrange(plot_list[["HS"]], plot_list[["MS"]], plot_list[["US"]], plot_list[["RS"]], labels = c("Helpful", "Misleading Naive", "Misleading Aware", "Random"), label.x = 0.2, nrow = 1, common.legend = TRUE, legend = "bottom")
+
+ggsave(filename = here("experiment-3/modelling/12_empirical-priors/plots/size-hist-priors.png"), width = 13, height = 5)
 
 ```
 

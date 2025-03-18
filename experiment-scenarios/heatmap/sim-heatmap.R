@@ -10,7 +10,7 @@ source(here("plottingFunctions.R"))
 
 load(here("experiment-scenarios/target-blocks/data/target-block-8-Cartesian.Rdata"))
 
-clue = 1
+clue = 4
 
 aPos = simulateLearnerGuesses(targetBlock$observations, alpha = 1, trial = clue, 100, prior = "flat")
 aPos$cond = "HS"

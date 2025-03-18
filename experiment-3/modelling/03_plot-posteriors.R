@@ -71,7 +71,7 @@ all_conditions <- all_conditions %>% mutate(
   )
 )
 
-# remove no cover story condition suince that was not in E3
+# remove no cover story condition since that was not in E3
 all_conditions <- all_conditions %>% 
     filter(conditions %in% c("HS","RS","US","MS"))
 

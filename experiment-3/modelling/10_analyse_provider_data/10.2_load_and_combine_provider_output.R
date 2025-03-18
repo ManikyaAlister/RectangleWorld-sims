@@ -45,9 +45,20 @@ loadAndCombine = function(file_list, directory, learner_conds){
   combined_df
 }
 
-#provider_scores_all <- loadAndCombine(file_list_prob, directory, learner_conds)
+provider_scores_all <- loadAndCombine(file_list_prob, directory, learner_conds)
 provider_scores_ranked_all <- loadAndCombine(file_list_ranked, directory, learner_conds)
 
-#save(provider_scores_all, file = here("experiment-3/modelling/04_output/provider_scores_all.Rdata"))
+save(provider_scores_all, file = here("experiment-3/modelling/04_output/provider_scores_all.Rdata"))
 save(provider_scores_ranked_all, file = here("experiment-3/modelling/04_output/provider_scores_ranked_all.Rdata"))
+
+# define rectangles for sequential provider modelling 
+rectangles <- list(
+  "medium" = c(4, 1, 9, 4),
+  "small" = c(1, 6, 4, 8),
+  "large" = c(0, 1, 9, 9)
+)
+
+# get sequential model predictions for each rectangle and model in provider phase
+sequential_point_posterior <- modelOptimalProviderSequential(rectangles)
+save(sequential_point_posterior, file = here("experiment-3/modelling/04_output/provider_scores_sequential.Rdata"))
 

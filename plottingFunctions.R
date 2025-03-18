@@ -487,12 +487,17 @@ sizeHistModel = function(data, condition, plotAlpha, ylim = 95, dif_priors = FAL
           axis.ticks.x=element_blank(),
           text = element_text(size = 25),
           axis.text = element_text(size = 22),
-          strip.text = element_text(margin = margin(0,0,0,0, "cm"), size = 5),
-          legend.position = "none")
+          strip.text = element_text(margin = margin(0,0,0,0, "cm"), size = 5)
+          #legend.position = "none"
+          )
 
   if (dif_priors){
-    plot <- plot + geom_line(aes(y = prob, colour = factor(prior_type), group = factor(prior_type), linetype = prior_type), linewidth = 0.8, colour = "grey28") # get on same scale
-
+    data$prior_type <- factor(data$prior_type, levels = c("empirical", "flat"))
+    plot <- plot + geom_line(aes(y = prob, colour = factor(prior_type), group = factor(prior_type), linetype = prior_type), linewidth = 0.8, colour = "grey28")  +
+      scale_linetype_manual(values = c("empirical" = "dotted", "flat" = "solid"))+
+      guides(linetype = guide_legend(title = "Prior Type"), fill = "none")  # Show only linetype legend
+      
+    
   } else {
     plot <- plot +geom_line(aes(y = prob, group = factor(cover_cond)), linewidth = 0.8, colour = "grey28") # get on same scale
 

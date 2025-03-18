@@ -304,6 +304,7 @@ getProviderScoreParallel = function(data, provider_model, subj_no, rank = FALSE,
   posterior_data
 }
 
+# function that calculates the optimal distribution of points for a given rectangle for each provider model
 modelOptimalProviderSequential = function(true_rectangles, prior = "flat") {
   H <- 10
   provider_conditions <-

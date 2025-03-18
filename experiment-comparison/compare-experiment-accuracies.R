@@ -3,6 +3,8 @@ library(here)
 library(tidyverse)
 library(effsize)
 library(ggsignif)
+library(rstatix)
+
 
 experiments <- 1:3
 target_blocks <- c(2,8)
@@ -118,9 +120,9 @@ accuracy_stats <- experimentComparisonStats(sum_accuracy, conds, experiment_comp
 # define full condition names 
 cond_names <- c(
   "HS" = "Helpful",
-  "RS" = "Random",
   "MS" = "Misleading Naive",
-  "US" = "Misleading Aware"
+  "US" = "Misleading Aware",
+  "RS" = "Random"
 )
 
 # create function that inserts full name in place of short name 
@@ -140,13 +142,16 @@ labelFullNames = function(variable, value){
  
  
  sum_accuracy_filtered %>%
+   mutate(cond = factor(cond, levels = names(cond_names))) %>%
    ggplot(aes()) +
    geom_jitter(alpha = .6, aes(x = experiment, y = accuracy, fill = experiment), colour = "black", shape = 21)+
    geom_boxplot(aes(x = experiment, y = accuracy, fill = experiment),colour = "black", alpha = .5, outliers =  FALSE) +
    labs(y = "Accuracy", subtitle = "Participant accuracy in non-target blocks", x = "Experiment") +
    facet_wrap( ~ cond, nrow = 1, labeller = as_labeller(cond_names)) +
    theme_bw() +
-   theme(legend.position = "none") +
+   theme(legend.position = "none",
+         line = element_blank(),
+         strip.background = element_rect(fill= "white")) +
    scale_fill_brewer() +
    scale_colour_brewer()+
    ggpubr::stat_pvalue_manual(stat_test, label = "p.adj.signif")
