@@ -1,15 +1,14 @@
 rm(list = ls())
 library(here)
 library(tidyverse)
+library(ggpubr)
 
-#source(here("plottingFunctions.R"))
 source(here("plottingFunctions.R"))
-#source(here("fixing_heatmaps.R"))
 source(here("calculatingFunctions.R"))
 load(here("experiment-3/data/derived/all_conditions.Rdata"))
 load(here("experiment-3/data/derived/data_cartesian.Rdata"))
 
-blocks <- 8
+blocks <- 2
 # All blocks 
 for (i in blocks) {
   block_conds <- all_conditions %>%

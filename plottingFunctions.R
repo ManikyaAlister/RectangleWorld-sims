@@ -636,6 +636,8 @@ plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zero
     
     heatMap <- plotDistribution(allPts=tempPts,xrange=xrange,yrange=yrange,
                                 obs=obs[1:clueNum,],whichDist="posterior", title = NULL, subtitle = t, trueRectangle = trueR)
+              plot_list[[condId]] <- heatMap
+
     
     if (save) {
       if (experiment == "sim"){
@@ -655,11 +657,13 @@ plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zero
       plot_list[[condId]] <- heatMap
     }
 
-
+    
     # track progress in console
     print(paste0(condId," out of ", nConds))
   }
   ggarrange(plotlist = plot_list)
+  #ggsave(filename = here(paste0("experiment-",experiment,"/modelling/05_plots/heatmap-all-b-",b,".png")), width = 5, height = 5, plot = heatMap)
+  
   
   }
   
