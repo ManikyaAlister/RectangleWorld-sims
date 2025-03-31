@@ -104,7 +104,8 @@ plotColourfulDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
 plotDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
                             xrange = 0:10, yrange=0:10, whichDist="posterior",
                             title="Hypothesis distribution", 
-                            subtitle="Yellow rectangle is the true hypothesis"){
+                            subtitle="Yellow rectangle is the true hypothesis",
+                            facet = FALSE){
   xlow <- min(xrange)
   xhigh <- max(xrange)
   ylow <- min(yrange)
@@ -116,8 +117,17 @@ plotDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
   if (!is.null(nrow(obs))) {
     allPts$posterior[obs$index] <- 0
   }
+  
+  if (facet){
+    # Normalize posterior within each facet
+    allPts <- allPts %>%
+      group_by(cover_story, condition) %>%
+      mutate(posterior = (posterior - min(posterior)) / (max(posterior) - min(posterior))) %>%
+      ungroup()
+  }
 
   pRect <- ggplot() +
+    theme_bw()+
     xlim(xlow,xhigh) +
     ylim(ylow,yhigh) +  
     theme(panel.grid.major = element_line(size = 0.25, linetype = 'solid',
@@ -126,8 +136,11 @@ plotDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
                                           colour = "black"),
           panel.background = element_rect(fill = "black", colour = "black",
                                           size = 2, linetype = "solid"),
+          strip.background = element_rect(fill= "white"),
           axis.text = element_blank(),  # Remove axis text
-          axis.ticks = element_blank() # remove ticks
+          axis.ticks = element_blank(), # remove ticks
+          plot.title = element_text(size = 40),
+          strip.text = element_text(size = 40)
     
     ) +
 
@@ -144,6 +157,8 @@ plotDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
                   mapping=aes(xmin=x-0.5, xmax=x+0.5, ymin=y-0.5, ymax=y+0.5, 
                               fill=posterior),show.legend=FALSE)  
     }
+  
+
 
     
     pRect <- pRect +
@@ -151,6 +166,10 @@ plotDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
                 color="yellow", fill=NA,linetype="dashed", linewidth = 2)+
       theme(axis.title = element_blank())
 
+    if (facet) {
+      pRect <- pRect + 
+        facet_grid(cover_story ~ condition) 
+    }
     
   # add in observations if they exist
   if (!is.null(nrow(obs))) {
@@ -537,7 +556,9 @@ sizeDensModel = function(data, condition, plotAlpha, prob_constant = 250, ylim =
 }
 
 
-plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zeroA = 6, H = 10, save = TRUE, file_label = "", filtered = FALSE){
+
+
+plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zeroA = 6, H = 10, save = TRUE, file_label = "", filtered = FALSE, facet = TRUE){
   # get load experiment obs function 
   source(here("genericFunctions.R"))
   # get update points function 
@@ -573,7 +594,7 @@ plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zero
     
     # get the provider helpfulness in each condition
     if (condition == "HS" | condition == "HN") {
-      provider <- "helpful"
+      provider <- "Helpful"
     } else if (condition == "RS" | condition == "RN") {
       provider <- "random"
     } else if (condition == "MS" | condition == "MN") {
@@ -778,4 +799,167 @@ plotHeatMapsLite = function(all_conditions, experiment, target_blocks = c(2,8), 
   }}
 
   
+plotHeatMapsFacet = function(all_conditions,
+                             experiment,
+                             clues = 4,
+                             target_blocks = c(2, 8),
+                             zeroA = 6,
+                             H = 10,
+                             save = TRUE,
+                             file_label = "",
+                             filtered = FALSE,
+                             t = NULL) {
+  
+  #clueNum = clues
+  
+  # get load experiment obs function
+  source(here("genericFunctions.R"))
+  # get update points function
+  source(here("calculatingFunctions.R"))
+  
+  nConds <- length(all_conditions[, 1])
+  # upload pre-calculated positive point probabilities for an alpha of zero (just for plotting clarity)
+  # Load the pre-calculated data if not loaded already
+  if (!exists("xrange")) {
+    fileSeg <- paste0("x0to", H, "y0to", H)
+    fn <- paste0("datafiles/", fileSeg, ".RData")
+    load(here(fn))
+  }
+  
+  tempPts_all <- NULL
+  
+  # Loop through each condition, creating a separate heat map for each
+  for (clueNum in clues) {
+    for (condId in 1:nConds) {
+      tempPts <- NULL 
+      hyp = NULL
+      # Get condition data (block, conditions, clue number)
+      b <- all_conditions[condId, "blocks"]
+      condition <- all_conditions[condId, "conditions"]
+      # Load data
+      if (experiment == "sim") {
+        load(here(
+          paste0(
+            "experiment-scenarios/heatmap/data/derived/hyp-probs/hp-",
+            condition,
+            "-b-",
+            b,
+            "-c-",
+            clueNum,
+            file_label,
+            ".Rdata"
+          )
+        ))
+      } else {
+        load(here(
+          paste0(
+            "experiment-",
+            experiment,
+            "/data/derived/hyp-probs/hp-",
+            condition,
+            "-b-",
+            b,
+            "-c-",
+            clueNum,
+            file_label,
+            ".Rdata"
+          )
+        ))
+        
+      }
+      
+      
+      # Load hypothesis probabilities
+      if (experiment == "sim") {
+        load(here(paste0("experiment-scenarios/heatmap/data/derived/hyp-probs/hp-",condition,"-b-",b,"-c-",clueNum,file_label,".Rdata")))
+      } else {
+        load(here(paste0("experiment-",experiment,"/data/derived/hyp-probs/hp-",condition,"-b-",b,"-c-",clueNum,file_label,".Rdata")))
+      }
+      
+      
+      # get the provider helpfulness in each condition
+      if (condition == "HS" | condition == "HN") {
+        provider <- "Helpful"
+      } else if (condition == "MS" | condition == "MN") {
+        provider <- "Misleading\nNaive"
+      } else if (condition == "US" | condition == "UN") {
+        provider <- "Misleading\nAware"
+        recursion = TRUE
+      } else if (condition == "RS" | condition == "RN") {
+        provider <- "Random"
+      }
+      
+      # Load clues pertaining to condition
+      
+      obs <- loadExperimentObs(b, clueNum, target_blocks, provider)
+      trueR <- loadExperimentTrueRect(b, clueNum, target_blocks, provider)
+      
+      #colourScale <- c("white","hotpink", "navy")
+      
+      # find the index of alpha = 0
+      zeroA = which.min(abs(alphas))
+      
+      # make index column 
+      pts$index = 1:nrow(pts)
+      
+      # get index of the observations 
+      merged_df <- merge(obs, pts, by.x = c("x", "y"), by.y = c("x", "y"))
+      obs$index = merged_df$index
+      
+      # make "selected" column (necessary for update points)
+      #ptProbs$selected = FALSE
+      #ptProbs$selected[obs$index] = TRUE
+      
+      #t <- NULL
+      # if not saving, plot title needs to be annotated
+      if (!save){
+        t <- paste0("block ", b, " ", condition)
+      }
+      
+      
+      # plot hypothesis heat map 
+      tempPts <- updatePoints(posProbPts[,,zeroA],obs[1:clueNum,],
+                              posterior=hyp$posterior,pts=pts)
+    
+      
+      tempPts <- tempPts %>%
+        mutate(clue = clueNum, block = b, condition = provider)
+      
+      cover_story = ifelse(grepl("S", condition), "Cover Story", "No Cover Story")
+      
+      if (experiment == "sim") {
+        tempPts  <- tempPts  %>%
+          mutate(cover_story = clueNum) # want to facet by clue number instead of cover story for the simulation plot 
+      } else {
+        tempPts  <- tempPts  %>%
+          mutate(cover_story = cover_story)
+      }
+      
+      tempPts <- tempPts %>%
+        mutate(condition = factor(
+          condition,
+          levels = c("Helpful", "Misleading\nNaive", "Misleading\nAware", "Random")
+        ))
+      
+      tempPts_all <- rbind(tempPts_all, tempPts)
+      
+   }
+  }
+
+  
+  heatMap <- plotDistribution(
+    allPts = tempPts_all,
+    xrange = xrange,
+    yrange = yrange,
+    obs = obs[1:clueNum, ],
+    whichDist = "posterior",
+    title = t,
+    subtitle = NULL,
+    trueRectangle = trueR,
+    facet = TRUE
+  )
+  
+  heatMap
+}
+
   

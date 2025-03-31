@@ -11,7 +11,7 @@ source(here("plottingFunctions.R"))
 exp <- 3
 alphas <- c(-1, 0, 1) # alphas we are interested in modelling
 c <- 3 # clue we are interested in
-b <- 8 # block we are interested in
+b <- 2 # block we are interested in
 targetBlocks <- c(2, 8)
 priors <- c("empirical", "flat")
 
@@ -41,7 +41,7 @@ getSizeHistData = function(data,
   source(here("getLearnerHypDistributions.R"))
   load(
     here(
-      "experiment-scenarios/target-blocks/data/target-block-8-Cartesian.Rdata"
+      paste0("experiment-scenarios/target-blocks/data/target-block-",b,"-Cartesian.Rdata")
     )
   )
   observations = targetBlock$observations
@@ -189,28 +189,28 @@ d_all_sizes <- getSizeHistData(d_cartesian,
                                all_conditions_filtered = all_conditions_filtered)
 
 save(d_all_sizes, file = here(
-  paste0("experiment-", exp, "/data/derived/d_size_histograms.Rdata")
+  paste0("experiment-", exp, "/data/derived/d_size_histograms-b",b,"-c",c,".Rdata")
 ))
 # load participants who passed liberal filtering 
-#load(here("experiment-3/modelling/11_filtered-analyses/good_uid_liberal.Rdata"))
+load(here("experiment-3/modelling/11_filtered-analyses/good_uid_liberal.Rdata"))
 
 # get size histogram with filtered data
-# d_filtered <- d_cartesian %>%
-#   filter(pid %in% good_uid_liberal)
-# 
-# 
-# d_all_sizes <- getSizeHistData(d_filtered,                
-#                                exp,
-#                                alphas,
-#                                c,
-#                                b,
-#                                targetBlocks,
-#                                priors = priors,
-#                                all_conditions_filtered = all_conditions_filtered)
-# 
-# save(d_all_sizes, file = here(
-#   paste0("experiment-", exp, "/data/derived/d_size_histograms_filtered.Rdata")
-# ))
+d_filtered <- d_cartesian %>%
+  filter(pid %in% good_uid_liberal)
+
+
+d_all_sizes_filtered <- getSizeHistData(d_filtered,
+                               exp,
+                               alphas,
+                               c,
+                               b,
+                               targetBlocks,
+                               priors = priors,
+                               all_conditions_filtered = all_conditions_filtered)
+
+save(d_all_sizes_filtered, file = here(
+  paste0("experiment-", exp, "/data/derived/d_size_histograms_filtered-b",b,"-c",c,".Rdata")
+))
 
 # add column for cover story/model condition
 all_conditions_filtered <- all_conditions_filtered %>%

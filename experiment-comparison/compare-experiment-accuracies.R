@@ -117,45 +117,69 @@ experimentComparisonStats = function(data, conds, experiment_comparisons, shapir
 accuracy_stats <- experimentComparisonStats(sum_accuracy, conds, experiment_comparisons, normal_plot = TRUE, shapiro = TRUE)
 
 
-# define full condition names 
-cond_names <- c(
-  "HS" = "Helpful",
-  "MS" = "Misleading Naive",
-  "US" = "Misleading Aware",
-  "RS" = "Random"
-)
+levels =  c("Helpful", "Misleading\nNaive", "Misleading\nAware","Random")
 
-# create function that inserts full name in place of short name 
-labelFullNames = function(variable, value){
-  condd_names[value]
+
+sum_accuracy_name <- sum_accuracy %>%
+  mutate(
+  full_cond_name = case_when(
+    cond == "HS" | cond == "HN" ~ "Helpful",
+    cond == "MS" | cond == "MN" ~ "Misleading\nNaive",
+    cond == "UN" | cond == "US" ~ "Misleading\nAware",
+    cond == "RS" | cond == "RN" ~ "Random"),
+  cover_story = ifelse(grepl("S",cond), "Cover Story", "No Cover Story"))
+    
+
+# Function to define allowed statistical comparisons based on available experiments
+run_custom_wilcox_tests <- function(df) {
+  exps <- sort(unique(df$experiment))
+  
+  if (identical(exps, c("1", "2", "3"))) {
+    comps <- list(c("1", "2"), c("2", "3"))
+  } else if (identical(exps, c("1", "2"))) {
+    comps <- list(c("1", "2"))
+  } else {
+    return(NULL)
+  }
+  
+  df %>%
+    wilcox_test(accuracy ~ experiment, comparisons = comps, p.adjust.method = "bonferroni") %>%
+    add_xy_position()
+  
 }
 
- sum_accuracy_filtered <- sum_accuracy %>% 
-  filter(cond %in% conds)
+
+
+# Apply statistical tests per group
+stat_test_all <- sum_accuracy_name %>%
+  group_by(full_cond_name, cover_story) %>%
+  group_modify(~ run_custom_wilcox_tests(.x)) %>%
+  ungroup()
+
+# add significance for regular p values, not just p.adj
+stat_test_all <- add_significance(stat_test_all, "p") %>%
+  # use regular p value signif when p.adj doesn't exist
+  mutate(signif = ifelse(p.adj.signif == "" | is.na(p.adj.signif), p.signif,p.adj.signif),
+         full_cond_name = factor(full_cond_name, levels = levels))
+  
  
- comparisons <- list(c("1","2"),c("2","3"))
- 
- stat_test <- sum_accuracy_filtered %>%
-   group_by(cond) %>%
-   wilcox_test(accuracy ~ experiment, comparisons = comparisons, p.adjust.method = "bonferroni", detailed = F) %>%
-   add_xy_position()
- 
- 
- sum_accuracy_filtered %>%
-   mutate(cond = factor(cond, levels = names(cond_names))) %>%
+
+sum_accuracy_name %>%
+  #filter(cover_story == "Cover Story") %>%
+   mutate(full_cond_name = factor(full_cond_name, levels = levels)) %>%
    ggplot(aes()) +
    geom_jitter(alpha = .6, aes(x = experiment, y = accuracy, fill = experiment), colour = "black", shape = 21)+
    geom_boxplot(aes(x = experiment, y = accuracy, fill = experiment),colour = "black", alpha = .5, outliers =  FALSE) +
    labs(y = "Accuracy", subtitle = "Participant accuracy in non-target blocks", x = "Experiment") +
-   facet_wrap( ~ cond, nrow = 1, labeller = as_labeller(cond_names)) +
+   facet_grid(cover_story~full_cond_name)+#, labeller = as_labeller(cond_names)) +
    theme_bw() +
    theme(legend.position = "none",
          line = element_blank(),
          strip.background = element_rect(fill= "white")) +
    scale_fill_brewer() +
-   scale_colour_brewer()+
-   ggpubr::stat_pvalue_manual(stat_test, label = "p.adj.signif")
+   scale_colour_brewer() +
+   ggpubr::stat_pvalue_manual(stat_test_all, label = "signif")
    
-   
-  ggsave(filename = here("experiment-comparison/accuracy.png"), width = 7, height = 5)
+
+  ggsave(filename = here("experiment-comparison/accuracy.png"), width = 9, height = 7)
   
