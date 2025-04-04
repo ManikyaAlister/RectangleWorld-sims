@@ -27,7 +27,7 @@ for (i in blocks) {
   }
   ggarrange(plotlist = plot_list, nrow = 2, ncol = 1)
   
-  ggsave(filename = here(paste0("experiment-",exp,"/modelling/05_plots/heatmap_facet_manuscript_b",i,".png")), width = 20, height = 12)
+  ggsave(filename = here(paste0("experiment-",exp,"/modelling/05_plots/heatmap_facet_manuscript_b",i,"_e",exp,".png")), width = 20, height = 12)
 }
 
 

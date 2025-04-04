@@ -3,18 +3,20 @@ library(here)
 library(tidyverse)
 library(ggpubr)
 
+exp <- 3
+
 source(here("plottingFunctions.R"))
 source(here("calculatingFunctions.R"))
-load(here("experiment-2/data/derived/all_conditions.Rdata"))
-load(here("experiment-2/data/derived/data_cartesian.Rdata"))
+load(here(paste0("experiment-",exp,"/data/derived/all_conditions.Rdata")))
+load(here(paste0("experiment-",exp,"/data/derived/data_cartesian.Rdata")))
 
-blocks <- 2
+blocks <- 8
 # All blocks 
 for (i in blocks) {
   block_conds <- all_conditions %>%
     filter(blocks == i)
-  getHypProbs(d = d_cartesian, all_conditions = block_conds, experiment = 2)
-  plotHeatMaps(all_conditions = block_conds, experiment = 2)
+  getHypProbs(d = d_cartesian, all_conditions = block_conds, experiment = exp)
+  plotHeatMaps(all_conditions = block_conds, experiment = exp)
 }
 
 

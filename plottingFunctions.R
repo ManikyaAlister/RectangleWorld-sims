@@ -493,12 +493,11 @@ sizeHistModel = function(data, condition, plotAlpha, ylim = 95, dif_priors = FAL
       cond == "RS" | cond == "RN" ~ "random"
     ))
   
-  
   plot  <- data %>%
     filter(cond == condition & cover_cond == plotAlpha) %>%
     ggplot(aes(x = factor(size))) +
     geom_col(aes(y = Percent, fill = cond)) +
-    scale_fill_manual(values = c("HS" = "darkgreen", "HN" = "darkgreen", "RS" = "lightblue", "RN" = "lightblue", "MS" = "darkred", "MN" = "darkred", "UN" = "orange", "US" = "orange"))+
+    scale_fill_manual(values = c("HS" = "darkgreen", "HN" = "darkgreen", "RS" = "skyblue3", "RN" = "skyblue3", "MS" = "darkred", "MN" = "darkred", "UN" = "orange", "US" = "orange"))+
     theme_classic()+
     ylim(c(0,ylim))+
     theme(axis.text.x=element_blank(),
@@ -506,17 +505,37 @@ sizeHistModel = function(data, condition, plotAlpha, ylim = 95, dif_priors = FAL
           axis.ticks.x=element_blank(),
           text = element_text(size = 25),
           axis.text = element_text(size = 22),
-          strip.text = element_text(margin = margin(0,0,0,0, "cm"), size = 5)
+          strip.text = element_text(margin = margin(0,0,0,0, "cm"), size = 5),
+          legend.key.width = unit(5, "cm")
           #legend.position = "none"
           )
 
   if (dif_priors){
-    data$prior_type <- factor(data$prior_type, levels = c("empirical", "flat"))
-    plot <- plot + geom_line(aes(y = prob, colour = factor(prior_type), group = factor(prior_type), linetype = prior_type), linewidth = 0.8, colour = "grey28")  +
-      scale_linetype_manual(values = c("empirical" = "dotted", "flat" = "solid"))+
-      guides(linetype = guide_legend(title = "Prior Type"), fill = "none")  # Show only linetype legend
-      
     
+    if (condition == "HS" ){
+      title = "Helpful"
+    } else if (condition == "MS") {
+      title = "Misleading Naive"
+    } else if (condition == "US") {
+      title = "Misleading Aware"
+    } else if (condition == "RS"){
+      title = "Random"
+    }
+    
+    data <- data %>%
+      mutate(prior_type = factor(prior_type, levels = c("flat", "empirical"))) 
+     
+    plot <- plot + 
+      geom_line(aes(y = prob, colour = prior_type, group = prior_type, linetype = prior_type), linewidth = 4.5) +
+      scale_linetype_manual(values = c("empirical" = "solid", "flat" = "longdash")) +
+      scale_colour_manual(values = c("empirical" = "purple", "flat" = "darkgrey")) + 
+      labs(title = title) +
+      guides(
+        linetype = guide_legend(title = "Prior Type"),
+        fill = "none",
+        colour = guide_legend(title = "Prior Type")
+      )
+      
   } else {
     plot <- plot +geom_line(aes(y = prob, group = factor(cover_cond)), linewidth = 0.8, colour = "grey28") # get on same scale
 

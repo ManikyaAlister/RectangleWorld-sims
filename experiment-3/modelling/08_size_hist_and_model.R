@@ -11,7 +11,7 @@ source(here("plottingFunctions.R"))
 exp <- 3
 alphas <- c(-1, 0, 1) # alphas we are interested in modelling
 c <- 3 # clue we are interested in
-b <- 2 # block we are interested in
+b <- 8 # block we are interested in
 targetBlocks <- c(2, 8)
 priors <- c("empirical", "flat")
 
@@ -270,3 +270,5 @@ for (p in priors) {
     paste0("experiment-", exp, "/data/derived/plot-files-", p, ".Rdata")
   ))
 }
+
+

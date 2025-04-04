@@ -12,6 +12,7 @@ rm(list = ls())
 library(here)
 library(patchwork)
 library(tidyr)
+library(ggpubr)
 
 load(here("experiment-3/data/derived/data_priors_cartesian.Rdata"))
 load(here("datafiles/x0to10y0to10.RData"))
@@ -201,13 +202,11 @@ names(plot_list) <- c("MS", "US","RS","HS")
 
 conds <- c("HS", "MS", "US", "RS")
 
-
-
 plot_list[order(match(names(plot_list), conds))]
 
-ggpubr::ggarrange(plot_list[["HS"]], plot_list[["MS"]], plot_list[["US"]], plot_list[["RS"]], labels = c("Helpful", "Misleading Naive", "Misleading Aware", "Random"), label.x = 0.2, nrow = 1, common.legend = TRUE, legend = "bottom")
+man_plot <- ggpubr::ggarrange(plot_list[["HS"]], plot_list[["MS"]], plot_list[["US"]], plot_list[["RS"]], label.x = 0.1, nrow = 2, ncol = 2, common.legend = TRUE, legend = "top", font.label = list(size = 30))
 
-ggsave(filename = here("experiment-3/modelling/12_empirical-priors/plots/size-hist-priors.png"), width = 13, height = 5)
+ggsave(filename = here("experiment-3/modelling/12_empirical-priors/plots/size-hist-priors.png"), width = 20, height = 10, plot = man_plot)
 
 ```
 
