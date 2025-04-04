@@ -8,7 +8,7 @@ source(here("calculatingFunctions.R"))
 load(here("experiment-1/data/derived/all_conditions.Rdata"))
 load(here("experiment-1/data/derived/data_cartesian.Rdata"))
 
-blocks <- 8
+blocks <- 2
 # All blocks 
 for (i in blocks) {
   block_conds <- all_conditions %>%

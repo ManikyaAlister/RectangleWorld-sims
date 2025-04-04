@@ -45,8 +45,8 @@ cond_labels <- c(
 )
 
 size_labels <- c(
-  "medium" = "Medium",
   "small" = "Small",
+  "medium" = "Medium",
   "large" = "Large"
 )
 ```
@@ -90,11 +90,20 @@ models <- c("helpful", "misleading", "uninformative", "random")
 
 ```{r}
 # heat map function
-plotProviderHeatMaps = function(data, size_labels, cond_labels, title = NULL, subtitle = NULL, xlab = NULL, ylab = NULL){
+plotProviderHeatMaps = function(data, size_labels, cond_labels, title = NULL, subtitle = NULL, xlab = NULL, ylab = NULL, scaled_probability = FALSE){
+  
+  if(scaled_probability){
+    data <- data %>%
+  group_by(provider_cond, size) %>%
+  mutate(probability = probability / max(probability, na.rm = TRUE)) %>%
+  ungroup()
+  }
+  
   data %>%
+    #filter(size == "medium", provider_cond == "uninformative") %>%
   ggplot(aes(x = response_x1, y = response_y1, fill = probability)) +
   geom_tile() +
-    facet_grid(provider_cond ~ size, labeller = labeller(provider_cond = cond_labels, size = size_labels)) +  # Create separate heatmaps for each provider_cond and size
+    facet_grid(size ~ provider_cond, labeller = labeller(provider_cond = cond_labels, size = size_labels)) +  # Create separate heatmaps for each provider_cond and size
   scale_fill_gradient( high = "lightblue") +  # Color scale for the heatmap
   geom_rect(
             aes(xmin = ground_truth_x1, xmax = ground_truth_x2,
@@ -124,8 +133,9 @@ plotProviderHeatMaps = function(data, size_labels, cond_labels, title = NULL, su
   coord_fixed()  # Ensure squares are of equal size
 
 }
-
 ```
+
+Unscaled heatmap (colour scale is based on the global best point across all of the facets):
 
 ```{r}
 pts$index <- 1:100
@@ -146,7 +156,8 @@ load(here("experiment-3/modelling/04_output/provider_scores_sequential.Rdata"))
 
 seq_posteriors_heatmap_data <- sequential_point_posterior %>%
         filter(provider_cond != "random")%>%
-        mutate(provider_cond = factor(provider_cond, levels = models)) %>%
+        mutate(provider_cond = factor(provider_cond, levels = models),
+               size = factor(size, levels = names(size_labels))) %>%
   #filter(clue == 1) %>%
   group_by(response_x1, response_y1, provider_cond, size, ground_truth_x1, ground_truth_x2, ground_truth_y1, ground_truth_y2) %>%
   summarise(max_prob = max(posterior)) %>%
@@ -164,14 +175,32 @@ ggsave(filename = here("experiment-3/modelling/05_plots/provider_heatmaps.png"),
 
 ```
 
+Scaled heatmap (colour scale is based on thelocal best point within each facet):
+
+```{r}
+
+# Generate the heat map of empirical responses
+empirical_heatmap_local_scale <-  plotProviderHeatMaps(empirical_heatmap_data, size_labels, cond_labels, title = "A. Participant Performance", scaled_probability = TRUE)
+# Genertate heatmap of modelled responses 
+model_heatmap_local_scale <- plotProviderHeatMaps(seq_posteriors_heatmap_data, size_labels, cond_labels, title = "B. Model Predictions", scaled_probability = TRUE)
+
+ggarrange(empirical_heatmap_local_scale, model_heatmap_local_scale, common.legend = TRUE, legend = "none")
+ggsave(filename = here("experiment-3/modelling/05_plots/provider_heatmaps_local_scale.png"), width = 7.5,height = 5)
+
+
+```
+
 ```{r}
 #| warning: false
 colour_scale <- c("seagreen", "red", "orange","lightblue")
 
 score_by_model <- provider_scores_all %>%
-  #filter(provider_cond == learn_cond) %>%
-  group_by(p_num, provider_cond, model) %>%
-  summarise(score = median(prob), n = n()) 
+  filter(model != "random") %>%
+  #group_by(p_num, provider_cond, model,size) %>%
+    group_by(p_num, provider_cond, model) %>%
+  summarise(score = median(prob), n = n()) %>% 
+  mutate(odds_ratio = score/0.01)
+         #size = factor(size, levels = c("small", "medium", "large"), labels = c("Small", "Medium", "Large")))
 
 # function that creates box plots from model predictions on empirical data
 
@@ -179,15 +208,18 @@ boxPlotProvider = function(score_by_model, title, subtitle){
   score_by_model %>%
   mutate(model = factor(model, levels = models),
          provider_cond = factor(provider_cond, levels = models))%>%
-  ggplot(aes(x = model, y = score, fill = model))+
+  ggplot(aes(x = model, y = odds_ratio, fill = model))+
   geom_jitter(aes(colour = model), alpha = .2)+
-  geom_boxplot(outliers = FALSE)+
+  geom_boxplot(outliers = FALSE, alpha = 0.5)+
+    geom_hline(aes(yintercept = 1), linetype = "dashed")+
   #geom_bar(position="dodge", stat="identity")+
   scale_fill_manual(values = colour_scale)+
   scale_colour_manual(values = colour_scale)+
   scale_x_discrete(labels = cond_labels) + 
-  labs(title = title, subtitle = subtitle, x = "Provider Model", y = "Probability")+
-  facet_wrap(~provider_cond, labeller = labeller(provider_cond = cond_labels))+
+  labs(title = title, subtitle = subtitle, x = "Provider Model", y = "Odds Ratio (Compared to Chance)")+
+    #ylim(0,5)+
+  #facet_grid(size~provider_cond, labeller = labeller(provider_cond = cond_labels))+
+  facet_grid(~provider_cond, labeller = labeller(provider_cond = cond_labels))+
     theme_bw()+
     theme(legend.position =  "none", 
           axis.text.x = element_text(angle = 45, hjust = 1),
@@ -386,7 +418,7 @@ empirical_heatmap_data_filtered <- d_cartesian_t %>%
   mutate(probability = count / sum(count)) %>%  # Convert counts to probabilities within each group
   ungroup() 
 
-plotProviderHeatMaps(empirical_heatmap_data_filtered, cond_labels, size_labels)
+plotProviderHeatMaps(empirical_heatmap_data_filtered, cond_labels, size_labels, scaled_probability = TRUE)
   
 ```
 
@@ -464,7 +496,7 @@ empirical_heatmap_data_filtered_cons <- d_cartesian_t %>%
   mutate(probability = count / sum(count)) %>%  # Convert counts to probabilities within each group
   ungroup() 
 
-plotProviderHeatMaps(empirical_heatmap_data_filtered_cons, cond_labels, size_labels)
+plotProviderHeatMaps(empirical_heatmap_data_filtered_cons, cond_labels, size_labels, scaled_probability = T)
 ```
 
 ### 
