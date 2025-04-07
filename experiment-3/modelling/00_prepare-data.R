@@ -1,6 +1,6 @@
 library(here)
 library(dplyr)
-source(here("genericFunctions.R"))
+source(here("functions/generic-functions.R"))
 
 # Convert clean experiment data into format that can be used for modelling and analyses. 
 

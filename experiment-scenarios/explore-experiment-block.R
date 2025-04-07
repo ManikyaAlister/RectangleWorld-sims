@@ -1,6 +1,6 @@
 rm(list = ls())
 library(here)
-source(here("generateExperimentBlock.R"))
+source(here("functions/generateExperimentBlock.R"))
 # Script to generate a bunch of different experiment block scenarios for a given teacher, to try and 
 # narrow down which ones to use for the experiment. 
 

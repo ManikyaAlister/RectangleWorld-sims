@@ -2,9 +2,9 @@
 
 # setup 
 library(here)
-source(here("getLearnerHypDistributions.R"))
-source(here("calculatingFunctions.R"))
-source(here("plottingFunctions.R"))
+source(here("functions/getLearnerHypDistributions.R"))
+source(here("functions/calculatingFunctions.R"))
+source(here("functions/plottingFunctions.R"))
 load(here("experiment-3/data/derived/data_cartesian.Rdata"))
 
 # Target Block 2 ----------------------------------------------------------

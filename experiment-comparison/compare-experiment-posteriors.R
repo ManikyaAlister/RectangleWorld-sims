@@ -2,7 +2,7 @@ rm(list = ls())
 library(here)
 library(effsize)
 library(BayesFactor)
-source(here("plottingFunctions.R"))
+source(here("functions/plottingFunctions.R"))
 load(here("experiment-1/data/derived/all_conditions.R"))
 
 

@@ -1,8 +1,8 @@
 rm(list = ls())
 lib = .libPaths("~/Library/Frameworks/R.framework/Versions/4.1/Resources/library")
 library(here, lib.loc = lib)
-source(here("getLearnerHypDistributions.R"))
-source(here("genericFunctions.R"))
+source(here("functions/getLearnerHypDistributions.R"))
+source(here("functions/generic-functions.R"))
 
 getAlphaBlockDistributions = function(obs, block, alphas = c(-5,-2,-1,-0.5,-0.1, 0, 0.1, 0.5, 1, 2, 5), recursion = FALSE, provider = FALSE){
   for (i in 1:length(alphas)){

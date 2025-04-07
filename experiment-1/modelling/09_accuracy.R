@@ -1,7 +1,7 @@
 rm(list =ls())
 library(here)
 library(tidyverse)
-source(here("calculatingFunctions.R"))
+source(here("functions/calculatingFunctions.R"))
 library(patchwork)
 
 # load data

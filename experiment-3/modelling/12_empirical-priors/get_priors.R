@@ -4,8 +4,8 @@ library(patchwork)
 library(tidyr)
 
 load(here("experiment-3/data/derived/data_priors_cartesian.Rdata"))
-source(here("plottingFunctions.R"))
-source(here("calculatingFunctions.R"))
+source(here("functions/plottingFunctions.R"))
+source(here("functions/calculatingFunctions.R"))
 
 filter_priors = function(data, block, condition = c("HS", "RS", "MS", "US")) {
   b <- block

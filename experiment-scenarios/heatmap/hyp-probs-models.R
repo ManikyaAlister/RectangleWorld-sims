@@ -1,6 +1,6 @@
-source(here("plottingFunctions.R"))
-source(here("genericFunctions.R"))
-source(here("getLearnerHypDistributions.R"))
+source(here("functions/plottingFunctions.R"))
+source(here("functions/generic-functions.R"))
+source(here("functions/getLearnerHypDistributions.R"))
 load(here("experiment-1/data/derived/all_conditions.Rdata"))
 
 nBlocks <- 8

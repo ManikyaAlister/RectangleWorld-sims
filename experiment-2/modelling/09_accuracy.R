@@ -1,6 +1,6 @@
 rm(list =ls())
 library(here)
-source(here("calculatingFunctions.R"))
+source(here("functions/calculatingFunctions.R"))
 library(patchwork)
 
 # load data

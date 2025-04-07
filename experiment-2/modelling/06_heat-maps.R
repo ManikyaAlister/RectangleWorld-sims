@@ -5,8 +5,8 @@ library(ggpubr)
 
 exp <- 3
 
-source(here("plottingFunctions.R"))
-source(here("calculatingFunctions.R"))
+source(here("functions/plottingFunctions.R"))
+source(here("functions/calculatingFunctions.R"))
 load(here(paste0("experiment-",exp,"/data/derived/all_conditions.Rdata")))
 load(here(paste0("experiment-",exp,"/data/derived/data_cartesian.Rdata")))
 

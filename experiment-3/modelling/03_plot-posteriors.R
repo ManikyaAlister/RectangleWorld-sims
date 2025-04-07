@@ -3,7 +3,7 @@ library(here)
 library(tidyverse)
 library(ggpubr)
 library(RColorBrewer)
-source(here("plottingFunctions.R"))
+source(here("functions/plottingFunctions.R"))
 load(here("experiment-1/data/derived/all_conditions.R"))
 
 
@@ -121,7 +121,7 @@ for (b in blocks) {
           ))
           # load posteriors for recovery
           load(here(
-            paste0("recovery2/data/a",alpha,"_n100_c",c,"_pr-flat_recursion.RData")
+            paste0("recovery/data/a",alpha,"_n100_c",c,"_pr-flat_recursion.RData")
           ))
           
         } else {
@@ -135,7 +135,7 @@ for (b in blocks) {
           ))
           # load posteriors for recovery
           load(here(paste0(
-            "recovery2/data/a",alpha,"_n100_c",c,"_pr-flat.RData"
+            "recovery/data/a",alpha,"_n100_c",c,"_pr-flat.RData"
           )))
         }
       }  else {
@@ -145,7 +145,7 @@ for (b in blocks) {
           # load posteriors for recovery
           load(here(
             paste0(
-              "recovery2/data/a",alpha,"_n100_c",c,"_pr-flat_b_",b,"_",provider,"_recursion.RData"
+              "recovery/data/a",alpha,"_n100_c",c,"_pr-flat_b_",b,"_",provider,"_recursion.RData"
             )))
           
         } else {
@@ -153,7 +153,7 @@ for (b in blocks) {
           load(here(paste0("experiment-",exp,"/modelling/04_output/b",b,"-all-alpha-posteriors-",provider,".Rdata")))
           # load posteriors for recovery
           load(here(paste0(
-            "recovery2/data/a",alpha,"_n100_c",c,"_pr-flat_b_",b,"_",provider,"_.RData"
+            "recovery/data/a",alpha,"_n100_c",c,"_pr-flat_b_",b,"_",provider,"_.RData"
           )))
         }
       }

@@ -4,13 +4,13 @@
 rm(list = ls())
 # setup F
 library(here)
-source(here("getLearnerHypDistributions.R"))
-source(here("calculatingFunctions.R"))
-source(here("plottingFunctions.R"))
+source(here("functions/getLearnerHypDistributions.R"))
+source(here("functions/calculatingFunctions.R"))
+source(here("functions/plottingFunctions.R"))
 
 # load generic data
 load(here("experiment-3/data/derived/all_conditions.Rdata"))
-source(here("getLearnerHypDistributions.R"))
+source(here("functions/getLearnerHypDistributions.R"))
 load(here(
   "experiment-scenarios/target-blocks/data/target-block-8-Cartesian.Rdata"
 ))

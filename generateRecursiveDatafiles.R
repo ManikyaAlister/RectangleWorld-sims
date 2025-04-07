@@ -1,6 +1,6 @@
 library(here)
-source(here("genericFunctions.R"))
-source(here("calculatingFunctions.R"))
+source(here("functions/generic-functions.R"))
+source(here("functions/calculatingFunctions.R"))
 
 # size of hypotheses
 H <- 10

@@ -1,6 +1,6 @@
 library(jsonlite)
 rm(list = ls())
-source(here("simulateMultipleAlphas.R"))
+source(here("functions/simulateMultipleAlphas.R"))
 
 targetRect1 <- c(5,2,9,6)
 targetRect2 <- 10-targetRect1

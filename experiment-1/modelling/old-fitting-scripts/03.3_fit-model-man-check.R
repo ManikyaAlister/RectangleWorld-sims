@@ -3,7 +3,7 @@
 # set up parallel model runs
 library(here)
 library(tidyverse)
-source(here("getLearnerHypDistributions.R"))
+source(here("functions/getLearnerHypDistributions.R"))
 load(here("experiment-1/data/derived/all_conditions.R"))
 load(here("experiment-1/data/derived/data_cartesian.Rdata"))
 

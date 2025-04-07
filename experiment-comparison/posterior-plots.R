@@ -3,7 +3,7 @@ library(here)
 library(tidyverse)
 library(ggpubr)
 library(RColorBrewer)
-source(here("plottingFunctions.R"))
+source(here("functions/plottingFunctions.R"))
 load(here("experiment-1/data/derived/all_conditions.R"))
 
 sum_all <- NULL
@@ -134,7 +134,7 @@ for (exp in 1:3) {
             # load posteriors for recovery
             load(here(
               paste0(
-                "recovery2/data/a",
+                "recovery/data/a",
                 alpha,
                 "_n100_c",
                 c,
@@ -156,7 +156,7 @@ for (exp in 1:3) {
             # load posteriors for recovery
             load(here(
               paste0(
-                "recovery2/data/a",
+                "recovery/data/a",
                 alpha,
                 "_n100_c",
                 c,
@@ -181,7 +181,7 @@ for (exp in 1:3) {
             # load posteriors for recovery
             load(here(
               paste0(
-                "recovery2/data/a",
+                "recovery/data/a",
                 alpha,
                 "_n100_c",
                 c,
@@ -209,7 +209,7 @@ for (exp in 1:3) {
             # load posteriors for recovery
             load(here(
               paste0(
-                "recovery2/data/a",
+                "recovery/data/a",
                 alpha,
                 "_n100_c",
                 c,

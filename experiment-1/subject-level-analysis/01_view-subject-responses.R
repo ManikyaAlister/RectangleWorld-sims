@@ -3,7 +3,7 @@ rm(list = ls())
 # set up
 library(here)
 library(dplyr)
-source(here("plottingFunctions.R"))
+source(here("functions/plottingFunctions.R"))
 
 # load data 
 load(here("experiment-1/data/derived/data_cartesian.Rdata"))

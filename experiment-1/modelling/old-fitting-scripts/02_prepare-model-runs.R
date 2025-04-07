@@ -1,6 +1,6 @@
 # set up parallel model runs
 library(here)
-source(here("getLearnerHypDistributions.R"))
+source(here("functions/getLearnerHypDistributions.R"))
 load(here("experiment-1/data/derived/all_conditions.R"))
 
 

@@ -1,7 +1,7 @@
 rm(list = ls())
 # Simulate target trials --------------------------------------------------
 # source simulation function
-source(here("simulateExperimentBlock.R"))
+source(here("functions/simulateExperimentBlock.R"))
 # load data 
 load(here("experiment-scenarios/target-blocks/data/target-trial-1-Cartesian.Rdata"))
 load(here("experiment-scenarios/target-blocks/data/target-trial-2-Cartesian.Rdata"))

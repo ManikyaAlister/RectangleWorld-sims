@@ -4,9 +4,9 @@
 rm(list = ls())
 # setup F
 library(here)
-source(here("getLearnerHypDistributions.R"))
-source(here("calculatingFunctions.R"))
-source(here("plottingFunctions.R"))
+source(here("functions/getLearnerHypDistributions.R"))
+source(here("functions/calculatingFunctions.R"))
+source(here("functions/plottingFunctions.R"))
 
 exp <- 3
 alphas <- c(-1, 0, 1) # alphas we are interested in modelling
@@ -38,7 +38,7 @@ getSizeHistData = function(data,
                            priors = "flat", 
                            all_conditions_filtered) {
 
-  source(here("getLearnerHypDistributions.R"))
+  source(here("functions/getLearnerHypDistributions.R"))
   load(
     here(
       paste0("experiment-scenarios/target-blocks/data/target-block-",b,"-Cartesian.Rdata")

@@ -1,6 +1,6 @@
 library(here)
 library(tidyverse)
-source(here("plottingFunctions.R"))
+source(here("functions/plottingFunctions.R"))
 
 exp = 2
 

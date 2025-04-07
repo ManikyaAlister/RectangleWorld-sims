@@ -5,7 +5,7 @@ rm(list = ls())
 library(here)
 library(dplyr)
 library(ggpubr)
-source(here("plottingFunctions.R"))
+source(here("functions/plottingFunctions.R"))
 
 # load experiment conditions
 load(here("experiment-1/data/derived/all_conditions.R"))

@@ -1,7 +1,7 @@
 rm(list = ls())
 library(here)
-source(here("generateExperimentBlock.R"))
-source(here("genericFunctions.R"))
+source(here("functions/generateExperimentBlock.R"))
+source(here("functions/generic-functions.R"))
 # Explore the block scenarios chosen for the experiment.
 
 

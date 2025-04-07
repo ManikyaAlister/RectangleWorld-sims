@@ -15,9 +15,9 @@ editor: visual
 library(here)
 library(tidyverse)
 library(ggpubr)
-source(here("plottingFunctions.R"))
-source(here("calculatingFunctions.R"))
-source(here("modelProviders.R"))
+source(here("functions/plottingFunctions.R"))
+source(here("functions/calculatingFunctions.R"))
+source(here("functions/modelProviders.R"))
 ```
 
 ```{r}
@@ -59,7 +59,7 @@ An important consideration when modelling behavior in the provider phase is that
 
 ```{r}
 # calculate probabilities using the "Clue 0" method
-source(here("calculatingFunctions.R"))
+source(here("functions/calculatingFunctions.R"))
 
 # Set up experiment parameters
 H <- 10

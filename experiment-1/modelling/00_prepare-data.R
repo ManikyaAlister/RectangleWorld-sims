@@ -1,7 +1,7 @@
 # Model Fitting Analysis 
 library(here)
 library(dplyr)
-source(here("genericFunctions.R"))
+source(here("functions/generic-functions.R"))
 
 # load data 
 load(here("experiment-1/data/clean/clean_data.rdata"))

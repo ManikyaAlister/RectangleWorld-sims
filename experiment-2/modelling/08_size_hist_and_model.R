@@ -4,9 +4,9 @@
 rm(list = ls())
 # setup F
 library(here)
-source(here("getLearnerHypDistributions.R"))
-source(here("calculatingFunctions.R"))
-source(here("plottingFunctions.R"))
+source(here("functions/getLearnerHypDistributions.R"))
+source(here("functions/calculatingFunctions.R"))
+source(here("functions/plottingFunctions.R"))
 
 exp <- 2
 alphas <- c(-1, 0, 1) # alphas we are interested in modelling
@@ -16,7 +16,7 @@ b <- 8 # block we are interested in
 
 # load generic data
 load(here(paste0("experiment-",exp,"/data/derived/all_conditions.Rdata")))
-source(here("getLearnerHypDistributions.R"))
+source(here("functions/getLearnerHypDistributions.R"))
 load(here(
   "experiment-scenarios/target-blocks/data/target-block-8-Cartesian.Rdata"
 ))

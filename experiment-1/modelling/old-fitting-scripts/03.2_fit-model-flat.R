@@ -2,7 +2,7 @@
 # on the parameters in all_conditions. Each run corresponds to condId which is called in that script too. 
 # set up parallel model runs
 library(here)
-source(here("getLearnerHypDistributions.R"))
+source(here("functions/getLearnerHypDistributions.R"))
 load(here("experiment-1/data/derived/all_conditions.R"))
 
 
