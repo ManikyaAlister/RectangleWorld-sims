@@ -72,5 +72,7 @@ experiment-1-rerun/mturk/*
 experiment-2/mturk/*
 experiment-3/mturk/*
 
+# code to explore different clue configurations and associated power points 
 experiment-scenarios/explore-scenarios/*
+experiment-scenarios/experiment-scenarios*
 
