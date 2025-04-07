@@ -1,4 +1,4 @@
-# recursive output
+# recursive output because it's too large
 datafiles/x0to10y0to10recursiveMain.RData
 datafiles/x0to10y0to10recursiveLow.RData
 datafiles/x0to10y0to10recursiveHigh.RData
@@ -65,3 +65,12 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# remove mturk folders
+experiment-1/mturk/*
+experiment-1-rerun/mturk/*
+experiment-2/mturk/*
+experiment-3/mturk/*
+
+
+
