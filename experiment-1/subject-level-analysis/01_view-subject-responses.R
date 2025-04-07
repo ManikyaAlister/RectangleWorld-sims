@@ -39,7 +39,7 @@ plotResponse = function(data, cond, nBlocks = 8){
     load("experiment-scenarios/target-blocks/data/target-block-8-Cartesian.Rdata")
     observations = targetBlock$observations
   } else {
-    load(here(paste0("experiment-scenarios/hand-picked-blocks/data/",blockOrder[i],"-",trueRect,"-",cond,"/",blockOrder[i],"-",trueRect,"-",cond,"trial-obs.Rdata")))
+    load(here(paste0("experiment-scenarios/filler-blocks/data/",blockOrder[i],"-",trueRect,"-",cond,"/",blockOrder[i],"-",trueRect,"-",cond,"trial-obs.Rdata")))
     observations = blockData$observations %>%
       mutate(x = x-0.5,
              y = 10-(y-0.5),

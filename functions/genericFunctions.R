@@ -273,7 +273,7 @@ loadExperimentObs = function(b, clueNum, target_blocks = c(2, 8), provider) {
     # find folder that contains the block data for that condition
     
     # get initial directory
-    directory <- "experiment-scenarios/hand-picked-blocks/data"
+    directory <- "experiment-scenarios/filler-blocks/data"
     
     # Pattern to match the folder name
     pattern <- paste0(".*", b, "-.*", provider)
@@ -335,7 +335,7 @@ loadExperimentTrueRect = function(b, clueNum, target_blocks = c(2, 8), provider)
     # find folder that contains the block data for that condition
     
     # get initial directory
-    directory <- "experiment-scenarios/hand-picked-blocks/data"
+    directory <- "experiment-scenarios/filler-blocks/data"
     
     # Pattern to match the folder name
     pattern <- paste0(".*", b, "-.*", provider)
