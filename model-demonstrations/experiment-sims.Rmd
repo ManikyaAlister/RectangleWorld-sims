@@ -82,7 +82,7 @@ if (maximise) {
 # update filename to reflect this
 dirname <- paste0("x",H,"y",H,"-expt",
                   "-v",version)
-dir.create(here(paste0("model-testing/figures/testsims/",dirname,"/")), showWarnings = FALSE)
+dir.create(here(paste0("model-demonstrations/figures/testsims/",dirname,"/")), showWarnings = FALSE)
 ```
 
 # What do we have?
@@ -119,7 +119,7 @@ pExpRect <- plotHypotheses(expH,obs=NA,rects=NA,xrange,yrange,
                          title="Correct hypothesis",
                          subtitle="Experiment trial 8")
 
-ggsave(here(paste0("model-testing/figures/testsims/",dirname,"/exprect.png")),
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/exprect.png")),
        plot=pExpRect,device="png",
        width=10,height=8, units="cm")
 
@@ -236,7 +236,7 @@ pLnPriorsH <- plotDistribution(title_size = 15,allPts=tchPts$tchDtlH,xrange=xran
 
 p <- ggarrange(pLnPriorsD,pLnPriorsW,pLnPriorsH,ncol=3)
 
-ggsave(here(paste0("model-testing/figures/testsims/",dirname,"/priors.png")),
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/priors.png")),
        plot=p,device="png",
        width=24,height=7, units="cm")
 
@@ -624,7 +624,7 @@ p1Hpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchH,xrange=xrange,yra
 p1H <- ggarrange(p1HprPts,p1HprHist,p1Hbest,
                p1Hpdist,p1Hhist,p1Hhmap,ncol=3,nrow=2)
 
-ggsave(here(paste0("model-testing/figures/testsims/",dirname,"/lnHelpExp1.png")),
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnHelpExp1.png")),
        plot=p1H,device="png",
        width=36,height=18, units="cm")
 
@@ -673,7 +673,7 @@ p2Hpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchH,xrange=xrange,yra
 p2H <- ggarrange(p2HprPts,p2HprHist,p2Hbest,
                p2Hpdist,p2Hhist,p2Hhmap,ncol=3,nrow=2)
 
-ggsave(here(paste0("model-testing/figures/testsims/",dirname,"/lnHelpExp2.png")),
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnHelpExp2.png")),
        plot=p2H,device="png",
        width=36,height=18, units="cm")
 
@@ -723,7 +723,7 @@ p3Hpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchH,xrange=xrange,yra
 p3H <- ggarrange(p3HprPts,p3HprHist,p3Hbest,
                p3Hpdist,p3Hhist,p3Hhmap,ncol=3,nrow=2)
 
-ggsave(here(paste0("model-testing/figures/testsims/",dirname,"/lnHelpExp3.png")),
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnHelpExp3.png")),
        plot=p3H,device="png",
        width=36,height=18, units="cm")
 
@@ -773,7 +773,7 @@ p4Hpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchH,xrange=xrange,yra
 p4H <- ggarrange(p4HprPts,p4HprHist,p4Hbest,
                p4Hpdist,p4Hhist,p4Hhmap,ncol=3,nrow=2)
 
-ggsave(here(paste0("model-testing/figures/testsims/",dirname,"/lnHelpExp4.png")),
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnHelpExp4.png")),
        plot=p4H,device="png",
        width=36,height=18, units="cm")
 ```
@@ -834,7 +834,7 @@ p1Wpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchW,xrange=xrange,yra
 p1W <- ggarrange(p1WprPts,p1WprHist,p1Wbest,
                p1Wpdist,p1Whist,p1Whmap,ncol=3,nrow=2)
 
-ggsave(here(paste0("model-testing/figures/testsims/",dirname,"/lnWeakExp1.png")),
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnWeakExp1.png")),
        plot=p1W,device="png",
        width=36,height=18, units="cm")
 
@@ -883,7 +883,7 @@ p2Wpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchW,xrange=xrange,yra
 p2W <- ggarrange(p2WprPts,p2WprHist,p2Wbest,
                p2Wpdist,p2Whist,p2Whmap,ncol=3,nrow=2)
 
-ggsave(here(paste0("model-testing/figures/testsims/",dirname,"/lnWeakExp2.png")),
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnWeakExp2.png")),
        plot=p2W,device="png",
        width=36,height=18, units="cm")
 
@@ -933,7 +933,7 @@ p3Wpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchW,xrange=xrange,yra
 p3W <- ggarrange(p3WprPts,p3WprHist,p3Wbest,
                p3Wpdist,p3Whist,p3Whmap,ncol=3,nrow=2)
 
-ggsave(here(paste0("model-testing/figures/testsims/",dirname,"/lnWeakExp3.png")),
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnWeakExp3.png")),
        plot=p3W,device="png",
        width=36,height=18, units="cm")
 
@@ -983,7 +983,7 @@ p4Wpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchW,xrange=xrange,yra
 p4W <- ggarrange(p4WprPts,p4WprHist,p4Wbest,
                p4Wpdist,p4Whist,p4Whmap,ncol=3,nrow=2)
 
-ggsave(here(paste0("model-testing/figures/testsims/",dirname,"/lnWeakExp4.png")),
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnWeakExp4.png")),
        plot=p4W,device="png",
        width=36,height=18, units="cm")
 ```
@@ -1046,7 +1046,7 @@ p1DD1pdist <- plotDistribution(title_size = 15,allPts=lnPts$tchDD1,xrange=xrange
 p1DD1 <- ggarrange(p1DD1prPts,p1DD1prHist,p1DD1best,
                p1DD1pdist,p1DD1hist,p1DD1hmap,ncol=3,nrow=2)
 
-ggsave(here(paste0("model-testing/figures/testsims/",dirname,"/lnDecExp1recursiveD1.png")),
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnDecExp1recursiveD1.png")),
        plot=p1DD1,device="png",
        width=36,height=18, units="cm")
 
@@ -1098,7 +1098,7 @@ p2DD1pdist <- plotDistribution(title_size = 15,allPts=lnPts$tchDD1,xrange=xrange
 p2DD1 <- ggarrange(p2DD1prPts,p2DD1prHist,p2DD1best,
                p2DD1pdist,p2DD1hist,p2DD1hmap,ncol=3,nrow=2)
 
-ggsave(here(paste0("model-testing/figures/testsims/",dirname,"/lnDecExp2recursiveD1.png")),
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnDecExp2recursiveD1.png")),
        plot=p2DD1,device="png",
        width=36,height=18, units="cm")
 
@@ -1150,7 +1150,7 @@ p3DD1pdist <- plotDistribution(title_size = 15,allPts=lnPts$tchDD1,xrange=xrange
 p3DD1 <- ggarrange(p3DD1prPts,p3DD1prHist,p3DD1best,
                p3DD1pdist,p3DD1hist,p3DD1hmap,ncol=3,nrow=2)
 
-ggsave(here(paste0("model-testing/figures/testsims/",dirname,"/lnDecExp3recursiveD1.png")),
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnDecExp3recursiveD1.png")),
        plot=p3DD1,device="png",
        width=36,height=18, units="cm")
 
@@ -1201,7 +1201,7 @@ p4DD1pdist <- plotDistribution(title_size = 15,allPts=lnPts$tchDD1,xrange=xrange
 p4DD1 <- ggarrange(p4DD1prPts,p4DD1prHist,p4DD1best,
                p4DD1pdist,p4DD1hist,p4DD1hmap,ncol=3,nrow=2)
 
-ggsave(here(paste0("model-testing/figures/testsims/",dirname,"/lnDecExp4recursiveD1.png")),
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnDecExp4recursiveD1.png")),
        plot=p4DD1,device="png",
        width=36,height=18, units="cm")
 
@@ -1267,7 +1267,7 @@ p1DH1pdist <- plotDistribution(title_size = 15,allPts=lnPts$tchDH1,xrange=xrange
 p1DH1 <- ggarrange(p1DH1prPts,p1DH1prHist,p1DH1best,
                p1DH1pdist,p1DH1hist,p1DH1hmap,ncol=3,nrow=2)
 
-ggsave(here(paste0("model-testing/figures/testsims/",dirname,"/lnDecExp1recursiveH1.png")),
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnDecExp1recursiveH1.png")),
        plot=p1DH1,device="png",
        width=36,height=18, units="cm")
 
@@ -1319,7 +1319,7 @@ p2DH1pdist <- plotDistribution(title_size = 15,allPts=lnPts$tchDH1,xrange=xrange
 p2DH1 <- ggarrange(p2DH1prPts,p2DH1prHist,p2DH1best,
                p2DH1pdist,p2DH1hist,p2DH1hmap,ncol=3,nrow=2)
 
-ggsave(here(paste0("model-testing/figures/testsims/",dirname,"/lnDecExp2recursiveH1.png")),
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnDecExp2recursiveH1.png")),
        plot=p2DH1,device="png",
        width=36,height=18, units="cm")
 
@@ -1371,7 +1371,7 @@ p3DH1pdist <- plotDistribution(title_size = 15,allPts=lnPts$tchDH1,xrange=xrange
 p3DH1 <- ggarrange(p3DH1prPts,p3DH1prHist,p3DH1best,
                p3DH1pdist,p3DH1hist,p3DH1hmap,ncol=3,nrow=2)
 
-ggsave(here(paste0("model-testing/figures/testsims/",dirname,"/lnDecExp3recursiveH1.png")),
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnDecExp3recursiveH1.png")),
        plot=p3DH1,device="png",
        width=36,height=18, units="cm")
 
@@ -1422,7 +1422,7 @@ p4DH1pdist <- plotDistribution(title_size = 15,allPts=lnPts$tchDH1,xrange=xrange
 p4DH1 <- ggarrange(p4DH1prPts,p4DH1prHist,p4DH1best,
                p4DH1pdist,p4DH1hist,p4DH1hmap,ncol=3,nrow=2)
 
-ggsave(here(paste0("model-testing/figures/testsims/",dirname,"/lnDecExp4recursiveH1.png")),
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnDecExp4recursiveH1.png")),
        plot=p4DH1,device="png",
        width=36,height=18, units="cm")
 
