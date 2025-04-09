@@ -10,7 +10,7 @@ simulateExperimentBlock = function(observations,
                                    nBestH = 3,
                                    prior = "normal") {
   # Source functions
-  source(here("functions/generic-functions.R"))
+  source(here("functions/genericFunctions.R"))
   source(here("functions/calculatingFunctions.R"))
   source(here("functions/plottingFunctions.R"))
   

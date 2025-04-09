@@ -28,7 +28,7 @@ getPointDistributions = function(
   # Set up   --------------------------------------------------------
   
   # Source functions
-  source(here("functions/generic-functions.R"))
+  source(here("functions/genericFunctions.R"))
   source(here("functions/calculatingFunctions.R"))
   source(here("functions/plottingFunctions.R"))
   
@@ -311,7 +311,7 @@ modelOptimalProviderSequential = function(true_rectangles, prior = "flat") {
     c("helpful", "misleading", "uninformative", "random")
   
   # Source functions
-  source(here("functions/generic-functions.R"))
+  source(here("functions/genericFunctions.R"))
   source(here("functions/calculatingFunctions.R"))
   source(here("functions/plottingFunctions.R"))
   

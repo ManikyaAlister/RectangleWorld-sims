@@ -25,7 +25,7 @@ getLearnerHypDistribution = function(observations,
                                      recursion = FALSE,
                                      allHyp = FALSE) {
   # Source functions
-  source(here("functions/generic-functions.R"))
+  source(here("functions/genericFunctions.R"))
   source(here("functions/calculatingFunctions.R"))
   source(here("functions/plottingFunctions.R"))
   

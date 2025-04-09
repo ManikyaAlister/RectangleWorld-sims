@@ -1,6 +1,6 @@
 library(dplyr)
 #library(nnet)
-source(here("functions/generic-functions.R"))
+source(here("functions/genericFunctions.R"))
 
 
 

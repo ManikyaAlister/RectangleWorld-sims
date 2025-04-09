@@ -6,7 +6,7 @@ library(dplyr, lib.loc = lib)
 library(stringr, lib.loc = lib)
 
 source(here("functions/getLearnerHypDistributions.R"))
-source(here("functions/generic-functions.R"))
+source(here("functions/genericFunctions.R"))
 
 # run locally and parallel:
   # run-recovery.sh

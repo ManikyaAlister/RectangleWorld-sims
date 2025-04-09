@@ -20,7 +20,8 @@ library(ggplot2)
 plotColourfulDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
                                      xrange = 0:10, yrange=0:10,
                                      title="Sampling distribution", 
-                                     subtitle="Yellow rectangle is the true hypothesis"){
+                                     subtitle="Yellow rectangle is the true hypothesis",
+                                     manual_scale = NULL){
   xlow <- min(xrange)
   xhigh <- max(xrange)
   ylow <- min(yrange)
@@ -48,11 +49,27 @@ plotColourfulDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
   pRect <- pRect + 
     geom_rect(data=allPts, 
               mapping=aes(xmin=x-0.5, xmax=x+0.5, ymin=y-0.5, ymax=y+0.5, 
-                          fill=posterior),show.legend=FALSE) +
+                          fill=posterior),show.legend=FALSE) 
     
     #geom_text(data=allPts, mapping=aes(x=x, y=y, label=abs(p)),
     #          show.legend=FALSE) +
-    scale_fill_gradient2(low="red",mid="black",high="green")
+    if (is.null(manual_scale)) {
+      
+      pRect <- pRect + 
+        scale_fill_gradient2(low="red",mid="black",high="green")
+      
+    } else {
+      pRect <- pRect + 
+        scale_fill_gradient2(
+          limits = manual_scale,
+          low = "red",
+          mid = "black",   
+          high = "green"   
+        )
+    }
+      
+
+    
   
   pRect <- pRect +
     geom_rect(data=trueR, mapping=aes(xmin=x1,xmax=x2,ymin=y1,ymax=y2), color="yellow",
@@ -105,7 +122,9 @@ plotDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
                             xrange = 0:10, yrange=0:10, whichDist="posterior",
                             title="Hypothesis distribution", 
                             subtitle="Yellow rectangle is the true hypothesis",
-                            facet = FALSE){
+                            facet = FALSE,
+                            manual_scale = NULL,
+                            title_size = 40){
   xlow <- min(xrange)
   xhigh <- max(xrange)
   ylow <- min(yrange)
@@ -125,7 +144,7 @@ plotDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
       mutate(posterior = (posterior - min(posterior)) / (max(posterior) - min(posterior))) %>%
       ungroup()
   }
-
+  
   pRect <- ggplot() +
     theme_bw()+
     xlim(xlow,xhigh) +
@@ -139,12 +158,24 @@ plotDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
           strip.background = element_rect(fill= "white"),
           axis.text = element_blank(),  # Remove axis text
           axis.ticks = element_blank(), # remove ticks
-          plot.title = element_text(size = 40),
-          strip.text = element_text(size = 40)
+          plot.title = element_text(size = title_size),
+          strip.text = element_text(size = title_size)
     
     ) +
+  
+      
 
     labs(title=title, subtitle=subtitle)
+  
+  if (!is.null(manual_scale)) {
+    pRect <- pRect + 
+      scale_fill_gradient(
+        limits = manual_scale,
+        low = "black",   # or whatever color you want at 0
+        high = "lightblue"    # or whatever color you want at 1
+      )
+  }
+  
   
     if (whichDist=="prior") {
       pRect <- pRect + 
@@ -163,7 +194,7 @@ plotDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
     
     pRect <- pRect +
       geom_rect(data=trueR, mapping=aes(xmin=x1,xmax=x2,ymin=y1,ymax=y2), 
-                color="yellow", fill=NA,linetype="dashed", linewidth = 2)+
+                color="yellow", fill=NA,linetype="dashed", size = 2)+
       theme(axis.title = element_blank())
 
     if (facet) {
@@ -196,6 +227,49 @@ plotDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
   
   return(pRect)
 }
+
+# ********************************
+#     plotHypothesisHistogram
+# ********************************
+#' @title plotHypothesisHistogram
+#' @description Makes a bar plot with hypothesis sizes where the y axis is
+#' the probability, the x axis is the size, and it indicates how many exist
+#' @param hyps hypotheses to be plotted
+#' @param title character string for a title for the graph (default:"Hypothesis distribution")
+#' @param subtitle character string for a title for the graph (default:"Darker bars have more hypotheses")
+
+plotHypothesisHistogram = function(hyps, title="Hypothesis distribution", 
+                                   subtitle="Darker bars have more hypotheses"){
+  
+  d <- hyps %>%
+    filter(posterior>0) %>%
+    mutate(sz = as.character(size)) %>%
+    group_by(sz) %>%
+    summarise(post = mean(posterior), sd=sd(posterior), n=n()) %>%
+    ungroup() %>%
+    mutate(size = as.numeric(sz))
+  
+  d$sz <- reorder(d$sz,d$size)
+  m <- max(d$post)
+  
+  pHDist <- d %>% 
+    #mutate(label = paste0("n=",n)) %>%
+    ggplot(mapping=aes(x=sz,y=post,fill=n)) + 
+    geom_col(show.legend=FALSE,color="black") + 
+    geom_text(aes(y=0.03*m,label=n),vjust=0,size=3) + 
+    theme_bw() + 
+    theme(axis.ticks.y=element_blank(),
+          axis.text.y=element_blank()) +
+    scale_fill_distiller(palette="Purples",direction=-1) +
+    #scale_x_continuous(breaks=d$sz) +
+    #scale_x_discrete()
+    labs(title=title, subtitle=subtitle,
+         x="Hypothesis size",
+         y="Probability")
+  
+  return(pHDist)
+}
+
 
 
 
@@ -526,7 +600,7 @@ sizeHistModel = function(data, condition, plotAlpha, ylim = 95, dif_priors = FAL
       mutate(prior_type = factor(prior_type, levels = c("flat", "empirical"))) 
      
     plot <- plot + 
-      geom_line(aes(y = prob, colour = prior_type, group = prior_type, linetype = prior_type), linewidth = 4.5) +
+      geom_line(aes(y = prob, colour = prior_type, group = prior_type, linetype = prior_type), size = 4.5) +
       scale_linetype_manual(values = c("empirical" = "solid", "flat" = "longdash")) +
       scale_colour_manual(values = c("empirical" = "purple", "flat" = "darkgrey")) + 
       labs(title = title) +
@@ -537,7 +611,7 @@ sizeHistModel = function(data, condition, plotAlpha, ylim = 95, dif_priors = FAL
       )
       
   } else {
-    plot <- plot +geom_line(aes(y = prob, group = factor(cover_cond)), linewidth = 0.8, colour = "grey28") # get on same scale
+    plot <- plot +geom_line(aes(y = prob, group = factor(cover_cond)), size = 0.8, colour = "grey28") # get on same scale
 
   }
   
@@ -561,7 +635,7 @@ sizeDensModel = function(data, condition, plotAlpha, prob_constant = 250, ylim =
     filter(cond == condition & cover_cond == plotAlpha) %>%
     ggplot(aes(x = factor(size))) +
     geom_density(aes(x = size, fill = cond, group = cond)) +
-    #geom_line(aes(y = prob*prob_constant, colour = factor(cover_cond), group = factor(cover_cond)), linewidth = 0.8, colour = "grey28")+ # get on same scale
+    #geom_line(aes(y = prob*prob_constant, colour = factor(cover_cond), group = factor(cover_cond)), size = 0.8, colour = "grey28")+ # get on same scale
     scale_fill_manual(values = c("HS" = "darkgreen", "HN" = "darkgreen", "RS" = "lightblue", "RN" = "lightblue", "MS" = "darkred", "MN" = "darkred", "UN" = "orange", "US" = "orange"))+
     labs(y = "Count")+
     theme_classic()+
@@ -579,7 +653,7 @@ sizeDensModel = function(data, condition, plotAlpha, prob_constant = 250, ylim =
 
 plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zeroA = 6, H = 10, save = TRUE, file_label = "", filtered = FALSE, facet = TRUE){
   # get load experiment obs function 
-  source(here("functions/generic-functions.R"))
+  source(here("functions/genericFunctions.R"))
   # get update points function 
   source(here("functions/calculatingFunctions.R"))
   
@@ -709,7 +783,7 @@ plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zero
   
 plotHeatMapsLite = function(all_conditions, experiment, target_blocks = c(2,8), zeroA = 6, H = 10){
   # get load experiment obs function 
-  source(here("functions/generic-functions.R"))
+  source(here("functions/genericFunctions.R"))
   # get update points function 
   source(here("functions/calculatingFunctions.R"))
   
@@ -832,7 +906,7 @@ plotHeatMapsFacet = function(all_conditions,
   #clueNum = clues
   
   # get load experiment obs function
-  source(here("functions/generic-functions.R"))
+  source(here("functions/genericFunctions.R"))
   # get update points function
   source(here("functions/calculatingFunctions.R"))
   

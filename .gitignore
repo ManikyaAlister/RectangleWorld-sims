@@ -72,7 +72,13 @@ experiment-1-rerun/mturk/*
 experiment-2/mturk/*
 experiment-3/mturk/*
 
-# code to explore different clue configurations and associated power points 
+# code to explore different clue configurations and associated keynotes/pdfs
 experiment-scenarios/explore-scenarios/*
 experiment-scenarios/experiment-scenarios*
+
+# some model testing scripts 
+
+model-testing/basic.*
+model-testing/simulateLearner* 
+model-testing/scratch.R
 
