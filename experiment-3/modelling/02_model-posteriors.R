@@ -1,7 +1,7 @@
 rm(list = ls())
 library(here)
 library(dplyr)
-source(here("getLearnerHypDistributions.R"))
+source(here("functions/getLearnerHypDistributions.R"))
 # load data
 load(here("experiment-3/data/derived/data_cartesian.Rdata"))
 target_blocks <- c(2,8)

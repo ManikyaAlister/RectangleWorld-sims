@@ -1,6 +1,6 @@
 library(here)
 library(tidyverse)
-source(here("calculatingFunctions.R"))
+source(here("functions/calculatingFunctions.R"))
 H <- 10
 
 # Is the data saving correctly?

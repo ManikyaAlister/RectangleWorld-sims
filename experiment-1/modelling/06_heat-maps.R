@@ -3,8 +3,8 @@ library(here)
 library(tidyverse)
 library(ggpubr)
 
-source(here("plottingFunctions.R"))
-source(here("calculatingFunctions.R"))
+source(here("functions/plottingFunctions.R"))
+source(here("functions/calculatingFunctions.R"))
 load(here("experiment-1/data/derived/all_conditions.Rdata"))
 load(here("experiment-1/data/derived/data_cartesian.Rdata"))
 

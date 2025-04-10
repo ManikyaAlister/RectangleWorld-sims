@@ -4,8 +4,8 @@ library(ggpubr)
 rm(list = ls())
 load(here("experiment-3/data/clean/clean_data_teaching_turk_pilot.rdata"))
 load(here("experiment-3/data/clean/clean_data_turk_pilot.rdata"))
-source(here("plottingFunctions.R"))
-source(here("calculatingFunctions.R"))
+source(here("functions/plottingFunctions.R"))
+source(here("functions/calculatingFunctions.R"))
 # check average run time
 H = 10
 run_time <- data %>% 

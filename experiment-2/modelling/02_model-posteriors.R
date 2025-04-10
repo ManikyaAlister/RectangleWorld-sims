@@ -1,7 +1,7 @@
 rm(list = ls())
 library(here)
 library(dplyr)
-source(here("getLearnerHypDistributions.R"))
+source(here("functions/getLearnerHypDistributions.R"))
 # load data
 load(here("experiment-2/data/derived/data_cartesian.Rdata"))
 

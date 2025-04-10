@@ -16,8 +16,8 @@ library(ggpubr)
 
 load(here("experiment-3/data/derived/data_priors_cartesian.Rdata"))
 load(here("datafiles/x0to10y0to10.RData"))
-source(here("plottingFunctions.R"))
-source(here("calculatingFunctions.R"))
+source(here("functions/plottingFunctions.R"))
+source(here("functions/calculatingFunctions.R"))
 ```
 
 ```{r}

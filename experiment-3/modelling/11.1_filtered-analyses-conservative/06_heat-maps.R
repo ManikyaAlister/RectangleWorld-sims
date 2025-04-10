@@ -2,10 +2,10 @@ rm(list = ls())
 library(here)
 library(tidyverse)
 
-#source(here("plottingFunctions.R"))
-source(here("plottingFunctions.R"))
+#source(here("functions/plottingFunctions.R"))
+source(here("functions/plottingFunctions.R"))
 #source(here("fixing_heatmaps.R"))
-source(here("calculatingFunctions.R"))
+source(here("functions/calculatingFunctions.R"))
 load(here("experiment-3/data/derived/all_conditions.Rdata"))
 load(here("experiment-3/data/derived/data_cartesian.Rdata"))
 

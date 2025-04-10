@@ -1,0 +1,200 @@
+---
+title: "Minimal model tutorial"
+author: "Manikya Alister"
+format: html
+editor: visual
+---
+
+
+```{r setup, include=FALSE}
+rm(list = ls())
+library(tidyverse)
+library(ggpubr)
+library(here)
+
+source(here("functions/genericFunctions.R"))
+source(here("functions/calculatingFunctions.R"))
+source(here("functions/plottingFunctions.R"))
+```
+
+## Setup Hypothesis Space
+
+We begin by defining a simple 2D grid and generating all possible rectangular hypotheses. Each hypothesis represents a possible hidden rectangle that a teacher could be trying to convey.
+
+```{r}
+H <- 2
+x <- 0:H
+y <- 0:H
+pts_x <- seq(0.5, H - 0.5, 1)
+pts_y <- pts_x
+pts <- expand.grid(x = pts_x, y = pts_y)
+
+hyp <- makeBorders(x, y)
+hyp$prior <- rep(0.1, nrow(hyp))
+hyp$rect_id <- rownames(hyp)
+justHyp <- hyp[, 1:4]
+```
+
+### Plot all possible hypotheses
+
+This plot shows the full hypothesis space — all possible rectangles over the grid.
+
+```{r}
+plotEmptyHypotheses <- function(hyp, pt = NULL) {
+  plot <- ggplot() +
+    geom_rect(data = hyp, fill = "lightblue", color = "black", alpha = 0.7,
+              aes(xmin = x1, xmax = x2, ymin = y1, ymax = y2)) +
+    scale_x_continuous(breaks = 0:2, minor_breaks = 0:2) +
+    scale_y_continuous(breaks = 0:2, minor_breaks = 0:2) +
+    coord_fixed() +
+    facet_wrap(~ rect_id) +
+    theme_minimal() +
+    labs(title = "All possible hypotheses", x = "X", y = "Y")
+
+  if (!is.null(pt)) {
+    plot <- plot + geom_point(data = pt, aes(x = x, y = y))
+  }
+  plot
+}
+
+plotEmptyHypotheses(hyp)
+```
+
+## Define Alpha Parameters
+
+These parameters define assumptions about the teacher's and learner's intentions. They can be adjusted to simulate helpful, neutral, or misleading teaching strategies.
+
+```{r}
+tchLnAlpha <- 1  # Teacher's model of learner's belief
+lnTchAlpha <- -1  # Learner's model of teacher's intent
+```
+
+## Step 1: Non-Recursive Inference
+
+We simulate a non-recursive learner — one who interprets each observed point at face value, using likelihoods to update beliefs over hypotheses.
+
+```{r}
+ppp <- findProbabilityOfPoints(hyp, pts, "pos", alpha = tchLnAlpha)
+ppp <- data.matrix(ppp / sum(ppp))
+nnn <- findProbabilityOfPoints(hyp, pts, "neg", alpha = tchLnAlpha)
+nnn <- data.matrix(nnn / sum(nnn))
+aaa <- ppp + nnn
+
+cons_pts <- findConsistencyOfPoints(hyp, pts)
+likelihoods <- list("positive" = ppp, "negative" = nnn)
+```
+
+### Visualize Initial Likelihoods
+
+Each panel shows the likelihood that a given point would be sampled by the teacher assuming a specific rectangle is the true hypothesis. Higher values indicate more probable samples.
+
+```{r}
+plotMultiplePointPosteriors <- function(hyp, point_probs, yrange = 0:2, xrange = 0:2) {
+  max_value <- max(point_probs)
+  min_value <- min(point_probs)
+  plot_list <- list()
+  for (i in 1:nrow(hyp)) {
+    d_i <- cbind.data.frame(pts, posterior = point_probs[, i])
+    rect <- hyp[i, 1:4]
+    hyp_name <- colnames(point_probs)[i]
+    p <- plotColourfulDistribution(trueRectangle = rect, allPts = d_i, xrange = xrange, yrange = yrange, t = hyp_name, subtitle = NULL, manual_scale = c(min_value, max_value))
+    plot_list[[i]] <- p
+  }
+  ggarrange(plotlist = plot_list)
+}
+
+plot1 <- plotMultiplePointPosteriors(hyp, aaa, yrange = 0:H, xrange = 0:H)
+annotate_figure(plot1, top = paste0("Provider point probabilities for alpha = ", tchLnAlpha))
+```
+
+### Sample New Point
+
+We now sample a point that the teacher might present to the learner. The point can either be a positive or negative example of the true rectangle.
+
+```{r}
+samplePoint <- function(pts) {
+  index <- sample(1:nrow(pts), size = 1)
+  sign <- sample(c("positive", "negative"), size = 1)
+  point <- cbind(index = index, pts[index, ], category = sign)
+  point
+}
+
+new_pt <- samplePoint(pts)
+```
+
+### Update Beliefs (Non-Recursive)
+
+The learner uses the observed point to update their posterior over hypotheses based on the likelihood of observing that point given each hypothesis.
+
+```{r}
+getHypDist <- function(new_pt, likelihoods, hyp) {
+  category <- new_pt[1, "category"]
+  hyp_probs <- likelihoods[[category]][new_pt[1, "index"], ]
+  hyp$posterior <- (hyp$prior * hyp_probs) / sum(hyp$prior * hyp_probs)
+  hyp[hyp$posterior != 0, ]
+}
+
+updated_hypotheses <- getHypDist(new_pt, likelihoods, hyp)
+plotEmptyHypotheses(updated_hypotheses, new_pt)
+```
+
+### Plot Posterior by Hypothesis Size
+
+This plot shows how the learner's updated beliefs are distributed across hypothesis sizes. Larger or smaller rectangles may now be more or less plausible depending on the evidence.
+
+```{r}
+plotHypSize <- function(updated_hypotheses) {
+  updated_hypotheses %>%
+    group_by(size) %>%
+    summarise(posterior = median(posterior)) %>%
+    ggplot(aes(x = size, y = posterior)) +
+    geom_line() + geom_point() +
+    ylim(0, 1) +
+    labs(x = "Hypothesis Size", y = "Posterior Probability")
+}
+
+plotHypSize(updated_hypotheses)
+```
+
+## Step 2: Recursive Inference
+
+We now simulate a recursive learner. This learner reasons about what kind of point the teacher would choose **given** the hypothesis and **given** the teacher’s beliefs about the learner.
+
+```{r}
+recursive_aaa <- as.data.frame(aaa)[NA, ]
+rownames(recursive_aaa) <- rownames(aaa)
+
+for (i in 1:nrow(hyp)) {
+  h <- rownames(justHyp[i, ])
+  recursive_pt_prob <- getSamplingDistribution(probPts = aaa, consPts = cons_pts, targetHyp = h, pts = pts, alpha = lnTchAlpha)
+  recursive_aaa[, h] <- recursive_pt_prob
+}
+```
+
+### Process Positive and Negative Distributions
+
+The recursive model returns a combined point distribution. We separate this into positive and negative parts for clarity.
+
+```{r}
+recursive_ppp <- recursive_aaa
+recursive_ppp[recursive_aaa < 0] <- 0
+recursive_nnn <- recursive_aaa
+recursive_nnn[recursive_aaa > 0] <- 0
+
+recursive_ppp <- data.matrix(recursive_ppp / sum(recursive_ppp))
+recursive_nnn <- data.matrix(recursive_nnn / sum(recursive_nnn))
+recursive_aaa_norm <- recursive_ppp + (-1 * recursive_nnn)
+
+plot2 <- plotMultiplePointPosteriors(hyp, recursive_aaa, yrange = 0:H, xrange = 0:H)
+plot2
+```
+
+### Update Recursive Beliefs
+
+The learner again updates their hypothesis distribution, but this time their likelihoods come from the recursive inference model.
+
+```{r}
+likelihoods_recursive <- list("positive" = recursive_ppp, "negative" = recursive_nnn)
+updated_hypotheses_recursive <- getHypDist(new_pt, likelihoods_recursive, hyp)
+plotHypSize(updated_hypotheses_recursive)
+```

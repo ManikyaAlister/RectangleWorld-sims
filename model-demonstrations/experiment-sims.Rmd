@@ -1,0 +1,1445 @@
+---
+title: "Experimental simulations"
+---
+
+Let's begin by loading up the pre-calculated files so we are more resource friendly and can do everything a lot faster.
+
+```{r setup, include=FALSE}
+# We'll begin by loading up the libraries and data we need, as always.
+knitr::opts_chunk$set(echo = TRUE)
+ rm(list=ls())
+ 
+# loading the libraries
+library(tidyverse)
+library(here)
+library(ggplot2)
+library(ggpubr)
+library(nnet)
+
+# size of hypothesis space
+H <- 10
+# version of this we are running (for saving)
+version <- 0
+# alphas for deceptive (aD), weak (aW), and helpful (aH)
+aD <- -1
+aW <- 0
+aH <- 1
+
+# the alpha the learner assumes the teacher is following
+lnAlpha <- c(aD,aW,aH)
+# the alpha the teacher is actually following
+tchAlpha <- c(aD,aW,aH)
+# the alpha the teacher is assuming the learner thinks the teacher is
+tchLnAlpha <- c(aD,aW,aH)
+# the alpha the learner is assuming teacher thinks the learner thinks the teacher is
+lnTchAlpha <- c(aD,aW,aH)
+
+# number of best hypotheses to show
+nBestH <- 3
+# TRUE if we want the teacher to always sample the highest probability pt
+# (if multiple points are equally high probability, randomly selects among them)
+maximise <- TRUE
+
+# sourcing our files
+source(here("functions/genericFunctions.R"))
+source(here("functions/calculatingFunctions.R"))
+source(here("functions/plottingFunctions.R"))
+
+# load the main data
+fileSeg <- paste0("x0to",H,"y0to",H)
+fn <- paste0("datafiles/",fileSeg,".RData")
+load(here(fn))
+
+# load the recursive data
+fileSeg <- paste0("x0to",H,"y0to",H)
+fn <- paste0("datafiles/",fileSeg,"recursiveMain.RData")
+load(here(fn))
+
+# load the experimental observations
+load(here("datafiles/obsExp.RData"))
+
+lA <- c(NA,NA,NA)
+tA <- c(NA,NA,NA)
+tlA <- c(NA,NA,NA)
+ltA <- c(NA,NA,NA)
+alphaText <- c(NA,NA,NA)
+zeroA <- which(alphas==0)
+for (i in 1:3) {
+   # set alphas based on parameters above
+   lA[i] <- which(alphas==lnAlpha[i])
+   tA[i] <- which(alphas==tchAlpha[i])
+   tlA[i] <- which(alphas==tchLnAlpha[i])
+   ltA[i] <- which(alphas==tchLnAlpha[i])
+   alphaText[i] <- returnAlpha(lnAlpha[i])
+}
+
+
+mx <- "F"
+if (maximise) {
+   mx <- "T" 
+}
+
+# update filename to reflect this
+dirname <- paste0("x",H,"y",H,"-expt",
+                  "-v",version)
+dir.create(here(paste0("model-demonstrations/figures/testsims/",dirname,"/")), showWarnings = FALSE)
+```
+
+# What do we have?
+
+*xrange*: the x-axis range for our hypothesis space: `r xrange`
+
+*yrange*: the y-axis range for our hypothesis space: `r yrange`
+
+*alphas*: the values of alpha I precalculated: `r alphas`
+
+*hyp*: all possible hypotheses in this space: there are *nHyp* = `r nHyp`
+
+*pts*: all of the points in this space: there are *nPts* = `r nPts`
+
+*posProbPts*: a 3d array of size *nPts* x *nHyp* x *length(alphas)*. This calculating the probability of generating each point assuming it is positive given each hypothesis and each alpha. This is all possible likelihoods (for the positive observations) we need to know.
+
+*negProbPts*: a 3d array of size *nPts* x *nHyp* x *length(alphas)*. This calculating the probability of generating each point assuming it is negative given each hypothesis and each alpha. This is all possible likelihoods (for the negative observations) we need to know.
+
+*allProbPts*: a 3d array of size *nPts* x *nHyp* x *length(alphas)*. This calculating the probability of generating each point whether it is positive or negative (i.e. with both of those summed together), given each hypothesis and each alpha. This is all possible likelihoods (for both positive and negative observations) we need to know.
+
+*consPts*: a 2d array of size *nPts* x *nHyp*. For each point and hypothesis, this is TRUE if that point is contained within that hypothesis and FALSE otherwise. Useful as a quick lookup. 
+
+## The true hypothesis
+
+Let's generate the true hypothesis
+
+```{r echo=FALSE, fig.height=3.5, fig.width=3, fig.align="center", message=FALSE, warning=FALSE}
+
+# get coordinates of rectangle created
+expH <- getCoordinates(hyp,expHNum)
+
+# plot rectangle
+pExpRect <- plotHypotheses(expH,obs=NA,rects=NA,xrange,yrange,
+                         title="Correct hypothesis",
+                         subtitle="Experiment trial 8")
+
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/exprect.png")),
+       plot=pExpRect,device="png",
+       width=10,height=8, units="cm")
+
+```
+
+# Common data structures
+
+**pts**: the set of points tracked by an agent. Each row is a point. The columns are: *x* (the x coordinate of that point); *y* (the y coordinate of that point); *selected* (TRUE if the teacher has provided that point; initialised to FALSE); *type* ("positive" or "negative", initialised to NA since no points have been seen at the start); *prior* (the prior probability of each point, initialised to be uniform); and *posterior* (posterior probability of each point, initialised to be uniform). As the agent sees new points, they update *selected*, *type*, and *posterior*.
+
+**hyps**: the set of hypotheses tracked by an agent Each row is a hypothesis. The columns are: *x1,y1,x2,y2* (the coordinates of that hypothesis) *size* (the size of that hypothesis); *negSize* (the size of the space around the hypothesis); *prior* (their priors over hypotheses, initialised to be uniform); *nPos* and *nNeg* (the number of positive and negative points seen so far; initialised to zero); *consPos* and *consNeg* (TRUE if the positive/negative points seen so far are all consistent with that hypothesis; initialised to TRUE because none have been seen so far); *likePos* and *likeNeg* (the probability of having seen those positive/negative datapoints given that hypothesis. zero if they are not consistent); *posterior* (posterior probability of that hypothesis, based on combining the prior with likePos and likeNeg). As the agent sees new points, they update everything after the *prior* column.
+
+
+# Now let's look at different teachers
+
+The teachers can vary according to two parameters:
+
+**tchAlpha**: the alpha value that the teacher has. We can vary these systematically so we consider the following values: `r tchAlpha`
+
+**tchLnAlpha**: the alpha value the teacher assumes the learner has about them. We can vary these systematically so we consider the following values: `r tchLnAlpha`
+
+## Teacher priors
+
+First we want to capture the different priors they might have about what the learners expect to see. This will depend on their value of **tchLnAlpha**. We consider three different sets of points (each is a data structure of **pts**):
+
+  **tchPtsLnD**: this corresponds to the points the teacher is tracking to model the learner, assuming that the learner thinks the teacher is being deceptive (alpha=`r tchLnAlpha[1]`)
+
+  **tchPtsLnR**: this corresponds to the points the teacher is tracking to model the learner, assuming that the learner thinks the teacher is being random (alpha=`r tchLnAlpha[2]`)
+  
+  **tchPtsLnH**: this corresponds to the points the teacher is tracking to model the learner, assuming that the learner thinks the teacher is being deceptive (alpha=`r tchLnAlpha[3]`)  
+
+
+```{r echo=FALSE, fig.height=4, fig.width=10, fig.align="center", message=FALSE, warning=FALSE}
+
+# points each teacher tracks (tchX indicates tchAlpha, tlX indicates tchLnAlpha)
+tchPts <- list(tchDtlD=pts, tchDtlW=pts, tchDtlH=pts,
+               tchWtlD=pts, tchWtlW=pts, tchWtlH=pts,
+               tchHtlD=pts, tchHtlW=pts, tchHtlH=pts)
+# hypotheses each teacher tracks (tchX indicates tchAlpha, tlX indicates tchLnAlpha)
+tchHyp <- list(tchDtlD=hyp, tchDtlW=hyp, tchDtlH=hyp,
+               tchWtlD=hyp, tchWtlW=hyp, tchWtlH=hyp,
+               tchHtlD=hyp, tchHtlW=hyp, tchHtlH=hyp)
+
+# points each learner tracks (tchX is the alpha the learner thinks the teacher has)
+# oP, oN, or oNP is positive, negative, or neg and positive observations
+# those with D1,H1,or W after X indicate recursive (the lnTchAlpha value)
+lnPts <- list(tchD=pts, tchW=pts, tchH=pts,   
+              tchDD1=pts, tchDH1=pts, tchDW=pts,
+              tchHD1=pts, tchHH1=pts, tchHW=pts)
+
+# hypotheses each learner tracks (tchX is the alpha the learner thinks the teacher has)
+# oP, oN, or oNP is positive, negative, or neg and positive observations
+# those with D1,H1,or W after X indicate recursive (the lnTchAlpha value)
+lnHyp <- list(tchD=hyp, tchW=hyp, tchH=hyp,
+              tchDD1=hyp, tchDH1=hyp, tchDW=hyp,
+              tchHD1=hyp, tchHH1=hyp, tchHW=hyp)
+
+# observations generated by each teacher 
+obs <- list(tchDtlD=NA, tchDtlW=NA, tchDtlH=NA,
+             tchWtlD=NA, tchWtlW=NA, tchWtlH=NA,
+             tchHtlD=NA, tchHtlW=NA, tchHtlH=NA)
+
+# teachers prior for learner (for tchLnAlpha = D, R, and H)
+tchPtProbs <- sweep(allProbPts[,,tlA[1]],2,tchHyp$tchDtlD$prior,"*")
+tchPts$tchDtlD$prior <- rowSums(tchPtProbs)/sum(tchPtProbs)
+tchPtProbs <- sweep(allProbPts[,,tlA[2]],2,tchHyp$tchDtlW$prior,"*")
+tchPts$tchDtlW$prior <- rowSums(tchPtProbs)/sum(tchPtProbs)
+tchPtProbs <- sweep(allProbPts[,,tlA[3]],2,tchHyp$tchDtlH$prior,"*")
+tchPts$tchDtlH$prior <- rowSums(tchPtProbs)/sum(tchPtProbs)
+
+# make copies because all the same for all tchAlphas
+tchPts$tchWtlD$prior <- tchPts$tchDtlD$prior
+tchPts$tchHtlD$prior <- tchPts$tchDtlD$prior
+tchPts$tchWtlW$prior <- tchPts$tchDtlW$prior
+tchPts$tchHtlW$prior <- tchPts$tchDtlW$prior
+tchPts$tchWtlH$prior <- tchPts$tchDtlH$prior
+tchPts$tchHtlH$prior <- tchPts$tchDtlH$prior
+
+# learner priors based on their assumptions about teacher
+lnPtProbs <- sweep(allProbPts[,,lA[1]],2,lnHyp$tchD$prior,"*")
+lnPts$tchD$prior <- rowSums(lnPtProbs)/sum(lnPtProbs)
+lnPtProbs <- sweep(allProbPts[,,lA[2]],2,lnHyp$tchW$prior,"*")
+lnPts$tchW$prior <- rowSums(lnPtProbs)/sum(lnPtProbs)
+lnPtProbs <- sweep(allProbPts[,,lA[3]],2,lnHyp$tchH$prior,"*")
+lnPts$tchH$prior <- rowSums(lnPtProbs)/sum(lnPtProbs)
+# recursive learner priors based on assumptions about teacher's assumptions
+# all of them assume lnAlpha=-1 (i.e. teacher is deceptive)
+# and just vary what the teacher assumes about their knowlege
+lnPtProbs <- sweep(D1allProbPts[,,ltA[1]],2,lnHyp$tchDD1$prior,"*")
+lnPts$tchDD1$prior <- rowSums(lnPtProbs)/sum(lnPtProbs)
+lnPtProbs <- sweep(D1allProbPts[,,ltA[2]],2,lnHyp$tchDW$prior,"*")
+lnPts$tchDW$prior <- rowSums(lnPtProbs)/sum(lnPtProbs)
+lnPtProbs <- sweep(D1allProbPts[,,ltA[3]],2,lnHyp$tchDH1$prior,"*")
+lnPts$tchDH1$prior <- rowSums(lnPtProbs)/sum(lnPtProbs)
+# all of them assume lnAlpha=1 (i.e. teacher is helpful)
+# and just vary what the teacher assumes about their knowlege
+lnPtProbs <- sweep(H1allProbPts[,,ltA[1]],2,lnHyp$tchHD1$prior,"*")
+lnPts$tchHD1$prior <- rowSums(lnPtProbs)/sum(lnPtProbs)
+lnPtProbs <- sweep(H1allProbPts[,,ltA[2]],2,lnHyp$tchHW$prior,"*")
+lnPts$tchHW$prior <- rowSums(lnPtProbs)/sum(lnPtProbs)
+lnPtProbs <- sweep(H1allProbPts[,,ltA[3]],2,lnHyp$tchHH1$prior,"*")
+lnPts$tchHH1$prior <- rowSums(lnPtProbs)/sum(lnPtProbs)
+
+
+# plot all of these for teacher
+pLnPriorsD <- plotDistribution(title_size = 15,allPts=tchPts$tchDtlD,xrange=xrange,yrange=yrange,
+                  subtitle=paste0("Assumes learner thinks deceptive: ",tchLnAlpha[1]),
+                  whichDist="prior",title="TEACHER priors about learner")
+pLnPriorsW <- plotDistribution(title_size = 15,allPts=tchPts$tchDtlW,xrange=xrange,yrange=yrange,
+                  subtitle=paste0("Assumes learner thinks weak: ",tchLnAlpha[2]),
+                  whichDist="prior",title="TEACHER priors about learner")
+pLnPriorsH <- plotDistribution(title_size = 15,allPts=tchPts$tchDtlH,xrange=xrange,yrange=yrange,
+                  subtitle=paste0("Assumes learner thinks helpful: ",tchLnAlpha[3]),
+                  whichDist="prior",title="TEACHER priors about learner")
+
+p <- ggarrange(pLnPriorsD,pLnPriorsW,pLnPriorsH,ncol=3)
+
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/priors.png")),
+       plot=p,device="png",
+       width=24,height=7, units="cm")
+
+```
+
+## Teacher sampling
+
+Let's look at how teachers sample depending on their alpha and their assumptions about
+the learner's alpha. 
+
+```{r echo=FALSE, fig.height=12, fig.width=12, fig.align="center", message=FALSE, warning=FALSE}
+
+# the teacher is deceptive
+tchPts$tchDtlD$posterior <- getSamplingDistribution(allProbPts[,,tlA[1]],consPts,
+                                                    tchPts$tchDtlD,expHNum,
+                                                    priors=tchHyp$tchDltD$prior,
+                                                    alpha=tchAlpha[1]) 
+
+ptDtlDsm <- plotColourfulDistribution(allPts=tchPts$tchDtlD,xrange=xrange,yrange=yrange,
+                          trueRectangle=expHNum,obs=obs$tchDtlD,
+                          title=paste0("DECEPTIVE teacher sampling distribution: ", 
+                                       tchAlpha[1]),
+                          subtitle=paste0("Assumes learner thinks teacher is DECEPTIVE: ",
+                                          tchLnAlpha[1]))
+
+tchPts$tchDtlW$posterior <- getSamplingDistribution(allProbPts[,,tlA[2]],consPts,
+                                                    tchPts$tchDtlW,expHNum,
+                                                    priors=tchHyp$tchDltW$prior,
+                                                    alpha=tchAlpha[1]) 
+
+ptDtlWsm <- plotColourfulDistribution(allPts=tchPts$tchDtlW,xrange=xrange,yrange=yrange,
+                          trueRectangle=expHNum,obs=obs$tchDtlW,
+                          title=paste0("DECEPTIVE teacher sampling distribution: ", 
+                                       tchAlpha[1]),
+                          subtitle=paste0("Assumes learner thinks teacher is WEAK: ",
+                                          tchLnAlpha[2]))
+
+tchPts$tchDtlH$posterior <- getSamplingDistribution(allProbPts[,,tlA[3]],consPts,
+                                                    tchPts$tchDtlH,expHNum,
+                                                    priors=tchHyp$tchDltH$prior,
+                                                    alpha=tchAlpha[1]) 
+
+ptDtlHsm <- plotColourfulDistribution(allPts=tchPts$tchDtlH,xrange=xrange,yrange=yrange,
+                          trueRectangle=expHNum,obs=obs$tchDtlH,
+                          title=paste0("DECEPTIVE teacher sampling distribution: ", 
+                                       tchAlpha[1]),
+                          subtitle=paste0("Assumes learner thinks teacher is HELPFUL: ",
+                                          tchLnAlpha[3]))
+
+# the teacher is weak
+tchPts$tchWtlD$posterior <- getSamplingDistribution(allProbPts[,,tlA[1]],consPts,
+                                                    tchPts$tchWtlD,expHNum,
+                                                    priors=tchHyp$tchWltD$prior,
+                                                    alpha=tchAlpha[2]) 
+
+ptWtlDsm <- plotColourfulDistribution(allPts=tchPts$tchWtlD,xrange=xrange,yrange=yrange,
+                          trueRectangle=expHNum,obs=obs$tchWtlD,
+                          title=paste0("WEAK teacher sampling distribution: ", 
+                                       tchAlpha[2]),
+                          subtitle=paste0("Assumes learner thinks teacher is DECEPTIVE: ",
+                                          tchLnAlpha[1]))
+
+tchPts$tchWtlW$posterior <- getSamplingDistribution(allProbPts[,,tlA[2]],consPts,
+                                                    tchPts$tchWtlW,expHNum,
+                                                    priors=tchHyp$tchWltW$prior,
+                                                    alpha=tchAlpha[2]) 
+
+ptWtlWsm <- plotColourfulDistribution(allPts=tchPts$tchWtlW,xrange=xrange,yrange=yrange,
+                          trueRectangle=expHNum,obs=obs$tchWtlW,
+                          title=paste0("WEAK teacher sampling distribution: ", 
+                                       tchAlpha[2]),
+                          subtitle=paste0("Assumes learner thinks teacher is WEAK: ",
+                                          tchLnAlpha[2]))
+
+tchPts$tchWtlH$posterior <- getSamplingDistribution(allProbPts[,,tlA[3]],consPts,
+                                                    tchPts$tchWtlH,expHNum,
+                                                    priors=tchHyp$tchWltH$prior,
+                                                    alpha=tchAlpha[2]) 
+
+ptWtlHsm <- plotColourfulDistribution(allPts=tchPts$tchWtlH,xrange=xrange,yrange=yrange,
+                          trueRectangle=expHNum,obs=obs$tchWtlH,
+                          title=paste0("WEAK teacher sampling distribution: ", 
+                                       tchAlpha[2]),
+                          subtitle=paste0("Assumes learner thinks teacher is HELPFUL: ",
+                                          tchLnAlpha[3]))
+
+
+# the teacher is helpful
+tchPts$tchHtlD$posterior <- getSamplingDistribution(allProbPts[,,tlA[1]],consPts,
+                                                    tchPts$tchHtlD,expHNum,
+                                                    priors=tchHyp$tchHltD$prior,
+                                                    alpha=tchAlpha[3]) 
+
+ptHtlDsm <- plotColourfulDistribution(allPts=tchPts$tchHtlD,xrange=xrange,yrange=yrange,
+                          trueRectangle=expHNum,obs=obs$tchHtlD,
+                          title=paste0("HELPFUL teacher sampling distribution: ", 
+                                       tchAlpha[3]),
+                          subtitle=paste0("Assumes learner thinks teacher is DECEPTIVE: ",
+                                          tchLnAlpha[1]))
+
+tchPts$tchHtlW$posterior <- getSamplingDistribution(allProbPts[,,tlA[2]],consPts,
+                                                    tchPts$tchHtlW,expHNum,
+                                                    priors=tchHyp$tchHltW$prior,
+                                                    alpha=tchAlpha[3]) 
+
+ptHtlWsm <- plotColourfulDistribution(allPts=tchPts$tchHtlW,xrange=xrange,yrange=yrange,
+                          trueRectangle=expHNum,obs=obs$tchHtlW,
+                          title=paste0("HELPFUL teacher sampling distribution: ", 
+                                       tchAlpha[3]),
+                          subtitle=paste0("Assumes learner thinks teacher is WEAK: ",
+                                          tchLnAlpha[2]))
+
+tchPts$tchHtlH$posterior <- getSamplingDistribution(allProbPts[,,tlA[3]],consPts,
+                                                    tchPts$tchHtlH,expHNum,
+                                                    priors=tchHyp$tchHltH$prior,
+                                                    alpha=tchAlpha[3]) 
+
+ptHtlHsm <- plotColourfulDistribution(allPts=tchPts$tchHtlH,xrange=xrange,yrange=yrange,
+                          trueRectangle=expHNum,obs=obs$tchHtlH,
+                          title=paste0("HELPFUL teacher sampling distribution: ", 
+                                       tchAlpha[3]),
+                          subtitle=paste0("Assumes learner thinks teacher is HELPFUL: ",
+                                          tchLnAlpha[3]))
+
+pSampSm <- ggarrange(ptDtlDsm,ptDtlWsm,ptDtlHsm,
+                    ptWtlDsm,ptWtlWsm,ptWtlHsm,
+                    ptHtlDsm,ptHtlWsm,ptHtlHsm,ncol=3,nrow=3)
+
+```
+
+
+# Now let's look at different learners
+
+From the learner end, they don't know what the hypotheses are, but instead they make different inferences based on different data, so that's what we want to vary. There are a few factors here.
+
+First we'll look at the ones that don't do the extra recursive layer of inference.
+
+The plots are saved individually (and therefore are easier to see) in figures/testsims/ 
+
+## Non-recursive: Deceptive
+
+
+```{r echo=FALSE, fig.height=12, fig.width=12, fig.align="center", message=FALSE, warning=FALSE}
+
+# **** DECEPTIVE TEACHER PT 1 ****
+
+st <- paste0("Assumes teacher DECEPTIVE; alpha = ",lnAlpha[1])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p1DprPts <- plotDistribution(title_size = 15,allPts=lnPts$tchD,xrange=xrange,yrange=yrange,
+                  subtitle=st,title=t,whichDist="prior")
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p1DprHist <- plotHypothesisHistogram(lnHyp$tchD,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchD <- updateHypotheses(allProbPts[,,lA[1]],consPts,obsExp[1,],lnHyp$tchD)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchD,n=nBestH)
+t <- "Learner: best hypothesis"
+p1Dbest <- plotHypotheses(r = expH, obs=obsExp[1,],rects=lnHyp$tchD[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p1Dhist <- plotHypothesisHistogram(lnHyp$tchD,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[1,],
+                       posterior=lnHyp$tchD$posterior,pts=lnPts$tchD)
+t <- "Learner: hypothesis heatmap"
+
+p1Dhmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchD <- updatePoints(allProbPts[,,lA[1]],obsExp[1,],
+                       posterior=lnHyp$tchD$posterior,pts=lnPts$tchD)
+t <- "Learner: point distribution"
+p1Dpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchD,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p1D <- ggarrange(p1DprPts,p1DprHist,p1Dbest,
+               p1Dpdist,p1Dhist,p1Dhmap,ncol=3,nrow=2)
+
+
+# **** DECEPTIVE TEACHER PT 2 ****
+
+st <- paste0("Assumes teacher DECEPTIVE; alpha = ",lnAlpha[1])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p2DprPts <- plotDistribution(title_size = 15,allPts=lnPts$tchD,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p2DprHist <- plotHypothesisHistogram(lnHyp$tchD,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchD <- updateHypotheses(allProbPts[,,lA[1]],consPts,obsExp[2,],lnHyp$tchD)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchD,n=nBestH)
+t <- "Learner: best hypothesis"
+p2Dbest <- plotHypotheses(r = expH, obs=obsExp[1:2,],rects=lnHyp$tchD[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p2Dhist <- plotHypothesisHistogram(lnHyp$tchD,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[2,],
+                       posterior=lnHyp$tchD$posterior,pts=lnPts$tchD)
+t <- "Learner: hypothesis heatmap"
+p2Dhmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:2,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchD <- updatePoints(allProbPts[,,lA[1]],obsExp[2,],
+                       posterior=lnHyp$tchD$posterior,pts=lnPts$tchD)
+t <- "Learner: point distribution"
+p2Dpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchD,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:2,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p2D <- ggarrange(p2DprPts,p2DprHist,p2Dbest,
+               p2Dpdist,p2Dhist,p2Dhmap,ncol=3,nrow=2)
+
+
+
+
+# **** DECEPTIVE TEACHER PT 3 ****
+
+st <- paste0("Assumes teacher DECEPTIVE; alpha = ",lnAlpha[1])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p3DprPts <- plotDistribution(title_size = 15,allPts=lnPts$tchD,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:2,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p3DprHist <- plotHypothesisHistogram(lnHyp$tchD,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchD <- updateHypotheses(allProbPts[,,lA[1]],consPts,obsExp[3,],lnHyp$tchD)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchD,n=nBestH)
+t <- "Learner: best hypothesis"
+p3Dbest <- plotHypotheses(r = expH, obs=obsExp[1:3,],rects=lnHyp$tchD[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p3Dhist <- plotHypothesisHistogram(lnHyp$tchD,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[3,],
+                       posterior=lnHyp$tchD$posterior,pts=lnPts$tchD)
+t <- "Learner: hypothesis heatmap"
+p3Dhmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:3,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchD <- updatePoints(allProbPts[,,lA[1]],obsExp[3,],
+                       posterior=lnHyp$tchD$posterior,pts=lnPts$tchD)
+t <- "Learner: point distribution"
+p3Dpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchD,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:3,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p3D <- ggarrange(p3DprPts,p3DprHist,p3Dbest,
+               p3Dpdist,p3Dhist,p3Dhmap,ncol=3,nrow=2)
+
+
+# **** DECEPTIVE TEACHER PT 4 ****
+
+st <- paste0("Assumes teacher DECEPTIVE; alpha = ",lnAlpha[1])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p4DprPts <- plotDistribution(title_size = 15,allPts=lnPts$tchD,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:3,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p4DprHist <- plotHypothesisHistogram(lnHyp$tchD,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchD <- updateHypotheses(allProbPts[,,lA[1]],consPts,obsExp[4,],lnHyp$tchD)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchD,n=nBestH)
+t <- "Learner: best hypothesis"
+p4Dbest <- plotHypotheses(r = expH, obs=obsExp[1:4,],rects=lnHyp$tchD[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p4Dhist <- plotHypothesisHistogram(lnHyp$tchD,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[4,],
+                       posterior=lnHyp$tchD$posterior,pts=lnPts$tchD)
+t <- "Learner: hypothesis heatmap"
+p4Dhmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:4,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchD <- updatePoints(allProbPts[,,lA[1]],obsExp[4,],
+                       posterior=lnHyp$tchD$posterior,pts=lnPts$tchD)
+t <- "Learner: point distribution"
+p4Dpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchD,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:4,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p4D <- ggarrange(p4DprPts,p4DprHist,p4Dbest,
+               p4Dpdist,p4Dhist,p4Dhmap,ncol=3,nrow=2)
+
+```
+
+```{r}
+p1D
+p2D
+p3D
+p4D
+```
+
+## Non-recursive: Helpful
+
+
+```{r echo=FALSE, fig.height=12, fig.width=12, fig.align="center", message=FALSE, warning=FALSE}
+
+# **** HELPFUL TEACHER PT 1 ****
+
+st <- paste0("Assumes teacher HELPFUL; alpha = ",lnAlpha[3])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p1HprPts <- plotDistribution(title_size = 15,allPts=lnPts$tchH,xrange=xrange,yrange=yrange,
+                  subtitle=st,title=t,whichDist="prior")
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p1HprHist <- plotHypothesisHistogram(lnHyp$tchH,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchH <- updateHypotheses(allProbPts[,,lA[3]],consPts,obsExp[1,],lnHyp$tchH)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchH,n=nBestH)
+t <- "Learner: best hypothesis"
+p1Hbest <- plotHypotheses(r = expH, obs=obsExp[1,],rects=lnHyp$tchH[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p1Hhist <- plotHypothesisHistogram(lnHyp$tchH,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[1,],
+                       posterior=lnHyp$tchH$posterior,pts=lnPts$tchH)
+t <- "Learner: hypothesis heatmap"
+p1Hhmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchH <- updatePoints(allProbPts[,,lA[3]],obsExp[1,],
+                       posterior=lnHyp$tchH$posterior,pts=lnPts$tchH)
+t <- "Learner: point distribution"
+p1Hpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchH,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p1H <- ggarrange(p1HprPts,p1HprHist,p1Hbest,
+               p1Hpdist,p1Hhist,p1Hhmap,ncol=3,nrow=2)
+
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnHelpExp1.png")),
+       plot=p1H,device="png",
+       width=36,height=18, units="cm")
+
+# **** HELPFUL TEACHER PT 2 ****
+
+st <- paste0("Assumes teacher HELPFUL; alpha = ",lnAlpha[3])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p2HprPts <- plotDistribution(title_size = 15,allPts=lnPts$tchH,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p2HprHist <- plotHypothesisHistogram(lnHyp$tchH,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchH <- updateHypotheses(allProbPts[,,lA[3]],consPts,obsExp[2,],lnHyp$tchH)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchH,n=nBestH)
+t <- "Learner: best hypothesis"
+p2Hbest <- plotHypotheses(r = expH, obs=obsExp[1:2,],rects=lnHyp$tchH[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p2Hhist <- plotHypothesisHistogram(lnHyp$tchH,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[2,],
+                       posterior=lnHyp$tchH$posterior,pts=lnPts$tchH)
+t <- "Learner: hypothesis heatmap"
+p2Hhmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:2,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchH <- updatePoints(allProbPts[,,lA[3]],obsExp[2,],
+                       posterior=lnHyp$tchH$posterior,pts=lnPts$tchH)
+t <- "Learner: point distribution"
+p2Hpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchH,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:2,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p2H <- ggarrange(p2HprPts,p2HprHist,p2Hbest,
+               p2Hpdist,p2Hhist,p2Hhmap,ncol=3,nrow=2)
+
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnHelpExp2.png")),
+       plot=p2H,device="png",
+       width=36,height=18, units="cm")
+
+
+# **** HELPFUL TEACHER PT 3 ****
+
+st <- paste0("Assumes teacher HELPFUL; alpha = ",lnAlpha[3])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p3HprPts <- plotDistribution(title_size = 15,allPts=lnPts$tchH,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:2,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p3HprHist <- plotHypothesisHistogram(lnHyp$tchH,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchH <- updateHypotheses(allProbPts[,,lA[3]],consPts,obsExp[3,],lnHyp$tchH)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchH,n=nBestH)
+t <- "Learner: best hypothesis"
+p3Hbest <- plotHypotheses(r = expH, obs=obsExp[1:3,],rects=lnHyp$tchH[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p3Hhist <- plotHypothesisHistogram(lnHyp$tchH,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[3,],
+                       posterior=lnHyp$tchH$posterior,pts=lnPts$tchH)
+t <- "Learner: hypothesis heatmap"
+p3Hhmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:3,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchH <- updatePoints(allProbPts[,,lA[3]],obsExp[3,],
+                       posterior=lnHyp$tchH$posterior,pts=lnPts$tchH)
+t <- "Learner: point distribution"
+p3Hpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchH,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:3,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p3H <- ggarrange(p3HprPts,p3HprHist,p3Hbest,
+               p3Hpdist,p3Hhist,p3Hhmap,ncol=3,nrow=2)
+
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnHelpExp3.png")),
+       plot=p3H,device="png",
+       width=36,height=18, units="cm")
+
+
+# **** HELPFUL TEACHER PT 4 ****
+
+st <- paste0("Assumes teacher HELPFUL; alpha = ",lnAlpha[3])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p4HprPts <- plotDistribution(title_size = 15,allPts=lnPts$tchH,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:3,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p4HprHist <- plotHypothesisHistogram(lnHyp$tchH,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchH <- updateHypotheses(allProbPts[,,lA[3]],consPts,obsExp[4,],lnHyp$tchH)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchH,n=nBestH)
+t <- "Learner: best hypothesis"
+p4Hbest <- plotHypotheses(r = expH, obs=obsExp[1:4,],rects=lnHyp$tchH[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p4Hhist <- plotHypothesisHistogram(lnHyp$tchH,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[4,],
+                       posterior=lnHyp$tchH$posterior,pts=lnPts$tchH)
+t <- "Learner: hypothesis heatmap"
+p4Hhmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:4,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchH <- updatePoints(allProbPts[,,lA[3]],obsExp[4,],
+                       posterior=lnHyp$tchH$posterior,pts=lnPts$tchH)
+t <- "Learner: point distribution"
+p4Hpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchH,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:4,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p4H <- ggarrange(p4HprPts,p4HprHist,p4Hbest,
+               p4Hpdist,p4Hhist,p4Hhmap,ncol=3,nrow=2)
+
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnHelpExp4.png")),
+       plot=p4H,device="png",
+       width=36,height=18, units="cm")
+```
+
+```{r}
+p1H
+p2H
+p3H
+p4H
+```
+
+## Non-recursive: Helpful
+
+
+```{r echo=FALSE, fig.height=12, fig.width=12, fig.align="center", message=FALSE, warning=FALSE}
+
+# **** WEAK TEACHER PT 1 ****
+
+st <- paste0("Assumes teacher WEAK; alpha = ",lnAlpha[2])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p1WprPts <- plotDistribution(title_size = 15,allPts=lnPts$tchW,xrange=xrange,yrange=yrange,
+                  subtitle=st,title=t,whichDist="prior")
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p1WprHist <- plotHypothesisHistogram(lnHyp$tchW,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchW <- updateHypotheses(allProbPts[,,lA[2]],consPts,obsExp[1,],lnHyp$tchW)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchW,n=nBestH)
+t <- "Learner: best hypothesis"
+p1Wbest <- plotHypotheses(r = expH, obs=obsExp[1,],rects=lnHyp$tchW[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p1Whist <- plotHypothesisHistogram(lnHyp$tchW,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[1,],
+                       posterior=lnHyp$tchW$posterior,pts=lnPts$tchW)
+t <- "Learner: hypothesis heatmap"
+p1Whmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchW <- updatePoints(allProbPts[,,lA[2]],obsExp[1,],
+                       posterior=lnHyp$tchW$posterior,pts=lnPts$tchW)
+t <- "Learner: point distribution"
+p1Wpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchW,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p1W <- ggarrange(p1WprPts,p1WprHist,p1Wbest,
+               p1Wpdist,p1Whist,p1Whmap,ncol=3,nrow=2)
+
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnWeakExp1.png")),
+       plot=p1W,device="png",
+       width=36,height=18, units="cm")
+
+# **** WEAK TEACHER PT 2 ****
+
+st <- paste0("Assumes teacher WEAK; alpha = ",lnAlpha[2])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p2WprPts <- plotDistribution(title_size = 15,allPts=lnPts$tchW,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p2WprHist <- plotHypothesisHistogram(lnHyp$tchW,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchW <- updateHypotheses(allProbPts[,,lA[2]],consPts,obsExp[2,],lnHyp$tchW)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchW,n=nBestH)
+t <- "Learner: best hypothesis"
+p2Wbest <- plotHypotheses(r = expH, obs=obsExp[1:2,],rects=lnHyp$tchW[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p2Whist <- plotHypothesisHistogram(lnHyp$tchW,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[2,],
+                       posterior=lnHyp$tchW$posterior,pts=lnPts$tchW)
+t <- "Learner: hypothesis heatmap"
+p2Whmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:2,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchW <- updatePoints(allProbPts[,,lA[2]],obsExp[2,],
+                       posterior=lnHyp$tchW$posterior,pts=lnPts$tchW)
+t <- "Learner: point distribution"
+p2Wpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchW,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:2,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p2W <- ggarrange(p2WprPts,p2WprHist,p2Wbest,
+               p2Wpdist,p2Whist,p2Whmap,ncol=3,nrow=2)
+
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnWeakExp2.png")),
+       plot=p2W,device="png",
+       width=36,height=18, units="cm")
+
+
+# **** WEAK TEACHER PT 3 ****
+
+st <- paste0("Assumes teacher WEAK; alpha = ",lnAlpha[2])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p3WprPts <- plotDistribution(title_size = 15,allPts=lnPts$tchW,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:2,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p3WprHist <- plotHypothesisHistogram(lnHyp$tchW,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchW <- updateHypotheses(allProbPts[,,lA[2]],consPts,obsExp[3,],lnHyp$tchW)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchW,n=nBestH)
+t <- "Learner: best hypothesis"
+p3Wbest <- plotHypotheses(r = expH, obs=obsExp[1:3,],rects=lnHyp$tchW[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p3Whist <- plotHypothesisHistogram(lnHyp$tchW,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[3,],
+                       posterior=lnHyp$tchW$posterior,pts=lnPts$tchW)
+t <- "Learner: hypothesis heatmap"
+p3Whmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:3,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchW <- updatePoints(allProbPts[,,lA[2]],obsExp[3,],
+                       posterior=lnHyp$tchW$posterior,pts=lnPts$tchW)
+t <- "Learner: point distribution"
+p3Wpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchW,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:3,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p3W <- ggarrange(p3WprPts,p3WprHist,p3Wbest,
+               p3Wpdist,p3Whist,p3Whmap,ncol=3,nrow=2)
+
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnWeakExp3.png")),
+       plot=p3W,device="png",
+       width=36,height=18, units="cm")
+
+
+# **** WEAK TEACHER PT 4 ****
+
+st <- paste0("Assumes teacher WEAK; alpha = ",lnAlpha[2])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p4WprPts <- plotDistribution(title_size = 15,allPts=lnPts$tchW,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:3,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p4WprHist <- plotHypothesisHistogram(lnHyp$tchW,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchW <- updateHypotheses(allProbPts[,,lA[2]],consPts,obsExp[4,],lnHyp$tchW)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchW,n=nBestH)
+t <- "Learner: best hypothesis"
+p4Wbest <- plotHypotheses(r = expH, obs=obsExp[1:4,],rects=lnHyp$tchW[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p4Whist <- plotHypothesisHistogram(lnHyp$tchW,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[4,],
+                       posterior=lnHyp$tchW$posterior,pts=lnPts$tchW)
+t <- "Learner: hypothesis heatmap"
+p4Whmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:4,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchW <- updatePoints(allProbPts[,,lA[2]],obsExp[4,],
+                       posterior=lnHyp$tchW$posterior,pts=lnPts$tchW)
+t <- "Learner: point distribution"
+p4Wpdist <- plotDistribution(title_size = 15,allPts=lnPts$tchW,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:4,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p4W <- ggarrange(p4WprPts,p4WprHist,p4Wbest,
+               p4Wpdist,p4Whist,p4Whmap,ncol=3,nrow=2)
+
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnWeakExp4.png")),
+       plot=p4W,device="png",
+       width=36,height=18, units="cm")
+```
+
+```{r}
+p1W
+p2W
+p3W
+p4W
+```
+
+## Recursive: Deceptive, assumes deceptive (i.e., uninformative)
+
+
+```{r echo=FALSE, fig.height=12, fig.width=12, fig.align="center", message=FALSE, warning=FALSE}
+
+# **** DECEPTIVE TEACHER PT 1 ****
+# **** ASSUMES TEACHER ASSUMES LEARNER KNOWS DECEPTIVE (lnTchAlpha=-1) ****
+
+st <- paste0("Assumes teacher DECEPTIVE; alpha = ",lnAlpha[1],
+             "\n ... and Teacher knows they know; lnTchAlpha = ",lnTchAlpha[1])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p1DD1prPts <- plotDistribution(title_size = 15,allPts=lnPts$tchDD1,xrange=xrange,yrange=yrange,
+                  subtitle=st,title=t,whichDist="prior")
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p1DD1prHist <- plotHypothesisHistogram(lnHyp$tchDD1,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchDD1 <- updateHypotheses(D1allProbPts[,,ltA[1]],consPts,obsExp[1,],lnHyp$tchDD1)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchDD1,n=nBestH)
+t <- "Learner: best hypothesis"
+p1DD1best <- plotHypotheses(r = expH, obs=obsExp[1,],rects=lnHyp$tchDD1[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p1DD1hist <- plotHypothesisHistogram(lnHyp$tchDD1,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[1,],
+                       posterior=lnHyp$tchDD1$posterior,pts=lnPts$tchDD1)
+t <- "Learner: hypothesis heatmap"
+p1DD1hmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchDD1 <- updatePoints(D1allProbPts[,,ltA[1]],obsExp[1,],
+                       posterior=lnHyp$tchDD1$posterior,pts=lnPts$tchDD1)
+t <- "Learner: point distribution"
+p1DD1pdist <- plotDistribution(title_size = 15,allPts=lnPts$tchDD1,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p1DD1 <- ggarrange(p1DD1prPts,p1DD1prHist,p1DD1best,
+               p1DD1pdist,p1DD1hist,p1DD1hmap,ncol=3,nrow=2)
+
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnDecExp1recursiveD1.png")),
+       plot=p1DD1,device="png",
+       width=36,height=18, units="cm")
+
+
+
+# **** DECEPTIVE TEACHER PT 2 ****
+# **** ASSUMES TEACHER ASSUMES LEARNER KNOWS DECEPTIVE (lnTchAlpha=-1) ****
+
+st <- paste0("Assumes teacher DECEPTIVE; alpha = ",lnAlpha[1],
+             "\n ... and Teacher knows they know; lnTchAlpha = ",lnTchAlpha[1])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p2DD1prPts <- plotDistribution(title_size = 15,allPts=lnPts$tchDD1,xrange=xrange,yrange=yrange,
+                  obs=obsExp[1,],subtitle=st,title=t,whichDist="posterior")
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p2DD1prHist <- plotHypothesisHistogram(lnHyp$tchDD1,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchDD1 <- updateHypotheses(D1allProbPts[,,ltA[1]],consPts,obsExp[2,],lnHyp$tchDD1)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchDD1,n=nBestH)
+t <- "Learner: best hypothesis"
+p2DD1best <- plotHypotheses(r = expH, obs=obsExp[1:2,],rects=lnHyp$tchDD1[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p2DD1hist <- plotHypothesisHistogram(lnHyp$tchDD1,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[2,],
+                       posterior=lnHyp$tchDD1$posterior,pts=lnPts$tchDD1)
+t <- "Learner: hypothesis heatmap"
+p2DD1hmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:2,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchDD1 <- updatePoints(D1allProbPts[,,ltA[1]],obsExp[2,],
+                       posterior=lnHyp$tchDD1$posterior,pts=lnPts$tchDD1)
+t <- "Learner: point distribution"
+p2DD1pdist <- plotDistribution(title_size = 15,allPts=lnPts$tchDD1,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:2,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p2DD1 <- ggarrange(p2DD1prPts,p2DD1prHist,p2DD1best,
+               p2DD1pdist,p2DD1hist,p2DD1hmap,ncol=3,nrow=2)
+
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnDecExp2recursiveD1.png")),
+       plot=p2DD1,device="png",
+       width=36,height=18, units="cm")
+
+
+
+# **** DECEPTIVE TEACHER PT 3 ****
+# **** ASSUMES TEACHER ASSUMES LEARNER KNOWS DECEPTIVE (lnTchAlpha=-1) ****
+
+st <- paste0("Assumes teacher DECEPTIVE; alpha = ",lnAlpha[1],
+             "\n ... and Teacher knows they know; lnTchAlpha = ",lnTchAlpha[1])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p3DD1prPts <- plotDistribution(title_size = 15,allPts=lnPts$tchDD1,xrange=xrange,yrange=yrange,
+                  obs=obsExp[1:2,],subtitle=st,title=t,whichDist="posterior")
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p3DD1prHist <- plotHypothesisHistogram(lnHyp$tchDD1,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchDD1 <- updateHypotheses(D1allProbPts[,,ltA[1]],consPts,obsExp[3,],lnHyp$tchDD1)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchDD1,n=nBestH)
+t <- "Learner: best hypothesis"
+p3DD1best <- plotHypotheses(r = expH, obs=obsExp[1:3,],rects=lnHyp$tchDD1[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p3DD1hist <- plotHypothesisHistogram(lnHyp$tchDD1,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[3,],
+                       posterior=lnHyp$tchDD1$posterior,pts=lnPts$tchDD1)
+t <- "Learner: hypothesis heatmap"
+p3DD1hmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:3,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchDD1 <- updatePoints(D1allProbPts[,,ltA[1]],obsExp[3,],
+                       posterior=lnHyp$tchDD1$posterior,pts=lnPts$tchDD1)
+t <- "Learner: point distribution"
+p3DD1pdist <- plotDistribution(title_size = 15,allPts=lnPts$tchDD1,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:3,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p3DD1 <- ggarrange(p3DD1prPts,p3DD1prHist,p3DD1best,
+               p3DD1pdist,p3DD1hist,p3DD1hmap,ncol=3,nrow=2)
+
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnDecExp3recursiveD1.png")),
+       plot=p3DD1,device="png",
+       width=36,height=18, units="cm")
+
+
+# **** DECEPTIVE TEACHER PT 4 ****
+# **** ASSUMES TEACHER ASSUMES LEARNER KNOWS DECEPTIVE (lnTchAlpha=-1) ****
+
+st <- paste0("Assumes teacher DECEPTIVE; alpha = ",lnAlpha[1],
+             "\n ... and Teacher knows they know; lnTchAlpha = ",lnTchAlpha[1])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p4DD1prPts <- plotDistribution(title_size = 15,allPts=lnPts$tchDD1,xrange=xrange,yrange=yrange,
+                  obs=obsExp[1:3,],subtitle=st,title=t,whichDist="posterior")
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p4DD1prHist <- plotHypothesisHistogram(lnHyp$tchDD1,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchDD1 <- updateHypotheses(D1allProbPts[,,ltA[1]],consPts,obsExp[4,],lnHyp$tchDD1)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchDD1,n=nBestH)
+t <- "Learner: best hypothesis"
+p4DD1best <- plotHypotheses(r = expH, obs=obsExp[1:4,],rects=lnHyp$tchDD1[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p4DD1hist <- plotHypothesisHistogram(lnHyp$tchDD1,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[4,],
+                       posterior=lnHyp$tchDD1$posterior,pts=lnPts$tchDD1)
+t <- "Learner: hypothesis heatmap"
+p4DD1hmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:4,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchDD1 <- updatePoints(D1allProbPts[,,ltA[1]],obsExp[4,],
+                       posterior=lnHyp$tchDD1$posterior,pts=lnPts$tchDD1)
+t <- "Learner: point distribution"
+p4DD1pdist <- plotDistribution(title_size = 15,allPts=lnPts$tchDD1,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:4,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p4DD1 <- ggarrange(p4DD1prPts,p4DD1prHist,p4DD1best,
+               p4DD1pdist,p4DD1hist,p4DD1hmap,ncol=3,nrow=2)
+
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnDecExp4recursiveD1.png")),
+       plot=p4DD1,device="png",
+       width=36,height=18, units="cm")
+
+```
+
+
+```{r}
+p1DD1
+p2DD1
+p3DD1
+p4DD1
+```
+
+
+## Recursive: Deceptive, assumes helpful (i.e., misleading)
+
+
+```{r echo=FALSE, fig.height=12, fig.width=12, fig.align="center", message=FALSE, warning=FALSE}
+
+# **** DECEPTIVE TEACHER PT 1 ****
+# **** ASSUMES TEACHER ASSUMES LEARNER THINKS HELPFUL (lnTchAlpha=1) ****
+
+st <- paste0("Assumes teacher DECEPTIVE; alpha = ",lnAlpha[1],
+             "\n ... and Teacher thinks they trust; lnTchAlpha = ",lnTchAlpha[3])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p1DH1prPts <- plotDistribution(title_size = 15,allPts=lnPts$tchDH1,xrange=xrange,yrange=yrange,
+                  subtitle=st,title=t,whichDist="prior")
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p1DH1prHist <- plotHypothesisHistogram(lnHyp$tchDH1,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchDH1 <- updateHypotheses(D1allProbPts[,,ltA[3]],consPts,obsExp[1,],lnHyp$tchDH1)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchDH1,n=nBestH)
+t <- "Learner: best hypothesis"
+p1DH1best <- plotHypotheses(r = expH, obs=obsExp[1,],rects=lnHyp$tchDH1[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p1DH1hist <- plotHypothesisHistogram(lnHyp$tchDH1,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[1,],
+                       posterior=lnHyp$tchDH1$posterior,pts=lnPts$tchDH1)
+t <- "Learner: hypothesis heatmap"
+p1DH1hmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchDH1 <- updatePoints(D1allProbPts[,,ltA[3]],obsExp[1,],
+                       posterior=lnHyp$tchDH1$posterior,pts=lnPts$tchDH1)
+t <- "Learner: point distribution"
+p1DH1pdist <- plotDistribution(title_size = 15,allPts=lnPts$tchDH1,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p1DH1 <- ggarrange(p1DH1prPts,p1DH1prHist,p1DH1best,
+               p1DH1pdist,p1DH1hist,p1DH1hmap,ncol=3,nrow=2)
+
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnDecExp1recursiveH1.png")),
+       plot=p1DH1,device="png",
+       width=36,height=18, units="cm")
+
+
+
+# **** DECEPTIVE TEACHER PT 2 ****
+# **** ASSUMES TEACHER ASSUMES LEARNER THINKS HELPFUL (lnTchAlpha=1) ****
+
+st <- paste0("Assumes teacher DECEPTIVE; alpha = ",lnAlpha[1],
+             "\n ... and Teacher thinks they trust; lnTchAlpha = ",lnTchAlpha[3])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p2DH1prPts <- plotDistribution(title_size = 15,allPts=lnPts$tchDH1,xrange=xrange,yrange=yrange,
+                  obs=obsExp[1,],subtitle=st,title=t,whichDist="posterior")
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p2DH1prHist <- plotHypothesisHistogram(lnHyp$tchDH1,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchDH1 <- updateHypotheses(D1allProbPts[,,ltA[3]],consPts,obsExp[2,],lnHyp$tchDH1)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchDH1,n=nBestH)
+t <- "Learner: best hypothesis"
+p2DH1best <- plotHypotheses(r = expH, obs=obsExp[1:2,],rects=lnHyp$tchDH1[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p2DH1hist <- plotHypothesisHistogram(lnHyp$tchDH1,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[2,],
+                       posterior=lnHyp$tchDH1$posterior,pts=lnPts$tchDH1)
+t <- "Learner: hypothesis heatmap"
+p2DH1hmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:2,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchDH1 <- updatePoints(D1allProbPts[,,ltA[3]],obsExp[2,],
+                       posterior=lnHyp$tchDH1$posterior,pts=lnPts$tchDH1)
+t <- "Learner: point distribution"
+p2DH1pdist <- plotDistribution(title_size = 15,allPts=lnPts$tchDH1,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:2,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p2DH1 <- ggarrange(p2DH1prPts,p2DH1prHist,p2DH1best,
+               p2DH1pdist,p2DH1hist,p2DH1hmap,ncol=3,nrow=2)
+
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnDecExp2recursiveH1.png")),
+       plot=p2DH1,device="png",
+       width=36,height=18, units="cm")
+
+
+
+# **** DECEPTIVE TEACHER PT 3 ****
+# **** ASSUMES TEACHER ASSUMES LEARNER THINKS HELPFUL (lnTchAlpha=1) ****
+
+st <- paste0("Assumes teacher DECEPTIVE; alpha = ",lnAlpha[1],
+             "\n ... and Teacher thinks they trust; lnTchAlpha = ",lnTchAlpha[3])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p3DH1prPts <- plotDistribution(title_size = 15,allPts=lnPts$tchDH1,xrange=xrange,yrange=yrange,
+                  obs=obsExp[1:2,],subtitle=st,title=t,whichDist="posterior")
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p3DH1prHist <- plotHypothesisHistogram(lnHyp$tchDH1,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchDH1 <- updateHypotheses(D1allProbPts[,,ltA[3]],consPts,obsExp[3,],lnHyp$tchDH1)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchDH1,n=nBestH)
+t <- "Learner: best hypothesis"
+p3DH1best <- plotHypotheses(r = expH, obs=obsExp[1:3,],rects=lnHyp$tchDH1[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p3DH1hist <- plotHypothesisHistogram(lnHyp$tchDH1,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[3,],
+                       posterior=lnHyp$tchDH1$posterior,pts=lnPts$tchDH1)
+t <- "Learner: hypothesis heatmap"
+p3DH1hmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:3,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchDH1 <- updatePoints(D1allProbPts[,,ltA[3]],obsExp[3,],
+                       posterior=lnHyp$tchDH1$posterior,pts=lnPts$tchDH1)
+t <- "Learner: point distribution"
+p3DH1pdist <- plotDistribution(title_size = 15,allPts=lnPts$tchDH1,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:3,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p3DH1 <- ggarrange(p3DH1prPts,p3DH1prHist,p3DH1best,
+               p3DH1pdist,p3DH1hist,p3DH1hmap,ncol=3,nrow=2)
+
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnDecExp3recursiveH1.png")),
+       plot=p3DH1,device="png",
+       width=36,height=18, units="cm")
+
+
+# **** DECEPTIVE TEACHER PT 4 ****
+# **** ASSUMES TEACHER ASSUMES LEARNER THINKS HELPFUL (lnTchAlpha=1) ****
+
+st <- paste0("Assumes teacher DECEPTIVE; alpha = ",lnAlpha[1],
+             "\n ... and Teacher thinks they trust; lnTchAlpha = ",lnTchAlpha[3])
+t <- "Learner: prior point distribution"
+
+# prior distribution over points
+p4DH1prPts <- plotDistribution(title_size = 15,allPts=lnPts$tchDH1,xrange=xrange,yrange=yrange,
+                  obs=obsExp[1:3,],subtitle=st,title=t,whichDist="posterior")
+
+# prior histogram
+t <- "Learner: prior hypothesis histogram"
+p4DH1prHist <- plotHypothesisHistogram(lnHyp$tchDH1,title=t,subtitle=st)
+
+# update the hypotheses
+lnHyp$tchDH1 <- updateHypotheses(D1allProbPts[,,ltA[3]],consPts,obsExp[4,],lnHyp$tchDH1)
+
+# plot the best one(s)
+bestH <- returnBestHypothesis(lnHyp$tchDH1,n=nBestH)
+t <- "Learner: best hypothesis"
+p4DH1best <- plotHypotheses(r = expH, obs=obsExp[1:4,],rects=lnHyp$tchDH1[bestH,],xrange=xrange,
+                           yrange=yrange,title=t,subtitle=st)
+
+# plot hypothesis histogram
+p4DH1hist <- plotHypothesisHistogram(lnHyp$tchDH1,subtitle=st)
+   
+# plot hypothesis heatmap 
+tempPts <- updatePoints(posProbPts[,,zeroA],obsExp[4,],
+                       posterior=lnHyp$tchDH1$posterior,pts=lnPts$tchDH1)
+t <- "Learner: hypothesis heatmap"
+p4DH1hmap <- plotDistribution(title_size = 15,allPts=tempPts,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:4,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+# plot point distribution 
+lnPts$tchDH1 <- updatePoints(D1allProbPts[,,ltA[3]],obsExp[4,],
+                       posterior=lnHyp$tchDH1$posterior,pts=lnPts$tchDH1)
+t <- "Learner: point distribution"
+p4DH1pdist <- plotDistribution(title_size = 15,allPts=lnPts$tchDH1,xrange=xrange,yrange=yrange,
+                          obs=obsExp[1:4,],whichDist="posterior",
+                          title=t, subtitle=st)
+
+p4DH1 <- ggarrange(p4DH1prPts,p4DH1prHist,p4DH1best,
+               p4DH1pdist,p4DH1hist,p4DH1hmap,ncol=3,nrow=2)
+
+ggsave(here(paste0("model-demonstrations/figures/testsims/",dirname,"/lnDecExp4recursiveH1.png")),
+       plot=p4DH1,device="png",
+       width=36,height=18, units="cm")
+
+```
+
+```{r}
+p1DH1
+p2DH1
+p3DH1
+p4DH1
+```
+
+
+```{r echo=FALSE, eval=FALSE}
+# save all of this as RData file
+filename = paste0("results/",dirname,".RData")
+save(xrange,yrange,smallH,smallHNum,lnAlpha,lnPts,lnHyp,tchAlpha,
+     tchLnAlpha,tchPts,tchHyp,obs,maximise,file=filename)
+
+```

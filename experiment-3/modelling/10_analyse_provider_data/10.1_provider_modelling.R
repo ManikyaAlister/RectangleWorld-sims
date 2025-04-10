@@ -4,7 +4,7 @@ library(parallel)
 library(doParallel)
 
 # source modelling functions
-source(here("modelProviders.R"))
+source(here("functions/modelProviders.R"))
 
 # load data
 load(here("experiment-3/data/clean/data_teaching_cartesian.Rdata"))
