@@ -82,3 +82,7 @@ model-testing/basic.*
 model-testing/simulateLearner* 
 model-testing/scratch.R
 
+#.DS_Store
+.DS_Store
+
+
