@@ -256,7 +256,7 @@ getProviderScore = function(data, rank = FALSE, print_plot = FALSE, save_plot = 
 }
 
 # to run more efficiently, divide data into smaller chunks and run parallel in the terminal
-getProviderScoreParallel = function(data, provider_model, subj_no, rank = FALSE, print_plot = FALSE, save_plot = TRUE){
+getProviderScoreParallel = function(data, provider_model, subj_no, rank = FALSE, print_plot = FALSE, save_plot = FALSE){
   # get vector of participant pids
   pid <- unique(data$pid)
   

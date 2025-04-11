@@ -4,7 +4,7 @@ library(tidyverse)
 library(ggpubr)
 library(RColorBrewer)
 source(here("functions/plottingFunctions.R"))
-load(here("experiment-1/data/derived/all_conditions.R"))
+load(here("experiment-1/data/derived/all_conditions.Rdata"))
 
 sum_all <- NULL
 recovery_all <- NULL

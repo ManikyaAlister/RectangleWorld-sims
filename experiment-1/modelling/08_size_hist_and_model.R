@@ -10,7 +10,7 @@ source(here("functions/plottingFunctions.R"))
 
 exp <- 1
 alphas <- c(-1, 0, 1) # alphas we are interested in modelling
-c <- 4 # clue we are interested in
+c <- 3 # clue we are interested in
 b <- 8 # block we are interested in
 priors <- "flat"
 dif_priors <- FALSE 
@@ -148,7 +148,7 @@ for (i in 1:nConds) {
   d_all_sizes <- rbind(d_all_sizes, d_cond_sizes)
 }
 
-save(d_all_sizes, file = here(paste0("experiment-",exp,"/data/derived/d_size_histograms.Rdata")))
+save(d_all_sizes, file = here(paste0("experiment-", exp, "/data/derived/d_size_histograms-b",b,"-c",c,".Rdata")))
 
 # add column for cover story/model condition
 all_conditions_filtered <- all_conditions_filtered %>%

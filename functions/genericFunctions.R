@@ -342,7 +342,7 @@ loadExperimentTrueRect = function(b, clueNum, target_blocks = c(2, 8), provider)
     
     # Find folders matching the pattern in the directory
     matching_directory <-
-      list.files(directory, pattern = pattern, full.name0s = TRUE)
+      list.files(directory, pattern = pattern, full.names = TRUE)
     
     # Check if any matching files were found
     if (length(matching_directory) > 0) {

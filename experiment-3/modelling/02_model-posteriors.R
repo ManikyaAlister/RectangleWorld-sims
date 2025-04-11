@@ -9,25 +9,24 @@ target_blocks <- c(2,8)
 
 # Non-recursive alphas ----------------------------------------------------
 
-# # target block 2
-# tb2  = filter(d_cartesian, block == 2)
-# all_alpha_posteriors = fitAlphas(block = 2, data = tb2)
-# save(all_alpha_posteriors, file = here("experiment-3/modelling/04_output/tb2-all-alpha-posteriors.Rdata"))
-# 
-# print("tb2 done")
-# 
-# # target block 8
-# tb8  = filter(d_cartesian, block == 8)
-# all_alpha_posteriors = fitAlphas(block = 8, data = tb8)
-# save(all_alpha_posteriors, file = here("experiment-3/modelling/04_output/tb8-all-alpha-posteriors.Rdata"))
-# 
-# print("tb8 done")
+# target block 2
+tb2  = filter(d_cartesian, block == 2)
+all_alpha_posteriors = fitAlphas(block = 2, data = tb2)
+save(all_alpha_posteriors, file = here("experiment-3/modelling/04_output/tb2-all-alpha-posteriors.Rdata"))
+
+print("tb2 done")
+
+# target block 8
+tb8  = filter(d_cartesian, block == 8)
+all_alpha_posteriors = fitAlphas(block = 8, data = tb8)
+save(all_alpha_posteriors, file = here("experiment-3/modelling/04_output/tb8-all-alpha-posteriors.Rdata"))
+
+print("tb8 done")
 
 
 # all blocks 
-#blocks <- c(1,3,4,5,6,7)
+blocks <- c(1,3,4,5,6,7)
 providers <- c("random", "misleading", "uninformative", "helpful")
-blocks <- c(1:8)
 #providers <- "helpful"
 
 for (i in 1:length(blocks)){
@@ -68,14 +67,14 @@ print("non-recursiveblocks done")
 
 # # Recursive alphas --------------------------------------------------------
 # 
-# # target block 2
-# all_alpha_posteriors = fitAlphas(block = 2, data = tb2, recursion = TRUE)
-# save(all_alpha_posteriors, file = here("experiment-3/modelling/04_output/tb2-all-alpha-posteriors-recursive.Rdata"))
-# print("recursive tb2 done")
-# # target block 8
-# all_alpha_posteriors = fitAlphas(block = 8, data = tb8, recursion = TRUE)
-# save(all_alpha_posteriors, file = here("experiment-3/modelling/04_output/tb8-all-alpha-posteriors-recursive.Rdata"))
-# print("recursive tb8 done")
+# target block 2
+all_alpha_posteriors = fitAlphas(block = 2, data = tb2, recursion = TRUE)
+save(all_alpha_posteriors, file = here("experiment-3/modelling/04_output/tb2-all-alpha-posteriors-recursive.Rdata"))
+print("recursive tb2 done")
+# target block 8
+all_alpha_posteriors = fitAlphas(block = 8, data = tb8, recursion = TRUE)
+save(all_alpha_posteriors, file = here("experiment-3/modelling/04_output/tb8-all-alpha-posteriors-recursive.Rdata"))
+print("recursive tb8 done")
 
 # recursive
 for (i in 1:length(blocks)){

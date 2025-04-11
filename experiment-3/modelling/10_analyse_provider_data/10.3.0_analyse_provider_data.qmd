@@ -204,11 +204,21 @@ score_by_model <- provider_scores_all %>%
 
 # function that creates box plots from model predictions on empirical data
 
-boxPlotProvider = function(score_by_model, title, subtitle){
-  score_by_model %>%
+boxPlotProvider = function(score_by_model, title, subtitle, or = TRUE){
+  d_plot <- score_by_model %>%
   mutate(model = factor(model, levels = models),
-         provider_cond = factor(provider_cond, levels = models))%>%
-  ggplot(aes(x = model, y = odds_ratio, fill = model))+
+         provider_cond = factor(provider_cond, levels = models))
+  
+  if (or){
+    plot <- d_plot %>%
+      ggplot(aes(x = model, y = odds_ratio, fill = model))
+
+  } else {
+      plot <- d_plot %>%
+        ggplot(aes(x = model, y = score, fill = model))
+
+  }
+  plot <- plot + 
   geom_jitter(aes(colour = model), alpha = .2)+
   geom_boxplot(outliers = FALSE, alpha = 0.5)+
     geom_hline(aes(yintercept = 1), linetype = "dashed")+
@@ -225,6 +235,8 @@ boxPlotProvider = function(score_by_model, title, subtitle){
           axis.text.x = element_text(angle = 45, hjust = 1),
                     line = element_blank(),
           strip.background = element_rect(fill= "white", colour = "black"))
+  
+  plot
 }
 ```
 
@@ -248,7 +260,7 @@ score_by_model_rank <- provider_scores_ranked_all %>%
   group_by(p_num, provider_cond, model) %>%
   summarise(score = median(100 - prob))
 
-boxPlotProvider(score_by_model_rank, title = "Sequential probability (ranked/ordinal)", subtitle = "Provider score according to each model as a function of condition")
+boxPlotProvider(score_by_model_rank, title = "Sequential probability (ranked/ordinal)", subtitle = "Provider score according to each model as a function of condition", or = FALSE)
 
 #The ranked data shows a similar qualitative pattern as the raw probabilities, but is less sensitive because it does not consider the fact that the difference in probability between points (e.g., the 3rd best point and the 4th best point) is much larger for some models rather than others. For example in the helpful model, it is quite clear that the best points are those in the corners, so those points have a very high probability, but the other points have a very low probability. This is also why the helpful model does better in the non-helpful conditions in the ranked comparison, because lower ranked scores are not sufficiently penalized in line with the model predictions.
 ```
@@ -351,14 +363,25 @@ Liberal (more relaxed) filtering: filter based on 1. If the best model in the he
 
 ```{r}
 # Figure out which model performed best for each participant and techer condition
-getBestProviderModel = function(scores_by_model, models){
+getBestProviderModel = function(scores_by_model, models, rank = FALSE){
   # Convert to wide format
-scores_by_model_wide <- scores_by_model %>%
+  
+  if (rank){
+    scores_by_model_wide <- scores_by_model %>%
   pivot_wider(
     id_cols = c(p_num, provider_cond),
     names_from = model,
     values_from = score
   )
+  } else {
+    scores_by_model_wide <- scores_by_model %>%
+  pivot_wider(
+    id_cols = c(p_num, provider_cond),
+    names_from = model,
+    values_from = odds_ratio
+  )
+  }
+
 
 # make temporary df with unnecessary columns
 tmp <- scores_by_model_wide[,models]
@@ -373,6 +396,7 @@ scores_by_model_wide
 
 
 models <- unique(provider_scores_all$model)
+models <- models[models != "random"] # remove random since the scores area always 0.1
 
 best_models <- getBestProviderModel(score_by_model, models) 
 
@@ -506,7 +530,7 @@ plotProviderHeatMaps(empirical_heatmap_data_filtered_cons, cond_labels, size_lab
 models <- unique(score_by_model_rank$model)
 
 
-best_models <- getBestProviderModel(score_by_model_rank, models) 
+best_models <- getBestProviderModel(score_by_model_rank, models, rank = TRUE) 
 
 # Liberal filtering: filter based on 1. If the best model in the helpful condition was the helpful model and 2. If the best model in the misleading condition was *not* the helpful condition. 
 

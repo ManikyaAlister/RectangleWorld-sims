@@ -194,6 +194,8 @@ We have shown that the group level prior distributions do not appear to resemble
 
 **Solid lines** are the model predictions with the empirical priors, **dashed lines** are the model predictions with flat priors.
 
+Not that you can't really see this well in the rendered plot, so see the original manuscript or \`plots/size-hist-priors.png\`.
+
 ```{r}
 load(here("experiment-3/data/derived/plot-files-empirical.Rdata"))
 
@@ -202,9 +204,11 @@ names(plot_list) <- c("MS", "US","RS","HS")
 
 conds <- c("HS", "MS", "US", "RS")
 
-plot_list[order(match(names(plot_list), conds))]
+plot_list <- plot_list[order(match(names(plot_list), conds))]
 
 man_plot <- ggpubr::ggarrange(plot_list[["HS"]], plot_list[["MS"]], plot_list[["US"]], plot_list[["RS"]], label.x = 0.1, nrow = 2, ncol = 2, common.legend = TRUE, legend = "top", font.label = list(size = 30))
+
+man_plot
 
 ggsave(filename = here("experiment-3/modelling/12_empirical-priors/plots/size-hist-priors.png"), width = 20, height = 10, plot = man_plot)
 

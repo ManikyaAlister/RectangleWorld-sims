@@ -35,8 +35,8 @@ foreach (i = 1:n_subj, .packages=c('here', 'tidyverse','ggpubr')) %dopar% {
   data <- d_cartesian_t %>% 
     filter(pid == subject)
   
-  #score <- getProviderScoreParallel(data, c("uninformative"), subject_no, rank = FALSE)
-  score_ranked <- getProviderScoreParallel(data, c("random"), subject_no, rank = TRUE)
+  #score <- getProviderScoreParallel(data, c("helpful", "random", "misleading", "uninformative"), subject_no, rank = FALSE)
+  score_ranked <- getProviderScoreParallel(data, c("helpful", "misleading", "uninformative"), subject_no, rank = TRUE)
   
   
 }
