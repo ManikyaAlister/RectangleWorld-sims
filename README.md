@@ -1,6 +1,8 @@
 # Code and Data for the paper "When a helpful bias is unhelpful: Limitations in reasoning from random and misleading evidence"
 
-Note that throughout the code and data, we make reference to Helpful, Random, Misleading, and Uninformative conditions. Here, "Misleading" refers to Misleading Naive in the paper, and "Uninformative" to misleading aware. These conditions are also often abbreviated to the first letter of the condition (e.g., "M" for misleading) and either "S" for  cover *story* or "N" for *no* cover story. So "MS" Would be the *M*isleading cover *S*tory condition. 
+Note that `datafiles` does not contain the experiment data (see overview), it contains model output. 
+
+Note also that throughout the code and data, we make reference to Helpful, Random, Misleading, and Uninformative conditions. Here, "Misleading" refers to Misleading Naive in the paper, and "Uninformative" to misleading aware. These conditions are also often abbreviated to the first letter of the condition (e.g., "M" for misleading) and either "S" for  cover *story* or "N" for *no* cover story. So "MS" Would be the *M*isleading cover *S*tory condition. 
 
 ## Requirements
 
