@@ -16,6 +16,8 @@ slurm_output/
 experiment-1/data/raw/*
 
 
+
+
 # History files
 .Rhistory
 .Rapp.history
