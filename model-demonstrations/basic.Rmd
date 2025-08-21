@@ -25,9 +25,9 @@ library(ggpubr)
 library(viridis)
 
 # sourcing our files
-source(here("functions/genericFunctions.R"))
-source(here("functions/calculatingFunctions.R"))
-source(here("functions/plottingFunctions.R"))
+source(here("genericFunctions.R"))
+source(here("calculatingFunctions.R"))
+source(here("plottingFunctions.R"))
 
 # load the data
 fileSeg <- paste0("x0to",H,"y0to",H)
@@ -87,13 +87,13 @@ initPtsNeg$posterior <- rowSums(allNegPtProbs)/sum(allNegPtProbs)
 initPtsPos$posterior <- rowSums(allPosPtProbs)/sum(allPosPtProbs)
 initPtsAll$posterior <- rowSums(allPtProbs)/sum(allPtProbs)
 
-pPos <- plotDistribution(title_size = 15,allPts=initPtsPos,xrange=xrange,yrange=yrange,
+pPos <- plotDistribution(allPts=initPtsPos,xrange=xrange,yrange=yrange,
                          subtitle="Positive hypotheses",
                          title="Initial distribution")
-pNeg <- plotDistribution(title_size = 15,allPts=initPtsNeg,xrange=xrange,yrange=yrange,
+pNeg <- plotDistribution(allPts=initPtsNeg,xrange=xrange,yrange=yrange,
                          subtitle="Negative hypotheses",
                          title="Initial distribution")
-pAll <- plotDistribution(title_size = 15,allPts=initPtsAll,xrange=xrange,yrange=yrange,
+pAll <- plotDistribution(allPts=initPtsAll,xrange=xrange,yrange=yrange,
                          subtitle="All hypotheses",
                          title="Initial distribution")
 
@@ -101,7 +101,7 @@ p <- ggarrange(pPos,pNeg,pAll,ncol=3)
 p
 
 
-ggsave(here(paste0("model-demonstrations/figures/basic/initialDist",fileSeg,".png")),
+ggsave(paste0("figures/basic/initialDist",fileSeg,".png"),
        plot=p,device="png",
        width=24,height=8, units="cm")
 ```
@@ -134,7 +134,7 @@ pLarge <- plotHypotheses(lgTrue,obs=NA,rects=NA,xrange,yrange,
 p <- ggarrange(pSmall,pMedium,pLarge,ncol=3)
 p
 
-ggsave(here(paste0("model-demonstrations/figures/basic/trueHypotheses",fileSeg,".png")),
+ggsave(paste0("figures/basic/trueHypotheses",fileSeg,".png"),
        plot=p,device="png",
        width=24,height=8, units="cm")
 
@@ -248,7 +248,7 @@ ps <- ggarrange(pDSD,pWSW,pHSH,pDMD,pWMW,pHMH,
                 pDLD,pWLW,pHLH,ncol=3,nrow=3)
 ps
 
-ggsave(here(paste0("model-demonstrations/figures/basic/firstPoints",fileSeg,".png")),
+ggsave(paste0("figures/basic/firstPoints",fileSeg,".png"),
        plot=ps,device="png",
        width=24,height=24, units="cm")
 
@@ -321,7 +321,7 @@ pDLH <- plotColourfulDistribution(allPts=pts,xrange=xrange,yrange=yrange,
 ps <- ggarrange(pDSH,pHSD,pDMH,pHMD,pDLH,pHLD,ncol=2,nrow=3)
 ps
 
-ggsave(here(paste0("model-demonstrations/figures/basic/firstPointsOpposite",fileSeg,".png")),
+ggsave(paste0("figures/basic/firstPointsOpposite",fileSeg,".png"),
        plot=ps,device="png",
        width=16,height=24, units="cm")
 

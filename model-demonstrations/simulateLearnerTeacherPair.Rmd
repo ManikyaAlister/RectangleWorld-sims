@@ -18,7 +18,7 @@ library(ggpubr)
 library(nnet)
 
 # size of hypothesis space
-H <- 10
+H <- 3
 # version of this we are running (for saving)
 version <- 0
 # the alpha the learner assumes the teacher is following
@@ -36,9 +36,9 @@ nBestH <- 3
 maximise <- TRUE
 
 # sourcing our files
-source(here("functions/genericFunctions.R"))
-source(here("functions/calculatingFunctions.R"))
-source(here("functions/plottingFunctions.R"))
+source(here("genericFunctions.R"))
+source(here("calculatingFunctions.R"))
+source(here("plottingFunctions.R"))
 
 # load the data
 fileSeg <- paste0("x0to",H,"y0to",H)
@@ -62,7 +62,7 @@ if (maximise) {
 dirname <- paste0("x",H,"y",H,"-L",lnAlphaText,
                   "-T",tchAlphaText,"-TL",tchLnAlphaText,
                   "-",trueRectSize,"-mx",mx,"-v",version)
-dir.create(here(paste0("model-demonstrations/figures/tlpairs/",dirname,"/")))
+dir.create(here(paste0("figures/tlpairs/",dirname,"/")))
 ```
 
 # What do we have?
@@ -154,7 +154,7 @@ pTchPriors <- plotDistribution(allPts=tchPts,xrange=xrange,yrange=yrange,
 p <- ggarrange(pLnPriors,pTchPriors,ncol=2)
 p
 
-ggsave(paste0("model-demonstrations/figures/tlpairs/",dirname,"/priors.png"),
+ggsave(paste0("figures/tlpairs/",dirname,"/priors.png"),
        plot=p,device="png",
        width=24,height=10, units="cm")
 
@@ -232,7 +232,7 @@ pt1step6 <- plotDistribution(allPts=lnPts,xrange=xrange,yrange=yrange,
 pt1 <- ggarrange(pRect,pt1step1,pt1step3,pt1step4,pt1step5,pt1step6,ncol=3,nrow=2)
 pt1
 
-ggsave(paste0("model-demonstrations/figures/tlpairs/",dirname,"/step1.png"),
+ggsave(paste0("figures/tlpairs/",dirname,"/step1.png"),
        plot=pt1,device="png",
        width=36,height=15, units="cm")
 
@@ -296,7 +296,7 @@ pt2step6 <- plotDistribution(allPts=lnPts,xrange=xrange,yrange=yrange,
 pt2 <- ggarrange(pRect,pt2step1,pt2step3,pt2step4,pt2step5,pt2step6,ncol=3,nrow=2)
 pt2
 
-ggsave(paste0("model-demonstrations/figures/tlpairs/",dirname,"/step2.png"),
+ggsave(paste0("figures/tlpairs/",dirname,"/step2.png"),
        plot=pt2,device="png",
        width=36,height=15, units="cm")
 
@@ -360,7 +360,7 @@ pt3step6 <- plotDistribution(allPts=lnPts,xrange=xrange,yrange=yrange,
 pt3 <- ggarrange(pRect,pt3step1,pt3step3,pt3step4,pt3step5,pt3step6,ncol=3,nrow=2)
 pt3
 
-ggsave(paste0("model-demonstrations/figures/tlpairs/",dirname,"/step3.png"),
+ggsave(paste0("figures/tlpairs/",dirname,"/step3.png"),
        plot=pt3,device="png",
        width=36,height=15, units="cm")
 
@@ -424,7 +424,7 @@ pt4step6 <- plotDistribution(allPts=lnPts,xrange=xrange,yrange=yrange,
 pt4 <- ggarrange(pRect,pt4step1,pt4step3,pt4step4,pt4step5,pt4step6,ncol=3,nrow=2)
 pt4
 
-ggsave(paste0("model-demonstrations/figures/tlpairs/",dirname,"/step4.png"),
+ggsave(paste0("figures/tlpairs/",dirname,"/step4.png"),
        plot=pt4,device="png",
        width=36,height=15, units="cm")
 
@@ -435,7 +435,7 @@ At the end, we save everything.
 
 ```{r echo=FALSE}
 # save all of this as RData file
-filename = paste0("model-demonstrations/results/",dirname,".RData")
+filename = paste0("results/",dirname,".RData")
 save(xrange,yrange,trueH,trueHNum,lnAlpha,lnPts,lnHyp,tchAlpha,
      tchLnAlpha,tchPts,tchHyp,obs,maximise,file=filename)
 

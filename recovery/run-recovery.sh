@@ -8,6 +8,6 @@ clues=(1 2 3 4)
 for alpha in "${alphas[@]}"; do
   for clue in "${clues[@]}"; do
     # Execute the R script with the current alpha and clue values
-    Rscript recovery/recovery.R $alpha $clue &
+    Rscript Recovery2/recovery.R $alpha $clue &
   done
 done

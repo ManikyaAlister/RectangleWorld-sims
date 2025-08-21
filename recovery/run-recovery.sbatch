@@ -44,7 +44,7 @@ block=${blocks[$block_index]}
 module load r/4.2.0
 
 # Execute the R script with the current alpha, clue, provider, and block values
-Rscript recovery/recovery.R $alpha $clue $block $provider
+Rscript recovery2/recovery.R $alpha $clue $block $provider
 
 ##DO NOT ADD/EDIT BEYOND THIS LINE##
 ##Job monitor command to list the resource usage

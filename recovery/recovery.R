@@ -5,8 +5,8 @@ library(here, lib.loc = lib)
 library(dplyr, lib.loc = lib)
 library(stringr, lib.loc = lib)
 
-source(here("functions/getLearnerHypDistributions.R"))
-source(here("functions/genericFunctions.R"))
+source(here("getLearnerHypDistributions.R"))
+source(here("genericFunctions.R"))
 
 # run locally and parallel:
   # run-recovery.sh
@@ -41,7 +41,7 @@ rects <- simulateLearnerGuesses(observations = observations, alpha = alpha, tria
 posteriors <- getMultiAlphaPosteriors(learnerRectangles = rects, observations = observations, prior = prior, recursion = recursion, nTrials = clue)
 
 if (recursion) {
-  save(posteriors, file = here(paste0("recovery/data/a",alpha,"_n",nRectangles,"_c",clue,"_pr-",prior,"_b_",block,"_",provider,"_recursion.RData")))
+  save(posteriors, file = here(paste0("recovery2/data/a",alpha,"_n",nRectangles,"_c",clue,"_pr-",prior,"_b_",block,"_",provider,"_recursion.RData")))
   } else {
-    save(posteriors, file = here(paste0("recovery/data/a",alpha,"_n",nRectangles,"_c",clue,"_pr-",prior,"_b_",block,"_",provider,"_.RData")))
+    save(posteriors, file = here(paste0("recovery2/data/a",alpha,"_n",nRectangles,"_c",clue,"_pr-",prior,"_b_",block,"_",provider,"_.RData")))
 }
