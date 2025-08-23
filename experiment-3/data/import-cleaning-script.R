@@ -112,14 +112,34 @@ cleaning_fun_learning = function(raw_data, nClues, nBlocks) {
     experiment_start_time <-
       as.numeric(d_participant$experimentStartTime)
     
-    # Trial tine
+    # Trial time
     trial_start <-
       d_df[str_detect(rownames(d_df), "trialStartTime"), ]
     trial_end <- d_df[str_detect(rownames(d_df), "trialEndTime"), ]
     trial_iqr <-
       IQR(as.numeric(trial_end) - as.numeric(trial_start)) / 1000
     
+    # function to get n_cover_check from a data frame
+    get_n_cover_check <- function(df) {
+      # get all rownames
+      rn <- rownames(df)
+      
+      # find those that match coverCheck_endTime_#
+      cover_rows <- grep("^coverCheck_endTime_[0-9]+$", rn, value = TRUE)
+      
+      if (length(cover_rows) == 0) {
+        return(0)  # no cover check rows
+      }
+      
+      # extract the numbers after the final underscore
+      attempts <- as.integer(sub(".*_", "", cover_rows))
+      
+      # maximum attempt
+      max(attempts, na.rm = TRUE)
+    }
     
+    # example usage
+    n_cover_check <- get_n_cover_check(d_df)
     
     follow_up <-
       d_participant$`RWLearningPhase_T-39-t10-4_clueGenerationFollowup`
@@ -151,6 +171,7 @@ cleaning_fun_learning = function(raw_data, nClues, nBlocks) {
         follow_up,
         experiment_end_time,
         trial_iqr,
+        n_cover_check,
         completed,
         mturk_id
       )
@@ -197,7 +218,8 @@ cleaning_fun_learning = function(raw_data, nClues, nBlocks) {
         response_x2,
         response_y2,
         trial_index,
-        trial_iqr
+        trial_iqr,
+        n_cover_check
       )
     ), as.numeric)
   
