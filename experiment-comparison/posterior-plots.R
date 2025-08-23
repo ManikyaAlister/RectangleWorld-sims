@@ -9,7 +9,7 @@ load(here("experiment-1/data/derived/all_conditions.Rdata"))
 sum_all <- NULL
 recovery_all <- NULL
 block_plot <- 8
-simple <- TRUE # if set to simple, only three alpha values alligning with three provider types
+simple <- FALSE # if set to simple, only three alpha values alligning with three provider types
 
 if (simple){
   model_alphas <- c(-1,0,1)
@@ -22,7 +22,7 @@ for (exp in 1:3) {
   #c = 4 # clue
   
   # function for wrangling plot data
-  getPosteriorPlotData = function(posteriors, model_alphas) {
+  getPosteriorPlotData = function(posteriors, model_alphas, simple_model = TRUE) {
     plot_data <- posteriors %>%
       mutate(alpha = as.factor(alpha)) %>%
       filter(alpha %in% model_alphas) %>%
@@ -32,14 +32,20 @@ for (exp in 1:3) {
         median = median(posterior),
         sum = sum(posterior),
         se = sd(posterior) / sqrt(n())
-      ) #%>%
-      # normalize so that everything is on the same scale
-      # mutate(
-      #   mean = mean / sum(mean),
-      #   median = median / sum(median),
-      #   sum = sum / sum(sum),
-      #   se = se / sum(mean)   
-      #)
+      )
+    
+    if (!simple){
+      plot_data <- plot_data %>%
+      #  normalize so that everything is on the same scale because otherwise it's hard to read with full alphas
+        mutate(
+          mean = mean / sum(mean),
+          median = median / sum(median),
+          sum = sum / sum(sum),
+          se = se / sum(mean)
+        )
+    }
+    
+    
     plot_data
   }
   
@@ -232,7 +238,7 @@ for (exp in 1:3) {
         }
         
         # wrangle recovery data for plotting
-        recovery_plotting <- getPosteriorPlotData(posteriors, model_alphas) %>%
+        recovery_plotting <- getPosteriorPlotData(posteriors, model_alphas, simple_model = simple) %>%
           mutate(
             condition = condition,
             provider = provider,
@@ -367,7 +373,7 @@ for (exp in 1:3) {
 
 
 
-clue_plot <- 3
+clue_plot <- 4
 recovery_all_plotting <- recovery_all %>%
   filter(clue == clue_plot, block == block_plot)
 
