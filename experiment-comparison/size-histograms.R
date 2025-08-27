@@ -1,10 +1,17 @@
 rm(list = ls())
 # define experiments to be compared
 experiments <- c(1:3,3)
-filtered <- c(FALSE, FALSE, FALSE, TRUE)
+filtered <- c(FALSE, FALSE, FALSE, TRUE) # if we're filtering based on provider phase
+filter_cover_check <- TRUE # if we're filtering based on cover story verification (true/false)
 all_experiment_data <- NULL 
 b <- 8
 c <- 3
+
+# filtering based on cover story verification, we're not doing the other filtering
+if(filter_cover_check){
+  experiments <- 1:3
+  filtered <- filtered[!filtered]
+}
 
 for (i in 1:length(experiments)) {
   filtered_i <- filtered[i]
@@ -17,9 +24,20 @@ for (i in 1:length(experiments)) {
   } else {
     exp <- experiments[i]
     experiment_name <- paste0("Exp. ",exp )
+    
+    load_file <- paste0("experiment-", exp, "/data/derived/d_size_histograms-b",b,"-c",c)
+    if (filter_cover_check){
+      load_file <- paste0(load_file, "-filter-cover")
+    }
+    
     load(here(
-      paste0("experiment-", exp, "/data/derived/d_size_histograms-b",b,"-c",c,".Rdata")
+      paste0(load_file,".Rdata")
     ))
+    
+    
+    if (i %in% 1:2){
+      d_all_sizes$prior_type <- "flat"
+    }
     
   }
   # if (i == 3){
@@ -71,5 +89,11 @@ all_experiment_data %>%
           legend.position = "none")+
     facet_grid(learn_cond ~ experiment+cover_cond, labeller = labeller(learn_cond = cond_labels))
 
-ggsave(here(paste0("experiment-comparison/size-hist-b",b,"-c",c,".png")), width = 7.5, height = 5)
+file <- paste0("experiment-comparison/size-hist-b",b,"-c",c)
+
+if(filter_cover_check){
+  file <- paste0(file, "-filter-cover")
+}
+
+ggsave(here(paste0(file,".png")), width = 7.5, height = 5)
   

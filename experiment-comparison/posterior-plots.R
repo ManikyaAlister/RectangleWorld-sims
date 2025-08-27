@@ -9,7 +9,8 @@ load(here("experiment-1/data/derived/all_conditions.Rdata"))
 sum_all <- NULL
 recovery_all <- NULL
 block_plot <- 8
-simple <- FALSE # if set to simple, only three alpha values alligning with three provider types
+simple <- TRUE # if set to simple, only three alpha values alligning with three provider types
+filter_cover_check <- 2
 
 if (simple){
   model_alphas <- c(-1,0,1)
@@ -22,7 +23,24 @@ for (exp in 1:3) {
   #c = 4 # clue
   
   # function for wrangling plot data
-  getPosteriorPlotData = function(posteriors, model_alphas, simple_model = TRUE) {
+  getPosteriorPlotData = function(posteriors, model_alphas, simple_model = simple, filter_check = filter_cover_check, recovery = FALSE) {
+  
+    
+    if (!is.null(filter_check) & !recovery){
+
+      n_old <- length(unique(posteriors$pid)) # get how many participants there were 
+      
+      posteriors <- posteriors %>%
+        filter(n_cover_check > filter_check)
+        #filter(man_check)
+      
+      n_new <- length(unique(posteriors$pid)) # get how many participants there are now 
+      
+      n_filtered <- n_old-n_new # get how many were removed
+      
+      print(paste0(n_filtered, " participants were removed for failing the cover story quiz at least ", filter_check, " time(s)"))
+    }
+    
     plot_data <- posteriors %>%
       mutate(alpha = as.factor(alpha)) %>%
       filter(alpha %in% model_alphas) %>%
@@ -44,7 +62,6 @@ for (exp in 1:3) {
           se = se / sum(mean)
         )
     }
-    
     
     plot_data
   }
@@ -238,7 +255,7 @@ for (exp in 1:3) {
         }
         
         # wrangle recovery data for plotting
-        recovery_plotting <- getPosteriorPlotData(posteriors, model_alphas, simple_model = simple) %>%
+        recovery_plotting <- getPosteriorPlotData(posteriors, model_alphas, simple_model = simple, recovery = TRUE) %>%
           mutate(
             condition = condition,
             provider = provider,
@@ -249,6 +266,27 @@ for (exp in 1:3) {
           )
         
         recovery_all <- rbind(recovery_all, recovery_plotting)
+        
+        
+        # load participant data 
+        load(here(
+          paste0(
+            "experiment-",
+            exp,
+            "/data/clean/clean_data.Rdata"
+          )))
+        
+        # match n cover check to posterior data
+        if(!is.null(filter_cover_check)){
+          
+          # get only n_check and pid
+          d_check <- data %>%
+            select(pid, n_cover_check)
+          
+          all_alpha_posteriors <- all_alpha_posteriors %>%
+            full_join(d_check, by = "pid", relationship = "many-to-many")
+        }
+        
         
         # wrangle participant data for plotting
         all_data <- all_alpha_posteriors %>%
@@ -373,7 +411,7 @@ for (exp in 1:3) {
 
 
 
-clue_plot <- 4
+clue_plot <- 3
 recovery_all_plotting <- recovery_all %>%
   filter(clue == clue_plot, block == block_plot)
 
@@ -471,14 +509,15 @@ plot <- plotPosteriorsCombined(
 plot
 
 if(simple){
-  file <- paste0("experiment-comparison/posterior-all-exps-b",block_plot,"-c",clue_plot,"-simple.png")
+  file <- paste0("experiment-comparison/posterior-all-exps-b",block_plot,"-c",clue_plot,"-simple")
 }else {
-  file <- paste0("experiment-comparison/posterior-all-exps-b",block_plot,"-c",clue_plot,".png")
-  
+  file <- paste0("experiment-comparison/posterior-all-exps-b",block_plot,"-c",clue_plot,"")
 }
 
+if(!is.null(filter_cover_check)){
+  file <- paste0(file,"-filter-cover-", filter_cover_check)
+}
 
-
-ggsave(filename = here(file), width = 15, height = 8)
+ggsave(filename = here(paste0(file,".png")), width = 15, height = 8)
 
 
