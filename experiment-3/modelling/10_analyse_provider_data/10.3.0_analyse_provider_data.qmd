@@ -94,42 +94,46 @@ plotProviderHeatMaps = function(data, size_labels, cond_labels, title = NULL, su
   
   if(scaled_probability){
     data <- data %>%
-  group_by(provider_cond, size) %>%
-  mutate(probability = probability / max(probability, na.rm = TRUE)) %>%
-  ungroup()
+      group_by(provider_cond, size) %>%
+      mutate(probability = probability / max(probability, na.rm = TRUE)) %>%
+      ungroup()
   }
   
   data %>%
     #filter(size == "medium", provider_cond == "uninformative") %>%
-  ggplot(aes(x = response_x1, y = response_y1, fill = probability)) +
-  geom_tile() +
+    ggplot(aes(x = response_x1, y = response_y1, fill = probability)) +
+    geom_tile() +
     facet_grid(size ~ provider_cond, labeller = labeller(provider_cond = cond_labels, size = size_labels)) +  # Create separate heatmaps for each provider_cond and size
-  scale_fill_gradient( high = "lightblue") +  # Color scale for the heatmap
-  geom_rect(
-            aes(xmin = ground_truth_x1, xmax = ground_truth_x2,
-                ymin = ground_truth_y1, ymax = ground_truth_y2),
-            color = "yellow", 
-            fill = NA,
-            linetype = "dashed",
-            size = .5)+  # Add dashed border for checkered effect
-  labs(title = title,
-       subtitle = subtitle,
-       x = xlab,
-       y = ylab,
-       fill = "Probability") +  # Update label to "Probability"
-  theme_minimal() +
-  theme(
-    axis.text = element_blank(),
-    panel.background = element_rect(
-      fill = "black",
-      colour = "black"),
-    panel.grid.major = element_line(size = 0.25, linetype = 'solid',
-                                          colour = "black"), 
-          panel.grid.minor = element_line(size = 0.05, linetype = 'solid',
-                                          colour = "black"),
-            line = element_blank(),
-          strip.background = element_rect(fill= "white")
-) +
+    scale_fill_gradient( high = "lightblue") +  # Color scale for the heatmap
+    geom_rect(
+      aes(xmin = ground_truth_x1, xmax = ground_truth_x2,
+          ymin = ground_truth_y1, ymax = ground_truth_y2),
+      color = "yellow",
+      fill = NA,
+      linetype = "dashed",
+      size = .5)+  # Add dashed border for checkered effect
+    labs(title = title,
+         subtitle = subtitle,
+         x = xlab,
+         y = ylab,
+         fill = "Probability") +  # Update label to "Probability"
+    theme_minimal() +
+    theme(
+      legend.title = element_text(size = 12),
+      legend.text = element_text(size = 9),
+      legend.key.width = unit(1, 'cm'),
+      legend.key.height = unit(.4,'cm'),
+      axis.text = element_blank(),
+      panel.background = element_rect(
+        fill = "black",
+        colour = "black"),
+      panel.grid.major = element_line(size = 0.25, linetype = 'solid',
+                                      colour = "black"),
+      panel.grid.minor = element_line(size = 0.05, linetype = 'solid',
+                                      colour = "black"),
+      line = element_blank(),
+      strip.background = element_rect(fill= "white")
+    ) +
   coord_fixed()  # Ensure squares are of equal size
 
 }
@@ -170,7 +174,7 @@ empirical_heatmap <-  plotProviderHeatMaps(empirical_heatmap_data, size_labels, 
 # Genertate heatmap of modelled responses 
 model_heatmap <- plotProviderHeatMaps(seq_posteriors_heatmap_data, size_labels, cond_labels, title = "B. Model Predictions")
 
-ggarrange(empirical_heatmap, model_heatmap, common.legend = TRUE, legend = "none")
+ggarrange(empirical_heatmap, model_heatmap, common.legend = TRUE, legend = "bottom")
 ggsave(filename = here("experiment-3/modelling/05_plots/provider_heatmaps.png"), width = 7.5,height = 5)
 
 ```
@@ -184,7 +188,7 @@ empirical_heatmap_local_scale <-  plotProviderHeatMaps(empirical_heatmap_data, s
 # Genertate heatmap of modelled responses 
 model_heatmap_local_scale <- plotProviderHeatMaps(seq_posteriors_heatmap_data, size_labels, cond_labels, title = "B. Model Predictions", scaled_probability = TRUE)
 
-ggarrange(empirical_heatmap_local_scale, model_heatmap_local_scale, common.legend = TRUE, legend = "none")
+ggarrange(empirical_heatmap_local_scale, model_heatmap_local_scale, common.legend = TRUE, legend = "bottom")
 ggsave(filename = here("experiment-3/modelling/05_plots/provider_heatmaps_local_scale.png"), width = 7.5,height = 5)
 
 

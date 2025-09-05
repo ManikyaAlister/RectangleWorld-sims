@@ -21,20 +21,11 @@ follow_up <- d_demographics %>%
 
 follow_up
 
-# Age
-age <- d_demographics$age
-age_dems <- c(min = min(age, na.rm = TRUE), max = max(age, na.rm = TRUE), mean = mean(age, na.rm = TRUE), sd = sd(age, na.rm = TRUE))
-age_dems
-
 # Gender
-gender <- table(d_demographics$gender)
-gender_perc <- round(gender/sum(gender)*100,0)
-gender_perc
+gender <- table(d_demographics$gender, useNA = "always")
+gender
 
 # Nationality
-nationality <- table(d_demographics$country)
-nationality_perc <- round((nationality/sum(nationality))*100,0)
-nationality_perc
+country <- table(d_demographics$country, useNA = "always")
+country
 
-nationality_unique <- length(unique(d_demographics$country))
-nationality_unique

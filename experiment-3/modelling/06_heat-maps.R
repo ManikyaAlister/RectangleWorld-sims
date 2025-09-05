@@ -25,7 +25,7 @@ for (i in blocks) {
     ggsave(file = here(path), width = 20, height = 12, plot = plot)
     plot_list[[j]] <- plot
   }
-  ggarrange(plotlist = plot_list, nrow = 2, ncol = 1)
+  ggarrange(plotlist = plot_list, nrow = 2, ncol = 1, common.legend = TRUE, legend = "bottom")
   
   ggsave(filename = here(paste0("experiment-",exp,"/modelling/05_plots/heatmap_facet_manuscript_b",i,"_e",exp,".png")), width = 20, height = 12)
 }

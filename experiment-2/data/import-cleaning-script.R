@@ -17,14 +17,16 @@ cleaning_fun = function(raw_data, nClues, nBlocks) {
   raw_data <- raw_data[[1]]
   pid_all <- names(raw_data)
   data <- NULL
+  dnf <- NULL # keep track of those who didn't finish
   for (i in 1:length(pid_all)) {
     d_participant <- raw_data[[i]]
-    # skip if participant didn't finish
-    if (is.null(d_participant$experimentEndStatus))
-      next
     # skip if participant isn't an mturker
     if (d_participant$src != "mt")
       next
+    if (is.null(d_participant$experimentEndStatus)){
+      dnf <- c(dnf, d_participant$mtWorkerId) # keep track of how many didn't finish
+      next
+    }
     # convert data from list to single column matrix
     d_df <- as.matrix(unlist(d_participant))
     # get participant responses.
@@ -188,6 +190,9 @@ cleaning_fun = function(raw_data, nClues, nBlocks) {
         n_cover_check
       )
     ), as.numeric)
+  
+  print(paste0("Number of participants who did not finish the task: ", length((unique(dnf)))))
+
   
   data
 }

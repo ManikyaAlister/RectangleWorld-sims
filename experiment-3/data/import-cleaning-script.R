@@ -13,26 +13,34 @@ nBlocks <- 8
 d_json <- read_json(here("experiment-3/data/raw/results.json"))
 test <- d_json[[1]]
 
+
 t <- as.character(unname(as.matrix(sapply(test, function(x) x["?mtWorkerId"]))))
 
 # function to clean learning phase data
 cleaning_fun_learning = function(raw_data, nClues, nBlocks) {
+  dnf <- NULL # empty vector of participants who did not finish
   raw_data <- raw_data[[1]]
   all_mturk <- NULL 
   pid_all <- names(raw_data)
   data <- NULL
   for (i in 1:length(pid_all)) {
     d_participant <- raw_data[[i]]
-    # skip if participant didn't finish
-    if (is.null(d_participant$experimentEndStatus))
-      next
-    if (is.null(d_participant$`RWTeachingPhase_2-T-11-M_3-3_clue`))
-      next
-    if (d_participant$`RWTeachingPhase_2-T-11-M_3-3_clue` == "NaN")
-      next
     # skip if participant isn't an mturker
     if (d_participant$src != "mt")
       next
+    # skip if participant didn't finish
+    if (is.null(d_participant$experimentEndStatus)){
+      dnf <- c(dnf, d_participant$mtWorkerId) # keep track of how many didn't finish
+      next
+    }
+    if (is.null(d_participant$`RWTeachingPhase_2-T-11-M_3-3_clue`)){
+      dnf <- c(dnf, d_participant$mtWorkerId) # keep track of how many didn't finish
+      next
+      }
+    if (d_participant$`RWTeachingPhase_2-T-11-M_3-3_clue` == "NaN") {
+      dnf <- c(dnf, d_participant$mtWorkerId) # keep track of how many didn't finish
+      next
+    }
     # convert data from list to single column matrix
     d_df <- as.matrix(unlist(d_participant))
     
@@ -195,15 +203,16 @@ cleaning_fun_learning = function(raw_data, nClues, nBlocks) {
         rep(7, nClues),
         rep(8, nClues)
       )
-    
     data <- rbind(data, d_clean)
+  
   }
   
   # figure out which mturkers are duplicates
   duplicates <- all_mturk[duplicated(all_mturk) | duplicated(all_mturk, fromLast = TRUE)]
   
   print(paste0("Removing ", length(duplicates), " instances from participats who completed multiple times"))  
-
+  print(paste0("Number of participants who did not finish the task: ", length((unique(dnf)))))
+  
   # change multiple columns to numeric
   data <-  data %>%
     filter(!mturk_id %in% duplicates) %>%
@@ -390,7 +399,7 @@ cleaning_fun_teaching = function(raw_data, nClues, nBlocks) {
   duplicates <- all_mturk[duplicated(all_mturk) | duplicated(all_mturk, fromLast = TRUE)]
 
   print(paste0("Removing ", length(duplicates), " instances from participats who completed multiple times"))  
-  
+
   # change multiple columns to numeric
   data <-  data %>%
     filter(!mturk_id %in% duplicates) %>%
