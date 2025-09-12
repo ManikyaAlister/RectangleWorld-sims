@@ -224,13 +224,13 @@ boxPlotProvider = function(score_by_model, title, subtitle, or = TRUE){
   }
   plot <- plot + 
   geom_jitter(aes(colour = model), alpha = .2)+
-  geom_boxplot(outliers = FALSE, alpha = 0.5)+
+  geom_boxplot(outlier.shape = NA, alpha = 0.5)+
     geom_hline(aes(yintercept = 1), linetype = "dashed")+
   #geom_bar(position="dodge", stat="identity")+
   scale_fill_manual(values = colour_scale)+
   scale_colour_manual(values = colour_scale)+
   scale_x_discrete(labels = cond_labels) + 
-  labs(title = title, subtitle = subtitle, x = "Provider Model", y = "Odds Ratio (Compared to Chance)")+
+  labs(title = title, subtitle = subtitle, x = "Provider Model", y = "Odds Ratio (Compared to Random Sampling Model)")+
     #ylim(0,5)+
   #facet_grid(size~provider_cond, labeller = labeller(provider_cond = cond_labels))+
   facet_grid(~provider_cond, labeller = labeller(provider_cond = cond_labels))+
