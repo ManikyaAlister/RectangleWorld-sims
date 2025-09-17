@@ -18,12 +18,18 @@ cleaning_fun = function(raw_data, nClues, nBlocks) {
   pid_all <- names(raw_data)
   data <- NULL
   dnf <- NULL # keep track of those who didn't finish
+  started <- NULL # keep track of everyone who actually started game instead of just opening/reading instructions. 
   for (i in 1:length(pid_all)) {
     d_participant <- raw_data[[i]]
     # skip if participant isn't an mturker
     if (d_participant$src != "mt")
       next
     if (is.null(d_participant$experimentEndStatus)){
+      var_names <- names(d_participant)
+      if (any(grepl("RW", var_names))) {
+        print("TEST")
+        started <- c(started, d_participant$mtWorkerId)
+      }
       dnf <- c(dnf, d_participant$mtWorkerId) # keep track of how many didn't finish
       next
     }
@@ -191,6 +197,7 @@ cleaning_fun = function(raw_data, nClues, nBlocks) {
       )
     ), as.numeric)
   
+  print(paste0("Number of participants who started but did not finish the task: ", length(unique(started))))
   print(paste0("Number of participants who did not finish the task: ", length((unique(dnf)))))
 
   

@@ -18,6 +18,7 @@ cleaning_fun = function(raw_data, nClues, nBlocks) {
   pid_all <- names(raw_data)
   data <- NULL
   dnf <- NULL # empty vector of participants who did not finish
+  started <- NULL # keep track of everyone who actually started game instead of just opening/reading instructions. 
   # tid corresponds to a condition -- it is recorded even if participants do not enter the task, so it is 
   # useful for when we need to ignore these conditions when counting the number of exclusions
   us_tid <- seq(from = 2, to = 2000, by = 8) # tids that correspond to misleading aware cover story condition
@@ -31,7 +32,12 @@ cleaning_fun = function(raw_data, nClues, nBlocks) {
       next
     # skip if participant didn't finish
     if (is.null(d_participant$experimentEndStatus)){
-      #print(d_participant$condition)
+      var_names <- names(d_participant)
+      if (any(grepl("RW", var_names))) {
+        print("TEST")
+        started <- c(started, d_participant$mtWorkerId)
+      }
+      
       if (!d_participant$tid %in% dont_count_tid_e1) { # these conditions were re-collected due to an error in the instructions
         dnf <- c(dnf, d_participant$mtWorkerId)
       }
@@ -202,7 +208,8 @@ cleaning_fun = function(raw_data, nClues, nBlocks) {
       )
     ), as.numeric)
   
-  print(paste0("Number of participants who did not finish the task: ", length(unique(dnf))))
+  print(paste0("Number of participants who started but did not finish the task: ", length(unique(started))))
+  print(paste0("Total number of participants who did not finish the task: ", length(unique(dnf))))
   
   data
   

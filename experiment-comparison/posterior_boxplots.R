@@ -2,7 +2,7 @@ model_alphas <- c(-1,0,1) # alphas we want for the helpful, misleading naive, ra
 recursive_alpha <- -1 # alpha that we want for the recursive (misleading aware/uninformative) model
 all_plotting <- NULL 
 plot_clue <- 3
-plot_block <- 8
+plot_block <- 2
 filter_cover_check <- FALSE # if filtering based on the cover story verification quiz, indicate the exclusion number
 
 for (exp in 1:3){

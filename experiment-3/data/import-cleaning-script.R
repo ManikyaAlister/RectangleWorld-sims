@@ -23,6 +23,7 @@ cleaning_fun_learning = function(raw_data, nClues, nBlocks) {
   all_mturk <- NULL 
   pid_all <- names(raw_data)
   data <- NULL
+  started <- NULL # keep track of everyone who actually started game instead of just opening/reading instructions. 
   for (i in 1:length(pid_all)) {
     d_participant <- raw_data[[i]]
     # skip if participant isn't an mturker
@@ -30,10 +31,16 @@ cleaning_fun_learning = function(raw_data, nClues, nBlocks) {
       next
     # skip if participant didn't finish
     if (is.null(d_participant$experimentEndStatus)){
+      var_names <- names(d_participant)
+      if (any(grepl("RW", var_names))) {
+        print("TEST")
+        started <- c(started, d_participant$mtWorkerId)
+      }
       dnf <- c(dnf, d_participant$mtWorkerId) # keep track of how many didn't finish
       next
     }
     if (is.null(d_participant$`RWTeachingPhase_2-T-11-M_3-3_clue`)){
+      print("TEST")
       dnf <- c(dnf, d_participant$mtWorkerId) # keep track of how many didn't finish
       next
       }
@@ -211,7 +218,9 @@ cleaning_fun_learning = function(raw_data, nClues, nBlocks) {
   duplicates <- all_mturk[duplicated(all_mturk) | duplicated(all_mturk, fromLast = TRUE)]
   
   print(paste0("Removing ", length(duplicates), " instances from participats who completed multiple times"))  
+  print(paste0("Number of participants who started but did not finish the task: ", length(unique(started))))
   print(paste0("Number of participants who did not finish the task: ", length((unique(dnf)))))
+  
   
   # change multiple columns to numeric
   data <-  data %>%
