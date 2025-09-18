@@ -44,7 +44,7 @@ d_cartesian <- d_cartesian %>%
     cond == "RS" & follow_up == "r_random" ~ TRUE,
     cond == "US" & follow_up == "r_uninformative" ~ TRUE,
     cond == "MS" & follow_up == "r_misleading" ~ TRUE,
-    # okay if participants couldn;t distinguish between misleading and uninformative 
+    # okay if participants couldn't distinguish between misleading and uninformative 
     cond == "US" & follow_up == "r_misleading" ~ TRUE,
     cond == "MS" & follow_up == "r_uninformative" ~ TRUE,
     TRUE ~ FALSE

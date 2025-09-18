@@ -13,6 +13,7 @@ alphas <- c(-1, 0, 1) # alphas we are interested in modelling
 c <- 3 # clue we are interested in
 b <- 8 # block we are interested in
 targetBlocks <- c(2, 8)
+filter_cover_check <- 1 #set to FALSE if not doing the cover check, otherwise, put the filter criterion (acceptable number of times to pass)
 priors <- c("empirical", "flat")
 
 # load participant data
@@ -20,6 +21,11 @@ load(here(
   paste0("experiment-", exp, "/data/derived/data_cartesian.Rdata")
 ))
 
+# filter participants by the number of times they passed the verification test if we're doing that
+if(filter_cover_check){
+  d_cartesian <- d_cartesian %>%
+    filter(n_cover_check > filter_cover_check)
+}
 
 # load generic data
 load(here(
@@ -28,6 +34,7 @@ load(here(
 
 all_conditions_filtered <- all_conditions %>%
   filter(clues == c & blocks == b)
+
 
 getSizeHistData = function(data,
                            exp,
@@ -188,10 +195,17 @@ d_all_sizes <- getSizeHistData(d_cartesian,
                                priors =  priors,
                                all_conditions_filtered = all_conditions_filtered)
 
-save(d_all_sizes, file = here(
-  paste0("experiment-", exp, "/data/derived/d_size_histograms-b",b,"-c",c,".Rdata")
+file <- paste0("experiment-", exp, "/data/derived/d_size_histograms-b",b,"-c",c)
+
+if (filter_cover_check){
+  file <- paste0(file,"-filter-cover")
+}
+
+save(d_all_sizes, file = here(paste0(
+  file,".Rdata")
 ))
-# load participants who passed liberal filtering 
+
+# load participants who passed liberal filtering based on provider phase performance
 load(here("experiment-3/modelling/11_filtered-analyses/good_uid_liberal.Rdata"))
 
 # get size histogram with filtered data
@@ -212,63 +226,68 @@ save(d_all_sizes_filtered, file = here(
   paste0("experiment-", exp, "/data/derived/d_size_histograms_filtered-b",b,"-c",c,".Rdata")
 ))
 
-# add column for cover story/model condition
-all_conditions_filtered <- all_conditions_filtered %>%
-  mutate(
-    plotCond = case_when(
-      conditions == "HS" | conditions == "HN" ~ "helpful",
-      conditions == "MS" | conditions == "MN" ~ "misleading",
-      conditions == "UN" | conditions == "US" ~ "uninformative",
-      conditions == "RS" | conditions == "RN" ~ "random"
+# only do the rest if we're not filtering based on the covers story verification
+if (!filter_cover_check){
+  # add column for cover story/model condition
+  all_conditions_filtered <- all_conditions_filtered %>%
+    mutate(
+      plotCond = case_when(
+        conditions == "HS" | conditions == "HN" ~ "helpful",
+        conditions == "MS" | conditions == "MN" ~ "misleading",
+        conditions == "UN" | conditions == "US" ~ "uninformative",
+        conditions == "RS" | conditions == "RN" ~ "random"
+      )
     )
-  )
-
-# Plot
-# loop through all conditions and make a plot for each
-
-# create an empty plot
-plot_list <- list()
-for (p in priors) {
-  for (i in 1:length(all_conditions_filtered[, 1])) {
-    condition <- all_conditions_filtered[i, "conditions"]
-    plotCond <- all_conditions_filtered[i, "plotCond"]
-    
-    d_plotting <- d_all_sizes
-    
-    if (p == "flat") {
-      d_plotting <- d_plotting %>% filter(prior_type == "flat")
+  
+  # Plot
+  # loop through all conditions and make a plot for each
+  
+  # create an empty plot
+  plot_list <- list()
+  for (p in priors) {
+    for (i in 1:length(all_conditions_filtered[, 1])) {
+      condition <- all_conditions_filtered[i, "conditions"]
+      plotCond <- all_conditions_filtered[i, "plotCond"]
+      
+      d_plotting <- d_all_sizes
+      
+      if (p == "flat") {
+        d_plotting <- d_plotting %>% filter(prior_type == "flat")
+      }
+      
+      if (condition == "US" | condition == "UN") {
+        plot_i <-
+          sizeHistModel(d_plotting, condition, plotCond, dif_priors = TRUE)
+      } else {
+        plot_i <-
+          sizeHistModel(d_plotting, condition, plotCond, dif_priors = TRUE)
+      }
+      plot_list[[condition]] <- plot_i
+      ggsave(
+        plot = plot_i,
+        filename = here(
+          paste0(
+            "experiment-",
+            exp,
+            "/modelling/05_plots/size_hist_b8_c",
+            c,
+            "_",
+            condition,
+            "-",
+            p,
+            ".png"
+          )
+        ),
+        width = 6,
+        height = 4
+      )
     }
-    
-    if (condition == "US" | condition == "UN") {
-      plot_i <-
-        sizeHistModel(d_plotting, condition, plotCond, dif_priors = TRUE)
-    } else {
-      plot_i <-
-        sizeHistModel(d_plotting, condition, plotCond, dif_priors = TRUE)
-    }
-    plot_list[[condition]] <- plot_i
-    ggsave(
-      plot = plot_i,
-      filename = here(
-        paste0(
-          "experiment-",
-          exp,
-          "/modelling/05_plots/size_hist_b8_c",
-          c,
-          "_",
-          condition,
-          "-",
-          p,
-          ".png"
-        )
-      ),
-      width = 6,
-      height = 4
-    )
+    save(plot_list, file = here(
+      paste0("experiment-", exp, "/data/derived/plot-files-", p, ".Rdata")
+    ))
   }
-  save(plot_list, file = here(
-    paste0("experiment-", exp, "/data/derived/plot-files-", p, ".Rdata")
-  ))
+  
 }
+
 
 

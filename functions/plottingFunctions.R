@@ -124,7 +124,8 @@ plotDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
                             subtitle="Yellow rectangle is the true hypothesis",
                             facet = FALSE,
                             manual_scale = NULL,
-                            title_size = 40){
+                            title_size = 40,
+                            legend = FALSE){
   xlow <- min(xrange)
   xhigh <- max(xrange)
   ylow <- min(yrange)
@@ -186,9 +187,22 @@ plotDistribution = function(obs=NA, trueRectangle=c(0,0,0,0), allPts,
       pRect <- pRect + 
         geom_rect(data=allPts, 
                   mapping=aes(xmin=x-0.5, xmax=x+0.5, ymin=y-0.5, ymax=y+0.5, 
-                              fill=posterior),show.legend=FALSE)  
+                              fill=posterior))  
     }
   
+  # if legend == false (default), remove legend
+  if (!legend) {
+    pRect <- pRect + 
+      theme(legend.position = "none")
+  } else {
+    pRect <- pRect + 
+      theme(legend.title = element_text(size = title_size-3),
+            legend.text = element_text(size = title_size-8),
+            legend.key.width = unit(2.5, 'cm'),
+            legend.key.height = unit(1.5,'cm'))+
+      labs(fill = "Probability  ")
+    
+  }
 
 
     
@@ -775,7 +789,7 @@ plotHeatMaps = function(all_conditions, experiment, target_blocks = c(2,8), zero
     # track progress in console
     print(paste0(condId," out of ", nConds))
   }
-  ggarrange(plotlist = plot_list)
+  ggarrange(plotlist = plot_list, common.legend = TRUE)
   #ggsave(filename = here(paste0("experiment-",experiment,"/modelling/05_plots/heatmap-all-b-",b,".png")), width = 5, height = 5, plot = heatMap)
   
   
@@ -901,7 +915,8 @@ plotHeatMapsFacet = function(all_conditions,
                              save = TRUE,
                              file_label = "",
                              filtered = FALSE,
-                             t = NULL) {
+                             t = NULL,
+                             legend = TRUE) {
   
   #clueNum = clues
   
@@ -1049,7 +1064,8 @@ plotHeatMapsFacet = function(all_conditions,
     title = t,
     subtitle = NULL,
     trueRectangle = trueR,
-    facet = TRUE
+    facet = TRUE,
+    legend = legend
   )
   
   heatMap

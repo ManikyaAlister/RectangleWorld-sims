@@ -95,70 +95,55 @@ In experiment 3, we added a "clue 0", where people could indicate a rectangle th
 Since some rectangle sizes were more common than others (e.g., there are 100 rectangles of size 1 but only 1 rectangle of size 100) we scaled the rectangles that participants drew based on how common that rectangle was (i.e., the base rate of that rectangle size). That way we could see whether people were drawing rectangles of a particular size more often than we would expect by chance, if they were just selecting a random rectangle. Additionally, we separated the priors by condition, to see whether the condition participants were in affected their priors.
 
 ```{r}
-block = 8
 getEmpiricalPriors = function(block){
-prior_all <- filter_priors(d_priors_cartesian, 1:8) 
-conds <- c("HS", "MS", "US", "RS")
-condition_names <- c("Helpful", "Misleading Naive", "Misleading Aware", "Random")
-plot_list <- list()
-all_empirical_priors <- list()
-
-for (i in 1:length(conds)){
-  cond_i <- conds[i]
-  cond_name_i <- condition_names[i]
-  prior_i <- filter_priors(d_priors_cartesian,block, condition = cond_i)
-  prior_scaled_i <- scaled_rectangle_sizes(prior_i, hyp) %>%
-    rename("size" = "size_resp") 
+  prior_all <- filter_priors(d_priors_cartesian, 1:8) 
+  conds <- c("HS", "MS", "US", "RS")
+  condition_names <- c("Helpful", "Misleading Naive", "Misleading Aware", "Random")
+  plot_list <- list()
+  all_empirical_priors <- list()
   
-# Calculate density
-dens <- density(prior_scaled_i$size, weights = prior_scaled_i$scaled_freq)
-
-# Extract x (sizes) and y (densities) values
-sizes <- dens$x
-densities <- dens$y
-
-# Round the sizes to the nearest whole number
-rounded_sizes <- round(sizes)
-
-# Filter rounded sizes to be between 1 and 100
-filtered_indices <- rounded_sizes >= 1 & rounded_sizes <= 100
-filtered_sizes <- rounded_sizes[filtered_indices]
-filtered_densities <- densities[filtered_indices]
-
-# Combine sizes and densities into a data frame
-density_data <- data.frame(size = filtered_sizes, density = filtered_densities)
-
-# Ensure one density value per unique rectangle size
-density_data <- density_data %>%
-  group_by(size) %>%
-  summarise(density = mean(density))
-
-# save prior into list of all empirical priors
-all_empirical_priors[[conds[i]]] <- density_data
-
-# simplel plot to make sure it looks okay
-#plot(density_data$size, density_data$density)
-
-prior_scaled_i$cond <- cond_i
-
-# plot prior for given condition
-  dens_plot_i <- prior_scaled_i %>% 
-    ggplot(aes(x = size, weight = scaled_freq)) +
-    geom_density(aes(fill = cond), alpha = 0.5) +
-        scale_fill_manual(values = c("HS" = "darkgreen", "HN" = "darkgreen", "RS" = "lightblue", "RN" = "lightblue", "MS" = "darkred", "MN" = "darkred", "UN" = "orange", "US" = "orange"))+
-    labs(x = "Rectangle Size", y = "Density", title = cond_name_i) +
-    #xlim(1,100)+
-    #scale_x_continuous(values = seq(1,100,20))+
-    theme_minimal()+
-    theme(legend.position = "none", axis.title = element_text(size = 10))
-  plot_list[[i]] <- dens_plot_i
-}
-
-save(all_empirical_priors, file = here(paste0("experiment-3/data/derived/empirical-prior-block-",block,".Rdata")))
-
-#names(all_empirical_priors) <- conds
-plot <- ggpubr::ggarrange(plotlist = plot_list, nrow = 1)
-annotate_figure(plot, top = text_grob(paste0("Block ", block), face = "bold"))
+  for (i in 1:length(conds)){
+    cond_i <- conds[i]
+    cond_name_i <- condition_names[i]
+    prior_i <- filter_priors(d_priors_cartesian, block, condition = cond_i)
+    prior_scaled_i <- scaled_rectangle_sizes(prior_i, hyp) %>%
+      rename("size" = "size_resp") %>%
+      mutate(normalised_weight = scaled_freq / sum(scaled_freq))
+    
+    # Add condition column
+    prior_scaled_i$cond <- cond_i
+    
+    # Calculate density for saving
+    dens <- density(prior_scaled_i$size, weights = prior_scaled_i$normalised_weight)
+    sizes <- dens$x
+    densities <- dens$y
+    rounded_sizes <- round(sizes)
+    filtered_indices <- rounded_sizes >= 1 & rounded_sizes <= 100
+    filtered_sizes <- rounded_sizes[filtered_indices]
+    filtered_densities <- densities[filtered_indices]
+    density_data <- data.frame(size = filtered_sizes, density = filtered_densities)
+    density_data <- density_data %>%
+      group_by(size) %>%
+      summarise(density = mean(density))
+    
+    # Save prior into list of all empirical priors
+    all_empirical_priors[[conds[i]]] <- density_data
+    
+    # Create plot for given condition
+    dens_plot_i <- prior_scaled_i %>% 
+      ggplot(aes(x = size, weight = normalised_weight)) +  # Fixed: use weight = normalised_weight
+      geom_density(aes(fill = cond), alpha = 0.5) +
+      scale_fill_manual(values = c("HS" = "darkgreen", "HN" = "darkgreen", "RS" = "lightblue", "RN" = "lightblue", "MS" = "darkred", "MN" = "darkred", "UN" = "orange", "US" = "orange"))+
+      labs(x = "Rectangle Size", y = "Density", title = cond_name_i) +
+      theme_minimal()+
+      theme(legend.position = "none", axis.title = element_text(size = 10))
+    
+    plot_list[[i]] <- dens_plot_i
+  }
+  
+  save(all_empirical_priors, file = here(paste0("experiment-3/data/derived/empirical-prior-block-",block,".Rdata")))
+  plot <- ggpubr::ggarrange(plotlist = plot_list, nrow = 1)
+  annotate_figure(plot, top = text_grob(paste0("Block ", block), face = "bold"))
 }
 ```
 

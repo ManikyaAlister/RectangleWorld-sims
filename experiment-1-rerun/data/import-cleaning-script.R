@@ -17,14 +17,17 @@ cleaning_fun = function(raw_data, nClues, nBlocks) {
   raw_data <- raw_data[[1]]
   pid_all <- names(raw_data)
   data <- NULL
+  dnf <- NULL
   for (i in 1:length(pid_all)) {
     d_participant <- raw_data[[i]]
-    # skip if participant didn't finish
-    if (is.null(d_participant$experimentEndStatus))
-      next
     # skip if participant isn't an mturker
     if (d_participant$src != "mt")
       next
+    # skip if participant didn't finish
+    if (is.null(d_participant$experimentEndStatus)){
+      dnf <- c(dnf, d_participant$mtWorkerId)
+      next
+    }
     # convert data from list to single column matrix
     d_df <- as.matrix(unlist(d_participant))
     # get participant responses.
@@ -91,6 +94,30 @@ cleaning_fun = function(raw_data, nClues, nBlocks) {
       IQR(as.numeric(trial_end) - as.numeric(trial_start)) / 1000
     
     
+    # function to get n_cover_check from a data frame
+    get_n_cover_check <- function(df) {
+      # get all rownames
+      rn <- rownames(df)
+      
+      # find those that match coverCheck_endTime_#
+      cover_rows <- grep("^coverCheck_endTime_[0-9]+$", rn, value = TRUE)
+      
+      if (length(cover_rows) == 0) {
+        return(0)  # no cover check rows
+      }
+      
+      # extract the numbers after the final underscore
+      attempts <- as.integer(sub(".*_", "", cover_rows))
+      
+      # maximum attempt
+      max(attempts, na.rm = TRUE)
+    }
+    
+    # example usage
+    n_cover_check <- get_n_cover_check(d_df)
+    #print(n_cover_check)
+    
+    
     
     follow_up <-
       d_participant$`RWLearningPhase_T-31-t10-3_clueGenerationFollowup`
@@ -121,6 +148,7 @@ cleaning_fun = function(raw_data, nClues, nBlocks) {
         follow_up,
         experiment_end_time,
         trial_iqr,
+        n_cover_check,
         completed
       )
     rownames(d_clean) <- NULL
@@ -159,12 +187,18 @@ cleaning_fun = function(raw_data, nClues, nBlocks) {
         response_x2,
         response_y2,
         trial_index,
-        trial_iqr
+        trial_iqr,
+        n_cover_check
       )
     ), as.numeric)
   
+  print(paste0("Number of participants who did not finish the task: ", length(unique(dnf))))
+  
+  
   data
 }
+
+
 
 data <- cleaning_fun(d_json, nBlocks = nBlocks, nClues = nClues)
 

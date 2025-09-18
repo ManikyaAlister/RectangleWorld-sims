@@ -12,6 +12,10 @@ exp <- 2
 alphas <- c(-1, 0, 1) # alphas we are interested in modelling
 c <- 3 # clue we are interested in
 b <- 8 # block we are interested in
+priors <- "flat"
+filter_cover_check <- 1
+dif_priors <- FALSE 
+if (length(priors) > 1) dif_prriors = TRUE
 
 
 # load generic data
@@ -24,6 +28,12 @@ observations = targetBlock$observations
 
 # load participant data
 load(here(paste0("experiment-",exp,"/data/derived/data_cartesian.Rdata")))
+
+# filter participants by the number of times they passed the verification test if we're doing that
+if(filter_cover_check){
+  d_cartesian <- d_cartesian %>%
+    filter(n_cover_check > filter_cover_check)
+}
 
 # Model predictions -------------------------------------------------------
 # Predicted distributions for each alpha
@@ -105,6 +115,13 @@ d_all_sizes <- NULL
 
 all_conditions_filtered <- all_conditions %>%
   filter(clues == c & blocks == b)
+
+# filter participants by the number of times they passed the verification test if we're doing that
+if(filter_cover_check){
+  all_conditions_filtered <- all_conditions_filtered %>%
+    filter(conditions %in% c("HS", "MS", "RS","US"))
+}
+
 nConds <- length(all_conditions_filtered[, 1])
 
 
@@ -145,8 +162,15 @@ for (i in 1:nConds) {
   d_all_sizes <- rbind(d_all_sizes, d_cond_sizes)
 }
 
-save(d_all_sizes, file = here(paste0("experiment-", exp, "/data/derived/d_size_histograms-b",b,"-c",c,".Rdata")))
 
+file <-  paste0("experiment-", exp, "/data/derived/d_size_histograms-b",b,"-c",c)
+
+if(filter_cover_check){
+  file <- paste0(file,"-filter-cover")
+}
+
+
+save(d_all_sizes, file = here(paste0(file,".Rdata")))
 
 # add column for cover story/model condition
 all_conditions_filtered <- all_conditions_filtered %>%
@@ -165,19 +189,30 @@ all_conditions_filtered <- all_conditions_filtered %>%
 for (i in 1:length(all_conditions_filtered[, 1])) {
   condition <- all_conditions_filtered[i, "conditions"]
   plotCond <- all_conditions_filtered[i, "plotCond"]
+  sizeHistModel(d_all_sizes, condition, plotCond)
   
-  if (condition == "US" | condition == "UN") {
-    sizeHistModel(d_all_sizes, condition, plotCond)
-  } else {
-    sizeHistModel(d_all_sizes, condition, plotCond)
+  
+  file <-  paste0("experiment-", exp, "/data/derived/d_size_histograms-b",b,"-c",c)
+  
+  if(filter_cover_check){
+    file <- paste0(file,"-filter-cover")
   }
+  
+  file <- paste0(
+    "experiment-",exp,"/modelling/05_plots/size_hist_b8_c",
+    c,
+    "_",
+    condition
+  )
+  
+  if (filter_cover_check){
+    file <- paste0(file,"-filter-cover")
+  }
+  
+  
   ggsave(filename = here(
     paste0(
-      "experiment-",exp,"/modelling/05_plots/size_hist_b8_c",
-      c,
-      "_",
-      condition,
-      ".png"
+      file,".png"
     )
   ),
   width = 6,

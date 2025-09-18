@@ -8,30 +8,64 @@ load(here("experiment-1/data/derived/all_conditions.Rdata"))
 
 sum_all <- NULL
 recovery_all <- NULL
-block_plot <- 2
+block_plot <- 8
+simple <- FALSE # if set to simple, only three alpha values alligning with three provider types
+filter_cover_check <- NULL
+
+if (simple){
+  model_alphas <- c(-1,0,1)
+} else {
+  model_alphas <- c(-5,-2,-1,-0.5,-0.1,0, 0.1,0.5,1,2,5)
+}
 
 
 for (exp in 1:3) {
   #c = 4 # clue
   
   # function for wrangling plot data
-  getPosteriorPlotData = function(posteriors) {
+  getPosteriorPlotData = function(posteriors, model_alphas, simple_model = simple, filter_check = filter_cover_check, recovery = FALSE) {
+  
+    
+    if (!is.null(filter_check) & !recovery){
+
+      n_old <- length(unique(posteriors$pid)) # get how many participants there were 
+      
+      posteriors <- posteriors %>%
+        filter(n_cover_check > filter_check)
+        #filter(man_check)
+      
+      n_new <- length(unique(posteriors$pid)) # get how many participants there are now 
+      
+      n_filtered <- n_old-n_new # get how many were removed
+      
+      print(paste0(n_filtered, " participants were removed for failing the cover story quiz at least ", filter_check, " time(s)"))
+    }
+    
     plot_data <- posteriors %>%
       mutate(alpha = as.factor(alpha)) %>%
+      filter(alpha %in% model_alphas) %>%
       group_by(alpha) %>%
       summarise(
         mean = mean(posterior),
         median = median(posterior),
-        sum = sum(posterior)
-      ) %>%
-      # normalize so that everything is on the same scale
-      mutate(
-        mean = mean / sum(mean),
-        median = median / sum(median),
-        sum = sum / sum(sum)
+        sum = sum(posterior),
+        se = sd(posterior) / sqrt(n())
       )
+    
+    if (!simple){
+      plot_data <- plot_data %>%
+      #  normalize so that everything is on the same scale because otherwise it's hard to read with full alphas
+        mutate(
+          mean = mean / sum(mean),
+          median = median / sum(median),
+          sum = sum / sum(sum),
+          se = se / sum(mean)
+        )
+    }
+    
     plot_data
   }
+  
   
   
   # Define alphas for each condition for recovery comparison
@@ -114,9 +148,6 @@ for (exp in 1:3) {
         recursion <- all_conditions_tmp[i, "recursion"]
         provider <- all_conditions_tmp[i, "provider"]
         cover_story <- all_conditions_tmp[i, "cover_story"]
-
-        
-        
         
         if (b %in% target_blocks) {
           # load posteriors
@@ -224,7 +255,7 @@ for (exp in 1:3) {
         }
         
         # wrangle recovery data for plotting
-        recovery_plotting <- getPosteriorPlotData(posteriors) %>%
+        recovery_plotting <- getPosteriorPlotData(posteriors, model_alphas, simple_model = simple, recovery = TRUE) %>%
           mutate(
             condition = condition,
             provider = provider,
@@ -236,12 +267,33 @@ for (exp in 1:3) {
         
         recovery_all <- rbind(recovery_all, recovery_plotting)
         
+        
+        # load participant data 
+        load(here(
+          paste0(
+            "experiment-",
+            exp,
+            "/data/clean/clean_data.Rdata"
+          )))
+        
+        # match n cover check to posterior data
+        if(!is.null(filter_cover_check)){
+          
+          # get only n_check and pid
+          d_check <- data %>%
+            select(pid, n_cover_check)
+          
+          all_alpha_posteriors <- all_alpha_posteriors %>%
+            full_join(d_check, by = "pid", relationship = "many-to-many")
+        }
+        
+        
         # wrangle participant data for plotting
         all_data <- all_alpha_posteriors %>%
           filter(cond == condition, clue == c) %>%
           mutate(alpha = as.factor(alpha))
         
-        sum <- getPosteriorPlotData(all_data) %>%
+        sum <- getPosteriorPlotData(all_data, model_alphas) %>%
           mutate(
             condition = condition,
             provider = provider,
@@ -359,7 +411,7 @@ for (exp in 1:3) {
 
 
 
-clue_plot <- 4
+clue_plot <- 1
 recovery_all_plotting <- recovery_all %>%
   filter(clue == clue_plot, block == block_plot)
 
@@ -370,7 +422,7 @@ sum_all_plotting <- sum_all %>%
 
 
 
-plotPosteriorsCombined = function(p_data, statistic, man_check = FALSE, recovery_data, title = "", subtitle = "") {
+plotPosteriorsCombined = function(p_data, statistic, man_check = FALSE, recovery_data, title = "", subtitle = "", simple_plot = simple) {
   
   # Define consistent factor levels
   provider_levels <- c("Helpful", "Misleading\nNaive", "Misleading\nAware", "Random")
@@ -387,16 +439,36 @@ plotPosteriorsCombined = function(p_data, statistic, man_check = FALSE, recovery
       alpha = as.factor(alpha),
       provider = factor(provider, levels = provider_levels)
     )
+  
+  # custom colour scaling
+  colfunc <- colorRampPalette(c("red", "skyblue3","darkgreen"))
+  
 
+  if(simple_plot){
+    title = "Performance of different learner models in each condition"
+    x_title = "Learner Model"
+  } else {
+    title =bquote("Inferred " * alpha * " for participant data in each condition")
+    x_title = bquote(alpha * ": < 0 (red), misleading assumption; > 0 (green) helpful assumption")
+  }
+  
   plot <- p_data %>% 
     ggplot() +
     geom_col(aes(x = alpha, y = eval(parse(text = statistic)), fill = alpha)) +
-    geom_line(data = recovery_data, aes(x = alpha, y = eval(parse(text = statistic))), group = 1) +
+    geom_errorbar(
+      aes(
+        x = alpha,
+        ymin = eval(parse(text = statistic)) - se,
+        ymax = eval(parse(text = statistic)) + se
+      ),
+      width = 0.2   # controls the width of the little crossbars
+    )+
     theme_classic() +
-    scale_fill_brewer(palette = "RdYlGn") +
+    scale_fill_manual(values = setNames(colfunc(length(unique(p_data$alpha))), unique(p_data$alpha)))+
+  #scale_fill_brewer(palette = "RdBlGn") +
     labs(
-      y = "Median Posterior Probability of Participant Inferences",
-      x = bquote(alpha * ": < 0 (red), misleading assumption; > 0 (green) helpful assumption"),
+      y = "Median Posterior Probability",
+      x = x_title,
       title = title,
       subtitle = subtitle
     ) +
@@ -404,24 +476,48 @@ plotPosteriorsCombined = function(p_data, statistic, man_check = FALSE, recovery
       axis.ticks.y = element_blank(),
       text = element_text(size = 18),
       axis.text.y = element_text(size = 18),
-      axis.text.x = element_text(angle = 60, vjust = .5),
+      axis.text.x = element_text(angle = 45, vjust = .5),
       axis.title.x = element_text(size = 22),
       legend.position = "none"
     ) +
     facet_grid(provider ~ experiment + cover_story)
 
+  if(simple){
+    plot <- plot +
+      scale_x_discrete(
+        breaks = c(-1, 0, 1),
+        labels = c("Misleading*", "Random", "Helpful")
+      )
+  } else{
+    plot <- plot +
+      geom_line(data = recovery_data, aes(x = alpha, y = eval(parse(text = statistic))), group = 1)
+  }
+  
   plot
 }
 
 
-plotPosteriorsCombined(
+
+plot <- plotPosteriorsCombined(
   sum_all_plotting,
   "median",
   recovery_data = recovery_all_plotting,
-  title = bquote("Inferred " * alpha * " for participant data in each condition"),
+  title = title,
   subtitle = NULL
 )
 
-ggsave(filename = here(paste0("experiment-comparison/posterior-all-exps-b",block_plot,"-c",clue_plot,".png")), width = 15, height = 8)
+plot
+
+if(simple){
+  file <- paste0("experiment-comparison/posterior-all-exps-b",block_plot,"-c",clue_plot,"-simple")
+}else {
+  file <- paste0("experiment-comparison/posterior-all-exps-b",block_plot,"-c",clue_plot,"")
+}
+
+if(!is.null(filter_cover_check)){
+  file <- paste0(file,"-filter-cover-", filter_cover_check)
+}
+
+ggsave(filename = here(paste0(file,".png")), width = 15, height = 8)
 
 
