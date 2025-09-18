@@ -1,10 +1,12 @@
 # Code and Data for the paper "When a helpful bias is unhelpful: Limitations in reasoning from random and misleading evidence"
 
-I'm sorry about the structure of this repository. This was one of the first projects of my PhD and I was fairly new to coding. This readme is my attempt to make this repo a bit more navigable for people interested in better understanding our analyses. 
+I'm sorry about the structure and messiness of this repository. This was one of the first projects of my PhD and I was fairly new to coding. This readme is my attempt to make this repo a bit more navigable for people interested in better understanding our analyses. 
 
 Note that `datafiles` does not contain the experiment data (see overview), it contains model output. 
 
-Note also that throughout the code and data, we make reference to Helpful, Random, Misleading, and Uninformative conditions. Here, "Misleading" refers to Misleading Naive in the paper, and "Uninformative" to misleading aware. These conditions are also often abbreviated to the first letter of the condition (e.g., "M" for misleading) and either "S" for  cover *story* or "N" for *no* cover story. So "MS" Would be the *M*isleading cover *S*tory condition. 
+**To run any of the modelling scripts, you will need to first run 01_generate-data-files and 02_generate-recursive-data-files**
+
+Note also that throughout the code and data, we make reference to Helpful, Random, Misleading, and Uninformative conditions. Here, "Misleading" refers to Misleading Naive in the paper, and "Uninformative" to Misleading Aware. These conditions are also often abbreviated to the first letter of the condition (e.g., "M" for misleading) and either "S" for  cover *story* or "N" for *no* cover story. So "MS" Would be the *M*isleading cover *S*tory condition. 
 
 ## Requirements
 
