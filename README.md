@@ -42,4 +42,8 @@ R version 4.2.2
 - `expeiment-simulations`: contains files relevant to conducting model simulations of the experiment target blocks.
 - `functions`: contains various functions used in the analyses. 
 - `model-demonstrations`: contains Rmarkdown/Quarto docs designed to provide an understanding of how the pedagogical sampling assumptions model works.
-- `recovery`: contains files relevant to a model recovery that tested whether data generated from the model could be accurately recovered by the model.  I've set the analysis up to run on a remote cloud computing server because it is a pretty computationally analysis, so this allows me to parallelise it greatly. If you want to run it locally, the scripts will need to be adapted. 
+- `recovery`: contains files relevant to a model recovery that tested whether data generated from the model could be accurately recovered by the model.  I've set the analysis up to run on a remote cloud computing server because it is a pretty computationally analysis, so this allows me to parallelise it greatly. If you want to run it locally, the scripts will need to be adapted.
+
+## Contributors
+
+Lots of this code was also written by Andrew Perfors.
